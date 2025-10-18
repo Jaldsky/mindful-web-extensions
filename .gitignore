@@ -1,13 +1,15 @@
 # IDE
 .idea/
 
-# Default ignored files
-/shelf/
-/workspace.xml
+# OS files
+.DS_Store
 
-# Editor-based HTTP Client requests
-/httpRequests/
+# Modules
+node_modules/
+package-lock.json
 
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
+# Coverage directory
+coverage/
+
+# Jest cache
+.jest/

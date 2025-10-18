@@ -1,10 +1,11 @@
 # 🌐 Mindful Web Extensions
 *Browser extensions for mindful internet tracking*
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Chrome](https://img.shields.io/badge/Chrome-Extension-green)](https://chrome.google.com/webstore)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)](https://developer.chrome.com/docs/extensions/mv3/)
 [![Privacy](https://img.shields.io/badge/Privacy-First-green)](https://github.com/Jaldsky/mindful-web)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)](extensions/chrome)
+[![Coverage](https://img.shields.io/badge/Coverage-95%25-brightgreen)](extensions/chrome)
 
 > **Mindful Web Extensions** — browser extensions for tracking internet activity and restoring control over your attention.
 
@@ -251,19 +252,63 @@ The extension uses the following permissions:
 ## 🧪 Testing / Тестирование
 
 ### 🇬🇧 English
+
+#### Automated Testing
+```bash
+# Install dependencies
+npm install
+
+# Run all tests
+npm test
+
+# Run Chrome extension tests
+npm run test:chrome
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
+
+# Interactive test runner
+cd extensions/chrome/tests
+./run-tests.sh
+```
+
+#### Manual Testing
 1. Open `chrome://extensions/`
 2. Enable Developer mode
-3. Load the extension
+3. Load the extension from `extensions/chrome/`
 4. Use the popup to monitor status
-5. Open `test.html` for additional testing
+5. Open `extensions/chrome/tests/test-runner.html` for interactive testing
 6. Check browser console for logs
 
 ### 🇷🇺 Русский
+
+#### Автоматизированное тестирование
+```bash
+# Установка зависимостей
+npm install
+
+# Запуск всех тестов
+npm test
+
+# Тесты Chrome расширения
+npm run test:chrome
+
+# Тесты с покрытием кода
+npm run test:coverage
+
+# Тесты в режиме наблюдения
+npm run test:watch
+```
+
+#### Ручное тестирование
 1. Откройте `chrome://extensions/`
 2. Включите режим разработчика
-3. Загрузите расширение
+3. Загрузите расширение из `extensions/chrome/`
 4. Используйте popup для мониторинга статуса
-5. Откройте `test.html` для дополнительного тестирования
+5. Откройте `extensions/chrome/tests/test-runner.html` для интерактивного тестирования
 6. Проверьте консоль браузера для просмотра логов
 
 ---
