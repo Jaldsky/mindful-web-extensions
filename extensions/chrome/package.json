@@ -1,0 +1,25 @@
+{
+  "name": "mindful-web-chrome-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension for mindful internet tracking",
+  "scripts": {
+    "test": "jest --config=tests/jest.config.js",
+    "test:watch": "jest --config=tests/jest.config.js --watch",
+    "test:coverage": "jest --config=tests/jest.config.js --coverage",
+    "test:dom": "jest --config=tests/jest.config.js tests/dom-manager.test.js",
+    "test:notifications": "jest --config=tests/jest.config.js tests/notification-manager.test.js"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^23.0.1"
+  },
+  "keywords": [
+    "chrome-extension",
+    "testing",
+    "dom",
+    "javascript"
+  ],
+  "author": "Mindful Web Team",
+  "license": "MIT"
+}
