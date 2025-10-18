@@ -1,168 +1,9 @@
-/**
- * Базовый класс для управления состоянием и константами.
- * Содержит общую логику для всех компонентов popup.
- * 
- * @class BaseManager
- */
-class BaseManager {
-    /**
-     * Создает экземпляр BaseManager.
-     * 
-     * @param {Object} options - Опции конфигурации
-     */
-    constructor(options = {}) {
-        this.CONSTANTS = {
-            UPDATE_INTERVAL: 2000,
-            NOTIFICATION_DURATION: 3000,
-            PING_TIMEOUT: 5000,
-            THROTTLE_DELAY: 1000
-        };
-        
-        this.state = {
-            isOnline: false,
-            isTracking: false,
-            lastUpdate: 0
-        };
-        
-        this.options = { ...options };
-    }
-
-    /**
-     * Обновляет внутреннее состояние.
-     * 
-     * @param {Object} newState - Новое состояние
-     * @returns {void}
-     */
-    updateState(newState) {
-        this.state = { ...this.state, ...newState };
-    }
-
-    /**
-     * Получает текущее состояние.
-     * 
-     * @returns {Object} Текущее состояние
-     */
-    getState() {
-        return { ...this.state };
-    }
-}
+const BaseManager = typeof window !== 'undefined' ? window.BaseManager : require('./src/BaseManager.js');
+const DOMManager = typeof window !== 'undefined' ? window.DOMManager : require('./src/DOMManager.js');
 
 /**
- * Менеджер для работы с DOM элементами.
- * Отвечает за кэширование и обновление UI элементов.
- * 
- * @class DOMManager
- * @extends BaseManager
- */
-class DOMManager extends BaseManager {
-    /**
-     * Создает экземпляр DOMManager.
-     * 
-     * @param {Object} options - Опции конфигурации
-     */
-    constructor(options = {}) {
-        super(options);
-        this.elements = this.cacheDOMElements();
-    }
-
-    /**
-     * Кэширует часто используемые DOM элементы для лучшей производительности.
-     * 
-     * @returns {Object} Объект, содержащий кэшированные DOM элементы
-     */
-    cacheDOMElements() {
-        return {
-            connectionStatus: document.getElementById('connectionStatus'),
-            trackingStatus: document.getElementById('trackingStatus'),
-            eventsCount: document.getElementById('eventsCount'),
-            domainsCount: document.getElementById('domainsCount'),
-            queueSize: document.getElementById('queueSize'),
-            openSettings: document.getElementById('openSettings'),
-            testConnection: document.getElementById('testConnection'),
-            reloadExtension: document.getElementById('reloadExtension'),
-            runDiagnostics: document.getElementById('runDiagnostics')
-        };
-    }
-
-    /**
-     * Обновляет отображение статуса подключения в popup.
-     * 
-     * @param {boolean} isOnline - Подключен ли интернет
-     * @returns {void}
-     */
-    updateConnectionStatus(isOnline) {
-        if (!this.elements.connectionStatus) return;
-        
-        if (isOnline) {
-            this.elements.connectionStatus.textContent = 'Online';
-            this.elements.connectionStatus.className = 'status-value online';
-        } else {
-            this.elements.connectionStatus.textContent = 'Offline';
-            this.elements.connectionStatus.className = 'status-value offline';
-        }
-    }
-
-    /**
-     * Обновляет отображение статуса отслеживания в popup.
-     * 
-     * @param {boolean} isTracking - Активно ли отслеживание
-     * @returns {void}
-     */
-    updateTrackingStatus(isTracking) {
-        if (!this.elements.trackingStatus) return;
-        
-        if (isTracking) {
-            this.elements.trackingStatus.textContent = 'Active';
-            this.elements.trackingStatus.className = 'status-value active';
-        } else {
-            this.elements.trackingStatus.textContent = 'Inactive';
-            this.elements.trackingStatus.className = 'status-value inactive';
-        }
-    }
-
-    /**
-     * Обновляет отображение статистики в popup.
-     * 
-     * @param {Object} stats - Объект статистики, содержащий данные отслеживания
-     * @param {number} [stats.eventsTracked] - Количество отслеженных событий
-     * @param {number} [stats.domainsVisited] - Количество посещенных доменов
-     * @param {number} [stats.queueSize] - Размер очереди событий
-     * @returns {void}
-     */
-    updateStats(stats) {
-        if (!stats) return;
-        
-        const updates = {
-            eventsCount: stats.eventsTracked || 0,
-            domainsCount: stats.domainsVisited || 0,
-            queueSize: stats.queueSize || 0
-        };
-
-        Object.entries(updates).forEach(([elementId, value]) => {
-            const element = this.elements[elementId];
-            if (element) {
-                element.textContent = value;
-            }
-        });
-    }
-
-    /**
-     * Устанавливает состояние кнопки (текст и статус отключения).
-     * 
-     * @param {HTMLElement} button - Элемент кнопки
-     * @param {string} text - Текст кнопки
-     * @param {boolean} disabled - Отключена ли кнопка
-     * @returns {void}
-     */
-    setButtonState(button, text, disabled) {
-        button.textContent = text;
-        button.disabled = disabled;
-    }
-}
-
-/**
- * Менеджер для работы с уведомлениями.
- * Отвечает за отображение и управление уведомлениями пользователю.
+ * Менеджер уведомлений для отображения сообщений пользователю.
+ * Отвечает за создание, отображение и удаление уведомлений.
  * 
  * @class NotificationManager
  * @extends BaseManager
@@ -178,71 +19,65 @@ class NotificationManager extends BaseManager {
     }
 
     /**
-     * Показывает временное уведомление пользователю с улучшенной стилизацией.
+     * Показывает уведомление пользователю.
      * 
      * @param {string} message - Текст уведомления
-     * @param {'success'|'error'} type - Тип уведомления (успех или ошибка)
+     * @param {string} type - Тип уведомления ('success', 'error', 'info', 'warning')
      * @returns {void}
      */
-    showNotification(message, type) {
-        // Удаляем существующие уведомления
+    showNotification(message, type = 'info') {
+        // Очищаем предыдущие уведомления
         this.clearNotifications();
         
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
-        notification.style.cssText = this.getNotificationStyles(type);
         notification.textContent = message;
+        
+        // Стили для уведомления
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 10000;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            max-width: 300px;
+            word-wrap: break-word;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        
+        // Цвета в зависимости от типа
+        const colors = {
+            success: '#4CAF50',
+            error: '#f44336',
+            warning: '#ff9800',
+            info: '#2196F3'
+        };
+        
+        notification.style.backgroundColor = colors[type] || colors.info;
+        notification.style.color = 'white';
         
         document.body.appendChild(notification);
         
-        // Автоматическое удаление уведомления
+        // Анимация появления
+        setTimeout(() => {
+            notification.style.opacity = '1';
+        }, 10);
+        
+        // Автоматическое удаление
         setTimeout(() => {
             this.removeNotification(notification);
         }, this.CONSTANTS.NOTIFICATION_DURATION);
     }
 
     /**
-     * Получает стили уведомления в зависимости от типа.
-     * 
-     * @param {'success'|'error'} type - Тип уведомления
-     * @returns {string} CSS стили
-     */
-    getNotificationStyles(type) {
-        const baseStyles = `
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            text-align: center;
-            z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            transition: opacity 0.3s ease;
-        `;
-        
-        const typeStyles = type === 'success' 
-            ? 'background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;'
-            : 'background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;';
-        
-        return baseStyles + typeStyles;
-    }
-
-    /**
-     * Очищает все существующие уведомления.
-     * 
-     * @returns {void}
-     */
-    clearNotifications() {
-        const notifications = document.querySelectorAll('.notification');
-        notifications.forEach(notification => this.removeNotification(notification));
-    }
-
-    /**
      * Удаляет конкретное уведомление.
      * 
-     * @param {HTMLElement} notification - Элемент уведомления для удаления
+     * @param {HTMLElement} notification - Элемент уведомления
      * @returns {void}
      */
     removeNotification(notification) {
@@ -255,11 +90,23 @@ class NotificationManager extends BaseManager {
             }, 300);
         }
     }
+
+    /**
+     * Очищает все уведомления.
+     * 
+     * @returns {void}
+     */
+    clearNotifications() {
+        const notifications = document.querySelectorAll('.notification');
+        notifications.forEach(notification => {
+            this.removeNotification(notification);
+        });
+    }
 }
 
 /**
- * Менеджер для работы с service worker.
- * Отвечает за коммуникацию с background script.
+ * Менеджер для работы с Service Worker.
+ * Отвечает за коммуникацию с фоновым скриптом.
  * 
  * @class ServiceWorkerManager
  * @extends BaseManager
@@ -272,78 +119,97 @@ class ServiceWorkerManager extends BaseManager {
      */
     constructor(options = {}) {
         super(options);
+        this.messageHandlers = new Map();
+        this.setupMessageListener();
     }
 
     /**
-     * Отправляет ping в service worker с обработкой таймаутов.
+     * Настраивает слушатель сообщений от Service Worker.
      * 
-     * @async
-     * @returns {Promise<boolean>} true если service worker отвечает, false в противном случае
+     * @returns {void}
      */
-    async pingServiceWorker() {
+    setupMessageListener() {
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            const handler = this.messageHandlers.get(message.type);
+            if (handler) {
+                handler(message.data, sendResponse);
+            }
+        });
+    }
+
+    /**
+     * Регистрирует обработчик сообщений.
+     * 
+     * @param {string} type - Тип сообщения
+     * @param {Function} handler - Обработчик сообщения
+     * @returns {void}
+     */
+    onMessage(type, handler) {
+        this.messageHandlers.set(type, handler);
+    }
+
+    /**
+     * Отправляет сообщение в Service Worker.
+     * 
+     * @param {string} type - Тип сообщения
+     * @param {Object} data - Данные сообщения
+     * @returns {Promise} Промис с ответом
+     */
+    async sendMessage(type, data = {}) {
         try {
-            const response = await Promise.race([
-                chrome.runtime.sendMessage({ action: 'ping' }),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Ping timeout')), this.CONSTANTS.PING_TIMEOUT)
-                )
-            ]);
-            
-            return response && response.success;
+            return await chrome.runtime.sendMessage({type, data});
         } catch (error) {
-            console.error('Ping failed:', error);
+            console.error('Ошибка отправки сообщения:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Проверяет подключение к серверу.
+     * 
+     * @returns {Promise<boolean>} Статус подключения
+     */
+    async checkConnection() {
+        try {
+            const response = await this.sendMessage('checkConnection');
+            return response?.success || false;
+        } catch (error) {
             return false;
         }
     }
 
     /**
-     * Получает статус из service worker с обработкой таймаутов.
+     * Получает текущий статус отслеживания.
      * 
-     * @async
-     * @returns {Promise<Object|null>} Ответ статуса или null при ошибке
+     * @returns {Promise<Object>} Статус отслеживания
      */
-    async getStatusFromServiceWorker() {
+    async getTrackingStatus() {
         try {
-            return await chrome.runtime.sendMessage({action: 'getStatus'});
+            const response = await this.sendMessage('getTrackingStatus');
+            return response || { isTracking: false, isOnline: false };
         } catch (error) {
-            console.error('Failed to get status from service worker:', error);
-            return null;
+            return { isTracking: false, isOnline: false };
         }
     }
 
     /**
-     * Тестирует подключение к бэкенду.
+     * Получает статистику за сегодня.
      * 
-     * @async
-     * @returns {Promise<Object>} Результат теста подключения
+     * @returns {Promise<Object>} Статистика
      */
-    async testConnection() {
+    async getTodayStats() {
         try {
-            return await chrome.runtime.sendMessage({action: 'testConnection'});
+            const response = await this.sendMessage('getTodayStats');
+            return response || { events: 0, domains: 0, queue: 0 };
         } catch (error) {
-            console.error('Connection test failed:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Перезагружает расширение.
-     * 
-     * @returns {void}
-     */
-    reloadExtension() {
-        try {
-            chrome.runtime.reload();
-        } catch (error) {
-            console.error('Error reloading extension:', error);
-            throw error;
+            return { events: 0, domains: 0, queue: 0 };
         }
     }
 }
 
 /**
- * Менеджер для диагностики системы.
- * Отвечает за комплексную проверку состояния расширения.
+ * Менеджер диагностики для проверки состояния расширения.
+ * Отвечает за запуск и отображение результатов диагностики.
  * 
  * @class DiagnosticsManager
  * @extends BaseManager
@@ -352,7 +218,7 @@ class DiagnosticsManager extends BaseManager {
     /**
      * Создает экземпляр DiagnosticsManager.
      * 
-     * @param {ServiceWorkerManager} serviceWorkerManager - Менеджер service worker
+     * @param {ServiceWorkerManager} serviceWorkerManager - Менеджер Service Worker
      * @param {NotificationManager} notificationManager - Менеджер уведомлений
      * @param {Object} options - Опции конфигурации
      */
@@ -363,106 +229,144 @@ class DiagnosticsManager extends BaseManager {
     }
 
     /**
-     * Запускает комплексную диагностику с улучшенной обработкой ошибок и отчетностью.
+     * Запускает полную диагностику системы.
      * 
-     * @async
-     * @returns {Promise<void>}
-     */
-    async runDiagnostics() {
-        try {
-            console.log('Running diagnostics...');
-            
-            const diagnostics = await this.runDiagnosticTests();
-            this.displayDiagnosticResults(diagnostics);
-            
-        } catch (error) {
-            console.error('Diagnostics error:', error);
-            this.notificationManager.showNotification(`Diagnostics failed: ${error.message}`, 'error');
-        }
-    }
-
-    /**
-     * Запускает все диагностические тесты.
-     * 
-     * @async
      * @returns {Promise<Object>} Результаты диагностики
      */
-    async runDiagnosticTests() {
-        // Проверяем доступность Chrome APIs
-        if (typeof chrome === 'undefined') {
-            throw new Error('Chrome APIs not available. This popup is not running in extension context.');
-        }
-        
-        if (!chrome.runtime) {
-            throw new Error('chrome.runtime not available. Extension may not be properly loaded.');
-        }
-        
-        console.log('Chrome APIs available, testing service worker...');
-        
-        const tests = [
-            { name: 'Service Worker', test: () => this.testServiceWorker() },
-            { name: 'Status API', test: () => this.testStatusAPI() },
-            { name: 'Backend API', test: () => this.testBackendAPI() }
-        ];
-        
-        const results = {};
-        
-        for (const { name, test } of tests) {
-            try {
-                results[name] = await test();
-            } catch (error) {
-                results[name] = { success: false, error: error.message };
-            }
-        }
-        
-        return results;
-    }
+    async runDiagnostics() {
+        const results = {
+            timestamp: new Date().toISOString(),
+            checks: {}
+        };
 
-    /**
-     * Тестирует подключение к service worker.
-     * 
-     * @async
-     * @returns {Promise<Object>} Результат теста
-     */
-    async testServiceWorker() {
         try {
-            const response = await chrome.runtime.sendMessage({ action: 'ping' });
-            return { success: response && response.success };
+            // Проверка подключения к Service Worker
+            results.checks.serviceWorker = await this.checkServiceWorker();
+            
+            // Проверка подключения к серверу
+            results.checks.connection = await this.checkServerConnection();
+            
+            // Проверка состояния отслеживания
+            results.checks.tracking = await this.checkTrackingStatus();
+            
+            // Проверка статистики
+            results.checks.stats = await this.checkStats();
+            
+            // Общий статус
+            results.overall = this.calculateOverallStatus(results.checks);
+            
+            return results;
         } catch (error) {
-            return { success: false, error: error.message };
+            results.error = error.message;
+            results.overall = 'error';
+            return results;
         }
     }
 
     /**
-     * Тестирует API статуса.
+     * Проверяет доступность Service Worker.
      * 
-     * @async
-     * @returns {Promise<Object>} Результат теста
+     * @returns {Promise<Object>} Результат проверки
      */
-    async testStatusAPI() {
+    async checkServiceWorker() {
         try {
-            const response = await chrome.runtime.sendMessage({ action: 'getStatus' });
-            return { success: !!response };
-        } catch (error) {
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Тестирует API бэкенда.
-     * 
-     * @async
-     * @returns {Promise<Object>} Результат теста
-     */
-    async testBackendAPI() {
-        try {
-            const response = await chrome.runtime.sendMessage({ action: 'testConnection' });
-            return { 
-                success: response && response.success,
-                error: response && !response.success ? response.error : null
+            const response = await this.serviceWorkerManager.sendMessage('ping');
+            return {
+                status: 'ok',
+                message: 'Service Worker доступен',
+                response: response
             };
         } catch (error) {
-            return { success: false, error: error.message };
+            return {
+                status: 'error',
+                message: 'Service Worker недоступен',
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Проверяет подключение к серверу.
+     * 
+     * @returns {Promise<Object>} Результат проверки
+     */
+    async checkServerConnection() {
+        try {
+            const isOnline = await this.serviceWorkerManager.checkConnection();
+            return {
+                status: isOnline ? 'ok' : 'error',
+                message: isOnline ? 'Сервер доступен' : 'Сервер недоступен',
+                isOnline: isOnline
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                message: 'Ошибка проверки подключения',
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Проверяет состояние отслеживания.
+     * 
+     * @returns {Promise<Object>} Результат проверки
+     */
+    async checkTrackingStatus() {
+        try {
+            const status = await this.serviceWorkerManager.getTrackingStatus();
+            return {
+                status: 'ok',
+                message: 'Статус отслеживания получен',
+                isTracking: status.isTracking,
+                isOnline: status.isOnline
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                message: 'Ошибка получения статуса',
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Проверяет статистику.
+     * 
+     * @returns {Promise<Object>} Результат проверки
+     */
+    async checkStats() {
+        try {
+            const stats = await this.serviceWorkerManager.getTodayStats();
+            return {
+                status: 'ok',
+                message: 'Статистика получена',
+                stats: stats
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                message: 'Ошибка получения статистики',
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Вычисляет общий статус диагностики.
+     * 
+     * @param {Object} checks - Результаты проверок
+     * @returns {string} Общий статус
+     */
+    calculateOverallStatus(checks) {
+        const statuses = Object.values(checks).map(check => check.status);
+        
+        if (statuses.every(status => status === 'ok')) {
+            return 'ok';
+        } else if (statuses.some(status => status === 'error')) {
+            return 'error';
+        } else {
+            return 'warning';
         }
     }
 
@@ -473,22 +377,16 @@ class DiagnosticsManager extends BaseManager {
      * @returns {void}
      */
     displayDiagnosticResults(results) {
-        const resultMessages = [];
-        let allGood = true;
+        const statusEmoji = {
+            ok: '✅',
+            warning: '⚠️',
+            error: '❌'
+        };
         
-        Object.entries(results).forEach(([name, result]) => {
-            const status = result.success ? '✅ OK' : `❌ FAILED${result.error ? ` (${result.error})` : ''}`;
-            resultMessages.push(`${name}: ${status}`);
-            if (!result.success) allGood = false;
-        });
+        const emoji = statusEmoji[results.overall] || '❓';
+        const message = `${emoji} Диагностика завершена: ${results.overall}`;
         
-        const message = resultMessages.join('\n');
-        
-        if (allGood) {
-            this.notificationManager.showNotification('All diagnostics passed! ✅', 'success');
-        } else {
-            this.notificationManager.showNotification(`Diagnostics completed:\n${message}`, 'error');
-        }
+        this.notificationManager.showNotification(message, results.overall === 'ok' ? 'success' : 'error');
         
         console.log('Diagnostics completed:', results);
     }
@@ -533,259 +431,216 @@ class PopupManager extends BaseManager {
      */
     async init() {
         try {
-            await this.loadStatus();
-            this.setupEventListeners();
+            // Загружаем начальный статус
+            await this.loadInitialStatus();
+            
+            // Настраиваем обработчики событий
+            this.setupEventHandlers();
+            
+            // Запускаем периодические обновления
             this.startPeriodicUpdates();
+            
+            console.log('Popup manager initialized successfully');
         } catch (error) {
-            console.error('Failed to initialize popup manager:', error);
-            this.notificationManager.showNotification('Failed to initialize popup', 'error');
+            console.error('Ошибка инициализации popup:', error);
+            this.notificationManager.showNotification('Ошибка инициализации', 'error');
         }
     }
 
     /**
-     * Настраивает обработчики событий для кнопок popup с улучшенной обработкой ошибок.
-     * 
-     * @returns {void}
-     */
-    setupEventListeners() {
-        const eventHandlers = {
-            openSettings: () => chrome.runtime.openOptionsPage(),
-            testConnection: () => this.testConnection(),
-            reloadExtension: () => this.reloadExtension(),
-            runDiagnostics: () => this.runDiagnostics()
-        };
-
-        Object.entries(eventHandlers).forEach(([elementId, handler]) => {
-            const element = this.domManager.elements[elementId];
-            if (element) {
-                element.addEventListener('click', handler);
-            } else {
-                console.warn(`Element with id '${elementId}' not found`);
-            }
-        });
-    }
-
-    /**
-     * Запускает периодические обновления статуса с оптимизированным управлением интервалами.
-     * 
-     * @returns {void}
-     */
-    startPeriodicUpdates() {
-        // Очищаем существующий интервал
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-        }
-
-        this.updateInterval = setInterval(() => {
-            this.loadStatus();
-        }, this.CONSTANTS.UPDATE_INTERVAL);
-    }
-
-    /**
-     * Загружает и отображает текущий статус из service worker.
-     * Обновляет статус подключения, статус отслеживания и статистику с ограничением частоты.
+     * Загружает начальный статус системы.
      * 
      * @async
      * @returns {Promise<void>}
      */
-    async loadStatus() {
-        const now = Date.now();
-        
-        // Ограничиваем частоту обновлений для предотвращения избыточных API вызовов
-        if (now - this.state.lastUpdate < this.CONSTANTS.THROTTLE_DELAY) {
-            return;
-        }
-        
-        this.updateState({ lastUpdate: now });
-
+    async loadInitialStatus() {
         try {
-            const pingResponse = await this.serviceWorkerManager.pingServiceWorker();
+            // Проверяем подключение
+            const isOnline = await this.serviceWorkerManager.checkConnection();
+            this.domManager.updateConnectionStatus(isOnline);
             
-            if (pingResponse) {
-                const response = await this.serviceWorkerManager.getStatusFromServiceWorker();
-                
-                if (response) {
-                    this.updateUI(response);
-                } else {
-                    this.setOfflineState();
-                }
-            } else {
-                this.setOfflineState();
-            }
+            // Получаем статус отслеживания
+            const trackingStatus = await this.serviceWorkerManager.getTrackingStatus();
+            this.domManager.updateTrackingStatus(trackingStatus.isTracking);
+            
+            // Получаем статистику
+            const stats = await this.serviceWorkerManager.getTodayStats();
+            this.domManager.updateCounters(stats);
+            
+            console.log('Initial status loaded:', { isOnline, trackingStatus, stats });
         } catch (error) {
-            console.error('Error loading status:', error);
-            this.setOfflineState();
+            console.error('Ошибка загрузки начального статуса:', error);
+            this.notificationManager.showNotification('Ошибка загрузки статуса', 'error');
         }
     }
 
     /**
-     * Обновляет UI новыми данными статуса.
+     * Настраивает обработчики событий для кнопок.
      * 
-     * @param {Object} response - Ответ статуса от service worker
-     * @param {boolean} response.isOnline - Подключен ли интернет
-     * @param {boolean} response.isTracking - Активно ли отслеживание
-     * @param {Object} response.stats - Объект статистики
      * @returns {void}
      */
-    updateUI(response) {
-        this.domManager.updateConnectionStatus(response.isOnline);
-        this.domManager.updateTrackingStatus(response.isTracking);
-        this.domManager.updateStats(response.stats);
+    setupEventHandlers() {
+        // Кнопка настроек
+        if (this.domManager.elements.openSettings) {
+            this.domManager.elements.openSettings.addEventListener('click', () => {
+                chrome.runtime.openOptionsPage();
+            });
+        }
         
-        // Обновляем внутреннее состояние
-        this.updateState({
-            isOnline: response.isOnline,
-            isTracking: response.isTracking
-        });
+        // Кнопка тестирования подключения
+        if (this.domManager.elements.testConnection) {
+            this.domManager.elements.testConnection.addEventListener('click', async () => {
+                await this.testConnection();
+            });
+        }
+        
+        // Кнопка перезагрузки расширения
+        if (this.domManager.elements.reloadExtension) {
+            this.domManager.elements.reloadExtension.addEventListener('click', () => {
+                chrome.runtime.reload();
+            });
+        }
+        
+        // Кнопка диагностики
+        if (this.domManager.elements.runDiagnostics) {
+            this.domManager.elements.runDiagnostics.addEventListener('click', async () => {
+                await this.runDiagnostics();
+            });
+        }
     }
 
     /**
-     * Устанавливает UI в состояние офлайн.
+     * Запускает периодические обновления статуса.
      * 
      * @returns {void}
      */
-    setOfflineState() {
-        this.domManager.updateConnectionStatus(false);
-        this.domManager.updateTrackingStatus(false);
-        this.updateState({
-            isOnline: false,
-            isTracking: false
-        });
+    startPeriodicUpdates() {
+        this.updateInterval = setInterval(async () => {
+            await this.updateStatus();
+        }, this.CONSTANTS.UPDATE_INTERVAL);
     }
 
     /**
-     * Тестирует подключение к серверу бэкенда с улучшенным UX.
+     * Останавливает периодические обновления.
+     * 
+     * @returns {void}
+     */
+    stopPeriodicUpdates() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
+        }
+    }
+
+    /**
+     * Обновляет текущий статус системы.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    async updateStatus() {
+        try {
+            // Проверяем подключение
+            const isOnline = await this.serviceWorkerManager.checkConnection();
+            this.domManager.updateConnectionStatus(isOnline);
+            
+            // Получаем статус отслеживания
+            const trackingStatus = await this.serviceWorkerManager.getTrackingStatus();
+            this.domManager.updateTrackingStatus(trackingStatus.isTracking);
+            
+            // Получаем статистику
+            const stats = await this.serviceWorkerManager.getTodayStats();
+            this.domManager.updateCounters(stats);
+            
+            // Обновляем время последнего обновления
+            this.updateState({ lastUpdate: Date.now() });
+            
+        } catch (error) {
+            console.error('Ошибка обновления статуса:', error);
+        }
+    }
+
+    /**
+     * Тестирует подключение к серверу.
      * 
      * @async
      * @returns {Promise<void>}
      */
     async testConnection() {
-        if (!this.domManager.elements.testConnection) return;
-        
-        const button = this.domManager.elements.testConnection;
-        const originalText = button.textContent;
-        
-        this.domManager.setButtonState(button, 'Testing...', true);
-        
         try {
-            console.log('Starting connection test...');
+            this.domManager.setButtonState(
+                this.domManager.elements.testConnection, 
+                'Testing...', 
+                true
+            );
             
-            const pingResponse = await this.serviceWorkerManager.pingServiceWorker();
+            const isOnline = await this.serviceWorkerManager.checkConnection();
             
-            if (!pingResponse) {
-                this.notificationManager.showNotification('Service worker not responding. Please reload the extension.', 'error');
-                return;
+            if (isOnline) {
+                this.notificationManager.showNotification('Подключение успешно!', 'success');
+                this.domManager.updateConnectionStatus(true);
+            } else {
+                this.notificationManager.showNotification('Подключение не удалось', 'error');
+                this.domManager.updateConnectionStatus(false);
             }
             
-            const response = await this.serviceWorkerManager.testConnection();
-            console.log('Connection test response:', response);
-            
-            this.handleConnectionTestResponse(response);
-            
         } catch (error) {
-            console.error('Connection test error:', error);
-            this.handleConnectionTestError(error);
+            console.error('Ошибка тестирования подключения:', error);
+            this.notificationManager.showNotification('Ошибка тестирования', 'error');
+            this.domManager.updateConnectionStatus(false);
         } finally {
-            this.domManager.setButtonState(button, originalText, false);
+            this.domManager.setButtonState(
+                this.domManager.elements.testConnection, 
+                'Test Connection', 
+                false
+            );
         }
     }
 
     /**
-     * Обрабатывает ответ теста подключения.
-     * 
-     * @param {Object} response - Ответ от теста подключения
-     * @returns {void}
-     */
-    handleConnectionTestResponse(response) {
-        if (response && response.success) {
-            this.notificationManager.showNotification('Connection successful!', 'success');
-        } else if (response) {
-            this.notificationManager.showNotification(`Backend connection failed: ${response.error}`, 'error');
-        } else {
-            this.notificationManager.showNotification('No response from service worker', 'error');
-        }
-    }
-
-    /**
-     * Обрабатывает ошибки теста подключения.
-     * 
-     * @param {Error} error - Ошибка от теста подключения
-     * @returns {void}
-     */
-    handleConnectionTestError(error) {
-        if (error.message.includes('Receiving end does not exist')) {
-            this.notificationManager.showNotification('Extension not active. Please reload the extension.', 'error');
-        } else {
-            this.notificationManager.showNotification(`Connection test failed: ${error.message}`, 'error');
-        }
-    }
-
-    /**
-     * Перезагружает расширение для перезапуска service worker.
-     * 
-     * @returns {void}
-     */
-    reloadExtension() {
-        try {
-            this.serviceWorkerManager.reloadExtension();
-            this.notificationManager.showNotification('Extension reloaded!', 'success');
-        } catch (error) {
-            console.error('Error reloading extension:', error);
-            this.notificationManager.showNotification('Failed to reload extension', 'error');
-        }
-    }
-
-    /**
-     * Запускает комплексную диагностику с улучшенной обработкой ошибок и отчетностью.
+     * Запускает диагностику системы.
      * 
      * @async
      * @returns {Promise<void>}
      */
     async runDiagnostics() {
-        if (!this.domManager.elements.runDiagnostics) return;
-        
-        const button = this.domManager.elements.runDiagnostics;
-        const originalText = button.textContent;
-        
-        this.domManager.setButtonState(button, 'Running...', true);
-        
         try {
-            await this.diagnosticsManager.runDiagnostics();
+            this.domManager.setButtonState(
+                this.domManager.elements.runDiagnostics, 
+                'Running...', 
+                true
+            );
+            
+            const results = await this.diagnosticsManager.runDiagnostics();
+            this.diagnosticsManager.displayDiagnosticResults(results);
+            
         } catch (error) {
-            console.error('Diagnostics error:', error);
-            this.notificationManager.showNotification(`Diagnostics failed: ${error.message}`, 'error');
+            console.error('Ошибка диагностики:', error);
+            this.notificationManager.showNotification('Ошибка диагностики', 'error');
         } finally {
-            this.domManager.setButtonState(button, originalText, false);
+            this.domManager.setButtonState(
+                this.domManager.elements.runDiagnostics, 
+                'Run Diagnostics', 
+                false
+            );
         }
     }
 
     /**
-     * Метод очистки для удаления интервалов и обработчиков событий.
+     * Очищает ресурсы при закрытии popup.
      * 
      * @returns {void}
      */
     destroy() {
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-            this.updateInterval = null;
-        }
-        
-        this.notificationManager.clearNotifications();
+        this.stopPeriodicUpdates();
+        console.log('Popup manager destroyed');
     }
 }
 
-/**
- * Инициализирует PopupManager при загрузке DOM.
- * Это гарантирует, что все DOM элементы доступны перед настройкой обработчиков событий.
- */
 document.addEventListener('DOMContentLoaded', () => {
     window.popupManager = new PopupManager();
 });
 
-/**
- * Очистка ресурсов при выгрузке страницы.
- * Вызывает метод destroy() для правильной очистки интервалов и уведомлений.
- */
 window.addEventListener('beforeunload', () => {
     if (window.popupManager) {
         window.popupManager.destroy();
