@@ -295,3 +295,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ---
 
 **Mindful Web Extensions** — restore control over your attention in the digital world! 🧘‍♀️
+
