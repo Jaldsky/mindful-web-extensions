@@ -195,6 +195,49 @@ Events are sent in the following format:
 └── test.html             # Testing page
 ```
 
+#### Code Quality & Pre-commit Hooks
+This project uses automated code quality checks:
+
+**🔍 ESLint Configuration:**
+- Automatic code formatting and style checking
+- Chrome Extension specific rules
+- Jest testing environment support
+- Relaxed rules for existing codebase
+
+**⚡ Pre-commit Hooks:**
+- **Husky** - Git hooks management
+- **lint-staged** - Run linters on staged files only
+- **Automatic fixes** - ESLint auto-fixes formatting issues
+- **Commit protection** - Prevents commits with linting errors
+
+**What happens on commit:**
+1. 🔍 ESLint checks staged JavaScript files
+2. 🔧 Auto-fixes formatting issues where possible
+3. ❌ Blocks commit if critical errors remain
+4. ✅ Allows commit if all checks pass
+
+**Manual testing:**
+```bash
+# Run linter manually
+cd extensions/chrome
+npm run lint
+
+# Run linter with auto-fix
+npm run lint:fix
+
+# Test pre-commit hook
+.husky/pre-commit
+```
+
+**Disable hooks (if needed):**
+```bash
+# Skip hooks for one commit
+git commit --no-verify -m "your message"
+
+# Remove hooks completely
+rm -rf .husky
+```
+
 ### 🇷🇺 Русский
 
 #### Архитектура
@@ -209,16 +252,47 @@ Events are sent in the following format:
 3. Используйте консоль для просмотра логов
 4. В popup нажмите **"Run Diagnostics"** для диагностики
 
-#### Структура файлов
+#### Качество кода и Pre-commit хуки
+Проект использует автоматизированные проверки качества кода:
+
+**🔍 Конфигурация ESLint:**
+- Автоматическое форматирование и проверка стиля кода
+- Правила для Chrome Extension
+- Поддержка среды тестирования Jest
+- Расслабленные правила для существующего кода
+
+**⚡ Pre-commit хуки:**
+- **Husky** - управление Git хуками
+- **lint-staged** - запуск линтеров только для измененных файлов
+- **Автоматические исправления** - ESLint автоматически исправляет проблемы форматирования
+- **Защита коммитов** - предотвращает коммиты с ошибками линтинга
+
+**Что происходит при коммите:**
+1. 🔍 ESLint проверяет измененные JavaScript файлы
+2. 🔧 Автоматически исправляет проблемы форматирования где возможно
+3. ❌ Блокирует коммит если остались критические ошибки
+4. ✅ Разрешает коммит если все проверки пройдены
+
+**Ручное тестирование:**
+```bash
+# Запуск линтера вручную
+cd extensions/chrome
+npm run lint
+
+# Запуск линтера с автоисправлением
+npm run lint:fix
+
+# Тестирование pre-commit хука
+.husky/pre-commit
 ```
-сhrome_extension/
-├── manifest.json          # Конфигурация расширения
-├── background.js          # Service worker (основная логика)
-├── popup.html            # Интерфейс popup
-├── popup.js              # Функциональность popup
-├── options.html          # Страница настроек
-├── options.js            # Функциональность настроек
-└── test.html             # Страница тестирования
+
+**Отключение хуков (при необходимости):**
+```bash
+# Пропустить хуки для одного коммита
+git commit --no-verify -m "your message"
+
+# Полностью удалить хуки
+rm -rf .husky
 ```
 
 ---
@@ -275,6 +349,23 @@ cd extensions/chrome/tests
 ./run-tests.sh
 ```
 
+#### Code Quality Checks
+```bash
+# Run ESLint manually
+cd extensions/chrome
+npm run lint
+
+# Run ESLint with auto-fix
+npm run lint:fix
+
+# Test pre-commit hook manually
+.husky/pre-commit
+
+# Check code quality before commit
+git add .
+git commit -m "your message"  # Pre-commit hooks run automatically
+```
+
 #### Manual Testing
 1. Open `chrome://extensions/`
 2. Enable Developer mode
@@ -301,6 +392,23 @@ npm run test:coverage
 
 # Тесты в режиме наблюдения
 npm run test:watch
+```
+
+#### Проверки качества кода
+```bash
+# Запуск ESLint вручную
+cd extensions/chrome
+npm run lint
+
+# Запуск ESLint с автоисправлением
+npm run lint:fix
+
+# Тестирование pre-commit хука вручную
+.husky/pre-commit
+
+# Проверка качества кода перед коммитом
+git add .
+git commit -m "your message"  # Pre-commit хуки запускаются автоматически
 ```
 
 #### Ручное тестирование
