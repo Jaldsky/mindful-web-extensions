@@ -1,5 +1,5 @@
-const BaseManager = typeof window !== 'undefined' ? window.BaseManager : require('./src/BaseManager.js');
-const DOMManager = typeof window !== 'undefined' ? window.DOMManager : require('./src/DOMManager.js');
+const BaseManager = typeof window !== 'undefined' ? window.BaseManager : require('./src/app_manager/BaseManager.js');
+const DOMManager = typeof window !== 'undefined' ? window.DOMManager : require('./src/app_manager/DOMManager.js');
 
 /**
  * Менеджер уведомлений для отображения сообщений пользователю.
