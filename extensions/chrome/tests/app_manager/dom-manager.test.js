@@ -3,7 +3,7 @@
  * Тестирует функциональность работы с DOM элементами
  */
 
-const DOMManager = require('../src/app_manager/DOMManager.js');
+const DOMManager = require('../../src/app_manager/DOMManager.js');
 
 describe('DOMManager', () => {
     let domManager;
