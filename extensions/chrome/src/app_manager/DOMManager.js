@@ -318,26 +318,6 @@ class DOMManager extends BaseManager {
     }
 
     /**
-     * Проверяет наличие элемента по ключу.
-     * 
-     * @param {string} elementKey - Ключ элемента в this.elements
-     * @returns {boolean} true если элемент существует
-     */
-    hasElement(elementKey) {
-        return this.elements[elementKey] !== null && this.elements[elementKey] !== undefined;
-    }
-
-    /**
-     * Получает элемент по ключу.
-     * 
-     * @param {string} elementKey - Ключ элемента
-     * @returns {HTMLElement|null} Элемент или null
-     */
-    getElement(elementKey) {
-        return this.elements[elementKey] || null;
-    }
-
-    /**
      * Очищает ресурсы при уничтожении менеджера.
      * 
      * @returns {void}
