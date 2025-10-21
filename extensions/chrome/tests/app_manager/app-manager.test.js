@@ -103,10 +103,10 @@ describe('AppManager', () => {
         });
 
         test('BUTTON_LABELS should have correct structure', () => {
-            expect(AppManager.BUTTON_LABELS.TEST_CONNECTION.DEFAULT).toBe('🔍 Тест подключения');
-            expect(AppManager.BUTTON_LABELS.TEST_CONNECTION.LOADING).toBe('⏳ Проверка...');
-            expect(AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.DEFAULT).toBe('🔧 Диагностика');
-            expect(AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.LOADING).toBe('⏳ Анализ...');
+            expect(AppManager.BUTTON_LABELS.TEST_CONNECTION.DEFAULT).toBe('🔍 Test Connection');
+            expect(AppManager.BUTTON_LABELS.TEST_CONNECTION.LOADING).toBe('🔍 Checking...');
+            expect(AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.DEFAULT).toBe('🔧 Run Diagnostics');
+            expect(AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.LOADING).toBe('🔧 Analyzing...');
         });
     });
 
@@ -132,6 +132,12 @@ describe('AppManager', () => {
             
             expect(appManager.eventHandlers).toBeInstanceOf(Map);
             expect(appManager.eventHandlers.size).toBeGreaterThanOrEqual(0);
+        });
+
+        test('should initialize originalButtonTexts Map', () => {
+            appManager = new AppManager({ enableLogging: false });
+            
+            expect(appManager.originalButtonTexts).toBeInstanceOf(Map);
         });
 
         test('should have isInitialized property', () => {
@@ -207,7 +213,7 @@ describe('AppManager', () => {
             jest.spyOn(appManager, 'loadInitialStatus').mockRejectedValue(error);
             
             await expect(appManager.init()).rejects.toThrow('Init failed');
-            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Ошибка инициализации', 'error');
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Initialization Error', 'error');
         });
     });
 
@@ -242,7 +248,7 @@ describe('AppManager', () => {
             
             await appManager.loadInitialStatus();
             
-            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Ошибка загрузки статуса', 'error');
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Status Loading Error', 'error');
         });
     });
 
@@ -273,6 +279,18 @@ describe('AppManager', () => {
             const handler = appManager.eventHandlers.get('runDiagnostics');
             
             expect(handler).toBeDefined();
+        });
+
+        test('should store original text for testConnection button', () => {
+            const originalText = appManager.originalButtonTexts.get('testConnection');
+            
+            expect(originalText).toBe('Test Connection');
+        });
+
+        test('should store original text for runDiagnostics button', () => {
+            const originalText = appManager.originalButtonTexts.get('runDiagnostics');
+            
+            expect(originalText).toBe('Run Diagnostics');
         });
 
         test('should store all handlers in eventHandlers Map', () => {
@@ -307,7 +325,7 @@ describe('AppManager', () => {
             const result = await appManager.testConnection();
             
             expect(result).toBe(true);
-            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Подключение успешно!', 'success');
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Connection Successful!', 'success');
             expect(mockDOMManager.updateConnectionStatus).toHaveBeenCalledWith(true);
         });
 
@@ -317,7 +335,7 @@ describe('AppManager', () => {
             const result = await appManager.testConnection();
             
             expect(result).toBe(false);
-            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Подключение не удалось', 'error');
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Connection Failed', 'error');
             expect(mockDOMManager.updateConnectionStatus).toHaveBeenCalledWith(false);
         });
 
@@ -335,7 +353,7 @@ describe('AppManager', () => {
             const result = await appManager.testConnection();
             
             expect(result).toBe(false);
-            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Ошибка тестирования', 'error');
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Connection Test Error', 'error');
         });
 
         test('should restore button state after completion', async () => {
@@ -343,7 +361,7 @@ describe('AppManager', () => {
             
             expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
                 mockDOMManager.elements.testConnection,
-                AppManager.BUTTON_LABELS.TEST_CONNECTION.DEFAULT,
+                'Test Connection',
                 false
             );
         });
@@ -355,7 +373,7 @@ describe('AppManager', () => {
             
             expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
                 mockDOMManager.elements.testConnection,
-                AppManager.BUTTON_LABELS.TEST_CONNECTION.DEFAULT,
+                'Test Connection',
                 false
             );
         });
@@ -405,7 +423,7 @@ describe('AppManager', () => {
             mockDiagnosticsManager.runDiagnostics.mockRejectedValue(error);
             
             await expect(appManager.runDiagnostics()).rejects.toThrow('Diagnostics failed');
-            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Ошибка диагностики', 'error');
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Diagnostics Error', 'error');
         });
 
         test('should restore button state after completion', async () => {
@@ -413,7 +431,7 @@ describe('AppManager', () => {
             
             expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
                 mockDOMManager.elements.runDiagnostics,
-                AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.DEFAULT,
+                'Run Diagnostics',
                 false
             );
         });
@@ -425,7 +443,7 @@ describe('AppManager', () => {
             
             expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
                 mockDOMManager.elements.runDiagnostics,
-                AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.DEFAULT,
+                'Run Diagnostics',
                 false
             );
         });

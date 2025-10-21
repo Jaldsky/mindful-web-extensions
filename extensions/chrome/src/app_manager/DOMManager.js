@@ -193,7 +193,7 @@ class DOMManager extends BaseManager {
             return this._safeUpdateElement(
                 this.elements.connectionStatus,
                 (element) => {
-                    element.textContent = isOnline ? 'Подключено' : 'Отключено';
+                    element.textContent = isOnline ? 'Connected' : 'Disconnected';
                     element.className = isOnline 
                         ? DOMManager.CSS_CLASSES.STATUS_ONLINE 
                         : DOMManager.CSS_CLASSES.STATUS_OFFLINE;
@@ -224,7 +224,7 @@ class DOMManager extends BaseManager {
             return this._safeUpdateElement(
                 this.elements.trackingStatus,
                 (element) => {
-                    element.textContent = isTracking ? 'Активно' : 'Неактивно';
+                    element.textContent = isTracking ? 'Active' : 'Inactive';
                     element.className = isTracking 
                         ? DOMManager.CSS_CLASSES.STATUS_ACTIVE 
                         : DOMManager.CSS_CLASSES.STATUS_INACTIVE;
