@@ -74,7 +74,32 @@
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: opacity 0.3s ease, background-color 0.3s ease;
+            width: 100%;
+            min-width: 260px;
+            height: 44px;
+            box-sizing: border-box;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button::before {
+            display: inline-block;
+            width: 0;
+            margin-right: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: width 0.3s ease, margin-right 0.3s ease, opacity 0.3s ease;
+        }
+        
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
         
         .settings-btn {
@@ -82,8 +107,18 @@
             color: white;
         }
         
-        .settings-btn:hover {
+        .settings-btn::before {
+            content: '⚙️';
+        }
+        
+        .settings-btn:hover:not(:disabled) {
             background-color: #45a049;
+        }
+        
+        .settings-btn:hover:not(:disabled)::before {
+            width: 1.2em;
+            margin-right: 4px;
+            opacity: 1;
         }
         
         .test-btn {
@@ -91,8 +126,18 @@
             color: white;
         }
         
-        .test-btn:hover {
+        .test-btn::before {
+            content: '🔍';
+        }
+        
+        .test-btn:hover:not(:disabled) {
             background-color: #1976D2;
+        }
+        
+        .test-btn:hover:not(:disabled)::before {
+            width: 1.2em;
+            margin-right: 4px;
+            opacity: 1;
         }
         
         .reload-btn {
@@ -100,8 +145,18 @@
             color: white;
         }
         
-        .reload-btn:hover {
+        .reload-btn::before {
+            content: '🔄';
+        }
+        
+        .reload-btn:hover:not(:disabled) {
             background-color: #F57C00;
+        }
+        
+        .reload-btn:hover:not(:disabled)::before {
+            width: 1.2em;
+            margin-right: 4px;
+            opacity: 1;
         }
         
         .debug-btn {
@@ -109,8 +164,18 @@
             color: white;
         }
         
-        .debug-btn:hover {
+        .debug-btn::before {
+            content: '🔧';
+        }
+        
+        .debug-btn:hover:not(:disabled) {
             background-color: #7B1FA2;
+        }
+        
+        .debug-btn:hover:not(:disabled)::before {
+            width: 1.2em;
+            margin-right: 4px;
+            opacity: 1;
         }
         
         .stats {

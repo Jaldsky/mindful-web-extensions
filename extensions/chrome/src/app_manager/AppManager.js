@@ -19,12 +19,12 @@ class AppManager extends BaseManager {
      */
     static BUTTON_LABELS = {
         TEST_CONNECTION: {
-            DEFAULT: '🔍 Тест подключения',
-            LOADING: '⏳ Проверка...'
+            DEFAULT: '🔍 Test Connection',
+            LOADING: '🔍 Checking...'
         },
         RUN_DIAGNOSTICS: {
-            DEFAULT: '🔧 Диагностика',
-            LOADING: '⏳ Анализ...'
+            DEFAULT: '🔧 Run Diagnostics',
+            LOADING: '🔧 Analyzing...'
         }
     };
 
@@ -55,6 +55,9 @@ class AppManager extends BaseManager {
 
         this.isInitialized = false;
         
+        // Store original button texts
+        this.originalButtonTexts = new Map();
+        
         this.init();
     }
 
@@ -84,7 +87,7 @@ class AppManager extends BaseManager {
             this._log('AppManager инициализирован успешно');
         } catch (error) {
             this._logError('Ошибка инициализации AppManager', error);
-            this.notificationManager.showNotification('Ошибка инициализации', 'error');
+            this.notificationManager.showNotification('Initialization Error', 'error');
             throw error;
         }
     }
@@ -109,7 +112,7 @@ class AppManager extends BaseManager {
             console.log('Initial status loaded:', { isOnline, trackingStatus, stats });
         } catch (error) {
             console.error('Ошибка загрузки начального статуса:', error);
-            this.notificationManager.showNotification('Ошибка загрузки статуса', 'error');
+            this.notificationManager.showNotification('Status Loading Error', 'error');
         }
     }
 
@@ -132,6 +135,9 @@ class AppManager extends BaseManager {
         }
 
         if (this.domManager.elements.testConnection) {
+            // Store original button text
+            this.originalButtonTexts.set('testConnection', this.domManager.elements.testConnection.textContent);
+            
             const handler = async () => {
                 await this.testConnection();
             };
@@ -149,6 +155,9 @@ class AppManager extends BaseManager {
         }
 
         if (this.domManager.elements.runDiagnostics) {
+            // Store original button text
+            this.originalButtonTexts.set('runDiagnostics', this.domManager.elements.runDiagnostics.textContent);
+            
             const handler = async () => {
                 await this.runDiagnostics();
             };
@@ -167,6 +176,7 @@ class AppManager extends BaseManager {
      */
     async testConnection() {
         const button = this.domManager.elements.testConnection;
+        const originalText = this.originalButtonTexts.get('testConnection') || 'Test Connection';
         
         try {
             this._log('Тестирование подключения');
@@ -177,15 +187,19 @@ class AppManager extends BaseManager {
                 true
             );
 
-            const isOnline = await this.serviceWorkerManager.checkConnection();
+            // Минимальная задержка для визуальной обратной связи (500ms)
+            const minDelay = new Promise(resolve => setTimeout(resolve, 500));
+            const connectionCheck = this.serviceWorkerManager.checkConnection();
+            
+            const [isOnline] = await Promise.all([connectionCheck, minDelay]);
 
             if (isOnline) {
-                this.notificationManager.showNotification('Подключение успешно!', 'success');
+                this.notificationManager.showNotification('Connection Successful!', 'success');
                 this.domManager.updateConnectionStatus(true);
                 this.updateState({ isOnline: true });
                 this._log('Тестирование подключения: успешно');
             } else {
-                this.notificationManager.showNotification('Подключение не удалось', 'error');
+                this.notificationManager.showNotification('Connection Failed', 'error');
                 this.domManager.updateConnectionStatus(false);
                 this.updateState({ isOnline: false });
                 this._log('Тестирование подключения: неудача');
@@ -194,14 +208,14 @@ class AppManager extends BaseManager {
             return isOnline;
         } catch (error) {
             this._logError('Ошибка тестирования подключения', error);
-            this.notificationManager.showNotification('Ошибка тестирования', 'error');
+            this.notificationManager.showNotification('Connection Test Error', 'error');
             this.domManager.updateConnectionStatus(false);
             this.updateState({ isOnline: false });
             return false;
         } finally {
             this.domManager.setButtonState(
                 button,
-                AppManager.BUTTON_LABELS.TEST_CONNECTION.DEFAULT,
+                originalText,
                 false
             );
         }
@@ -215,6 +229,7 @@ class AppManager extends BaseManager {
      */
     async runDiagnostics() {
         const button = this.domManager.elements.runDiagnostics;
+        const originalText = this.originalButtonTexts.get('runDiagnostics') || 'Run Diagnostics';
         
         try {
             this._log('Запуск диагностики');
@@ -225,7 +240,12 @@ class AppManager extends BaseManager {
                 true
             );
 
-            const results = await this.diagnosticsManager.runDiagnostics();
+            // Минимальная задержка для визуальной обратной связи (500ms)
+            const minDelay = new Promise(resolve => setTimeout(resolve, 500));
+            const diagnosticsRun = this.diagnosticsManager.runDiagnostics();
+            
+            const [results] = await Promise.all([diagnosticsRun, minDelay]);
+            
             this.diagnosticsManager.displayDiagnosticResults(results);
 
             this._log('Диагностика завершена', { overall: results.overall });
@@ -233,12 +253,12 @@ class AppManager extends BaseManager {
             return results;
         } catch (error) {
             this._logError('Ошибка диагностики', error);
-            this.notificationManager.showNotification('Ошибка диагностики', 'error');
+            this.notificationManager.showNotification('Diagnostics Error', 'error');
             throw error;
         } finally {
             this.domManager.setButtonState(
                 button,
-                AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.DEFAULT,
+                originalText,
                 false
             );
         }
