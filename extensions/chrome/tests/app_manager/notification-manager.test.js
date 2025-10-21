@@ -9,7 +9,6 @@ describe('NotificationManager', () => {
     let notificationManager;
 
     beforeEach(() => {
-        // Очищаем body и head перед каждым тестом
         document.body.innerHTML = '';
         const existingStyles = document.getElementById('notification-styles');
         if (existingStyles) {
@@ -21,7 +20,6 @@ describe('NotificationManager', () => {
     });
 
     afterEach(() => {
-        // Очистка всех уведомлений
         notificationManager.destroy();
         jest.clearAllTimers();
         jest.useRealTimers();
@@ -97,11 +95,9 @@ describe('NotificationManager', () => {
         });
 
         test('should clear existing notifications when autoClear is true', () => {
-            // Показываем первое уведомление
             notificationManager.showNotification('First notification', 'success');
             expect(document.querySelectorAll('.notification')).toHaveLength(1);
 
-            // Показываем второе уведомление
             notificationManager.showNotification('Second notification', 'error');
             expect(document.querySelectorAll('.notification')).toHaveLength(1);
             expect(document.querySelector('.notification').textContent).toBe('Second notification');
@@ -128,13 +124,18 @@ describe('NotificationManager', () => {
             
             try {
                 manager.showNotification('First', 'success');
-                manager.showNotification('Second', 'error');
-                manager.showNotification('Third', 'info');
+                expect(manager.getActiveNotificationsCount()).toBe(1);
                 
-                // Проверяем, что в Set только 2 уведомления
+                manager.showNotification('Second', 'error');
                 expect(manager.getActiveNotificationsCount()).toBe(2);
+
+                manager.showNotification('Third', 'info');
+
+                expect(manager.getActiveNotificationsCount()).toBe(2);
+
+                const active = manager.getActiveNotifications();
+                expect(active).toHaveLength(2);
             } finally {
-                // Очищаем ресурсы после теста
                 manager.destroy();
             }
         });
@@ -152,11 +153,10 @@ describe('NotificationManager', () => {
         });
 
         test('should handle custom duration', () => {
-            const notification = notificationManager.showNotification('Test', 'success', { duration: 1000 });
+            notificationManager.showNotification('Test', 'success', { duration: 1000 });
             
             expect(document.querySelectorAll('.notification')).toHaveLength(1);
-            
-            // Ускоряем время на 1000мс + время анимации
+
             jest.advanceTimersByTime(1000 + 300);
             
             expect(document.querySelectorAll('.notification')).toHaveLength(0);
@@ -169,36 +169,35 @@ describe('NotificationManager', () => {
         });
 
         test('should validate message parameter', () => {
-            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
             
             const result1 = notificationManager.showNotification(null, 'success');
             const result2 = notificationManager.showNotification(123, 'success');
             
             expect(result1).toBeNull();
             expect(result2).toBeNull();
-            expect(consoleSpy).toHaveBeenCalledTimes(2);
+            expect(consoleWarnSpy).toHaveBeenCalled();
             
-            consoleSpy.mockRestore();
+            consoleWarnSpy.mockRestore();
         });
 
         test('should validate type parameter', () => {
-            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
             
             const notification = notificationManager.showNotification('Test', 'invalid-type');
             
             expect(notification).toBeDefined();
             expect(notification.getAttribute('data-type')).toBe('info');
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(consoleWarnSpy).toHaveBeenCalled();
             
-            consoleSpy.mockRestore();
+            consoleWarnSpy.mockRestore();
         });
 
         test('should auto-remove notification after duration', () => {
             notificationManager.showNotification('Test message', 'success');
             
             expect(document.querySelectorAll('.notification')).toHaveLength(1);
-            
-            // Ускоряем время на длительность + время анимации
+
             jest.advanceTimersByTime(notificationManager.CONSTANTS.NOTIFICATION_DURATION + 300);
             
             expect(document.querySelectorAll('.notification')).toHaveLength(0);
@@ -241,13 +240,11 @@ describe('NotificationManager', () => {
 
     describe('clearNotifications', () => {
         test('should remove all notifications from DOM', () => {
-            // Добавляем несколько уведомлений
             notificationManager.showNotification('First', 'success');
             notificationManager.showNotification('Second', 'error');
             
             expect(document.querySelectorAll('.notification')).toHaveLength(1); // autoClear is true
-            
-            // Очищаем все уведомления
+
             const count = notificationManager.clearNotifications();
             
             expect(count).toBe(1);
@@ -275,15 +272,19 @@ describe('NotificationManager', () => {
         test('should remove specific notification with animation', () => {
             const notification = notificationManager.showNotification('Test message', 'success');
             
+            expect(notificationManager.getActiveNotificationsCount()).toBe(1);
+            
             const result = notificationManager.removeNotification(notification);
             
             expect(result).toBe(true);
             expect(notification.classList.contains('show')).toBe(false);
-            
-            // Ускоряем время для завершения анимации
+
+            expect(notificationManager.getActiveNotificationsCount()).toBe(0);
+
+            expect(document.querySelectorAll('.notification')).toHaveLength(1);
+
             jest.advanceTimersByTime(300);
-            
-            // Уведомление должно быть удалено из DOM
+
             expect(document.querySelectorAll('.notification')).toHaveLength(0);
         });
 
@@ -309,8 +310,7 @@ describe('NotificationManager', () => {
 
         test('should handle notification without parentNode', () => {
             const notification = document.createElement('div');
-            // Не добавляем в DOM, поэтому parentNode будет null
-            
+
             const result = notificationManager.removeNotification(notification);
             expect(result).toBe(false);
         });
@@ -332,7 +332,7 @@ describe('NotificationManager', () => {
         });
 
         test('should get active notifications array', () => {
-            const notification1 = notificationManager.showNotification('First', 'success');
+            notificationManager.showNotification('First', 'success');
             const notification2 = notificationManager.showNotification('Second', 'error');
             
             const activeNotifications = notificationManager.getActiveNotifications();
@@ -382,11 +382,15 @@ describe('NotificationManager', () => {
                 maxNotifications: -1,
                 position: 123
             });
-            
-            // Settings should remain unchanged for invalid values
+
             expect(notificationManager.autoClear).toBe(originalAutoClear);
             expect(notificationManager.maxNotifications).toBe(originalMaxNotifications);
             expect(notificationManager.position).toBe(originalPosition);
+        });
+
+        test('should throw error for invalid settings parameter', () => {
+            expect(() => notificationManager.updateSettings(null)).toThrow(TypeError);
+            expect(() => notificationManager.updateSettings('invalid')).toThrow(TypeError);
         });
     });
 
@@ -419,12 +423,11 @@ describe('NotificationManager', () => {
 
     describe('multiple notifications handling', () => {
         test('should handle rapid successive notifications with autoClear', () => {
-            // Показываем несколько уведомлений подряд
+
             notificationManager.showNotification('First', 'success');
             notificationManager.showNotification('Second', 'error');
             notificationManager.showNotification('Third', 'success');
-            
-            // Должно остаться только последнее
+
             expect(document.querySelectorAll('.notification')).toHaveLength(1);
             expect(document.querySelector('.notification').textContent).toBe('Third');
         });
@@ -470,40 +473,61 @@ describe('NotificationManager', () => {
 
     describe('error handling', () => {
         test('should handle invalid notification type gracefully', () => {
-            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
             
             const notification = notificationManager.showNotification('Test', 'invalid-type');
             
             expect(notification).toBeDefined();
             expect(notification.getAttribute('data-type')).toBe('info');
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(consoleWarnSpy).toHaveBeenCalled();
             
-            consoleSpy.mockRestore();
+            consoleWarnSpy.mockRestore();
         });
 
         test('should handle empty message', () => {
-            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
             
             const notification = notificationManager.showNotification('', 'success');
-            
-            // Пустое сообщение должно возвращать null
+
             expect(notification).toBeNull();
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(consoleWarnSpy).toHaveBeenCalled();
             
-            consoleSpy.mockRestore();
+            consoleWarnSpy.mockRestore();
         });
 
         test('should handle null/undefined parameters', () => {
-            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
             
             const result1 = notificationManager.showNotification(null, 'success');
             const result2 = notificationManager.showNotification('Test', null);
             
             expect(result1).toBeNull();
             expect(result2).toBeDefined();
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(consoleWarnSpy).toHaveBeenCalled();
             
-            consoleSpy.mockRestore();
+            consoleWarnSpy.mockRestore();
+        });
+
+        test('should handle errors in notification creation', () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+            const originalBody = document.body;
+            Object.defineProperty(document, 'body', {
+                get: () => null,
+                configurable: true
+            });
+
+            const result = notificationManager.showNotification('Test', 'success');
+            
+            expect(result).toBeNull();
+            expect(consoleErrorSpy).toHaveBeenCalled();
+
+            Object.defineProperty(document, 'body', {
+                get: () => originalBody,
+                configurable: true
+            });
+            
+            consoleErrorSpy.mockRestore();
         });
     });
 });

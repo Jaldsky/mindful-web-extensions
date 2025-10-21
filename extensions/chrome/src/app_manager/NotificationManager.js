@@ -31,28 +31,48 @@ class NotificationManager extends BaseManager {
     constructor(options = {}) {
         super(options);
 
+        /** @type {Set<HTMLElement>} */
         this.notifications = new Set();
+        
+        /** @type {boolean} */
         this.autoClear = options.autoClear !== false;
-        this.maxNotifications = options.maxNotifications || 3;
+        
+        /** @type {number} */
+        this.maxNotifications = Math.max(1, options.maxNotifications || 3);
+        
+        /** @type {string} */
         this.position = options.position || 'top-right';
+        
+        /** @type {Map<HTMLElement, number>} */
         this.timeouts = new Map();
 
-        this.initializeStyles();
+        this._initializeStyles();
+        this._log('NotificationManager инициализирован', {
+            autoClear: this.autoClear,
+            maxNotifications: this.maxNotifications,
+            position: this.position
+        });
     }
 
     /**
-     * Логирует предупреждения (можно переопределить для кастомного логирования).
+     * Логирует предупреждения.
      * 
+     * @private
      * @param {string} message - Сообщение для логирования
+     * @returns {void}
      */
-    logWarning(message) {
-        console.warn(message);
+    _logWarning(message) {
+        // eslint-disable-next-line no-console
+        console.warn(`[NotificationManager] ${message}`);
     }
 
     /**
      * Инициализирует CSS стили для уведомлений.
+     * 
+     * @private
+     * @returns {void}
      */
-    initializeStyles() {
+    _initializeStyles() {
         if (document.getElementById('notification-styles')) return;
 
         const style = document.createElement('style');
@@ -111,45 +131,58 @@ class NotificationManager extends BaseManager {
      */
     showNotification(message, type = NotificationManager.NOTIFICATION_TYPES.INFO, options = {}) {
         if (!message || typeof message !== 'string') {
-            this.logWarning('NotificationManager: message is required and must be a string');
+            this._logWarning('message обязателен и должен быть строкой');
             return null;
         }
 
         if (!Object.values(NotificationManager.NOTIFICATION_TYPES).includes(type)) {
-            this.logWarning(`NotificationManager: invalid type "${type}", using INFO`);
+            this._logWarning(`Неверный тип "${type}", используется INFO`);
             type = NotificationManager.NOTIFICATION_TYPES.INFO;
         }
 
-        if (this.autoClear) {
-            this.clearNotifications();
+        try {
+            if (this.autoClear) {
+                this.clearNotifications();
+            }
+
+            while (this.notifications.size >= this.maxNotifications) {
+                const oldestNotification = this.notifications.values().next().value;
+                this.removeNotification(oldestNotification);
+            }
+
+            const notification = this._createNotificationElement(message, type, options);
+            this._positionNotification(notification);
+            this._addNotificationToDOM(notification);
+            this._animateIn(notification);
+            this._scheduleRemoval(notification, options.duration);
+
+            this._log(`Уведомление создано: ${type}`, { message, options });
+
+            return notification;
+        } catch (error) {
+            this._logError('Ошибка создания уведомления', error);
+            return null;
         }
-
-        while (this.notifications.size >= this.maxNotifications) {
-            const oldestNotification = this.notifications.values().next().value;
-            this.notifications.delete(oldestNotification);
-            this.removeNotification(oldestNotification);
-        }
-
-        const notification = this.createNotificationElement(message, type, options);
-        this.positionNotification(notification);
-        this.addNotificationToDOM(notification);
-        this.animateIn(notification);
-        this.scheduleRemoval(notification, options.duration);
-
-        return notification;
     }
 
     /**
      * Создает элемент уведомления.
+     * 
+     * @private
+     * @param {string} message - Текст уведомления
+     * @param {string} type - Тип уведомления
+     * @param {Object} options - Опции
+     * @returns {HTMLElement} Элемент уведомления
      */
-    createNotificationElement(message, type, options) {
+    _createNotificationElement(message, type, options) {
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.textContent = message;
         notification.setAttribute('data-type', type);
-        notification.setAttribute('data-timestamp', Date.now());
+        notification.setAttribute('data-timestamp', Date.now().toString());
 
         if (options.closable !== false) {
+            notification.style.cursor = 'pointer';
             notification.addEventListener('click', () => this.removeNotification(notification));
         }
 
@@ -158,8 +191,12 @@ class NotificationManager extends BaseManager {
 
     /**
      * Позиционирует уведомление в зависимости от настроек.
+     * 
+     * @private
+     * @param {HTMLElement} notification - Элемент уведомления
+     * @returns {void}
      */
-    positionNotification(notification) {
+    _positionNotification(notification) {
         const positions = {
             'top-right': { top: '20px', right: '20px' },
             'top-left': { top: '20px', left: '20px' },
@@ -173,16 +210,28 @@ class NotificationManager extends BaseManager {
 
     /**
      * Добавляет уведомление в DOM.
+     * 
+     * @private
+     * @param {HTMLElement} notification - Элемент уведомления
+     * @returns {void}
      */
-    addNotificationToDOM(notification) {
+    _addNotificationToDOM(notification) {
+        if (!document.body) {
+            throw new Error('document.body недоступен');
+        }
+        
         document.body.appendChild(notification);
         this.notifications.add(notification);
     }
 
     /**
      * Анимирует появление уведомления.
+     * 
+     * @private
+     * @param {HTMLElement} notification - Элемент уведомления
+     * @returns {void}
      */
-    animateIn(notification) {
+    _animateIn(notification) {
         requestAnimationFrame(() => {
             notification.classList.add('show');
         });
@@ -190,9 +239,17 @@ class NotificationManager extends BaseManager {
 
     /**
      * Планирует удаление уведомления.
+     * 
+     * @private
+     * @param {HTMLElement} notification - Элемент уведомления
+     * @param {number} [duration] - Длительность в мс
+     * @returns {void}
      */
-    scheduleRemoval(notification, duration) {
-        const timeoutDuration = duration || this.CONSTANTS.NOTIFICATION_DURATION;
+    _scheduleRemoval(notification, duration) {
+        const timeoutDuration = Number.isFinite(duration) && duration > 0
+            ? duration
+            : this.CONSTANTS.NOTIFICATION_DURATION;
+            
         const timeoutId = setTimeout(() => {
             this.removeNotification(notification);
         }, timeoutDuration);
@@ -208,26 +265,38 @@ class NotificationManager extends BaseManager {
      */
     removeNotification(notification) {
         if (!notification || !this.notifications.has(notification)) {
+            this._log('Уведомление не найдено или уже удалено');
             return false;
         }
 
-        const timeoutId = this.timeouts.get(notification);
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-            this.timeouts.delete(notification);
-        }
-
-        notification.classList.remove('show');
-        notification.style.transform = 'translateX(100%)';
-
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
+        try {
+            const timeoutId = this.timeouts.get(notification);
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                this.timeouts.delete(notification);
             }
-            this.notifications.delete(notification);
-        }, 300);
 
-        return true;
+            this.notifications.delete(notification);
+
+            notification.classList.remove('show');
+            notification.style.transform = 'translateX(100%)';
+
+            setTimeout(() => {
+                try {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                    this._log('Уведомление удалено из DOM');
+                } catch (error) {
+                    this._logError('Ошибка при удалении уведомления из DOM', error);
+                }
+            }, 300);
+
+            return true;
+        } catch (error) {
+            this._logError('Ошибка удаления уведомления', error);
+            return false;
+        }
     }
 
     /**
@@ -238,17 +307,29 @@ class NotificationManager extends BaseManager {
     clearNotifications() {
         const count = this.notifications.size;
 
-        this.timeouts.forEach(timeoutId => clearTimeout(timeoutId));
-        this.timeouts.clear();
+        try {
 
-        this.notifications.forEach(notification => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        });
+            this.timeouts.forEach(timeoutId => clearTimeout(timeoutId));
+            this.timeouts.clear();
 
-        this.notifications.clear();
-        return count;
+            this.notifications.forEach(notification => {
+                try {
+                    if (notification && notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                } catch (error) {
+                    this._logError('Ошибка удаления уведомления', error);
+                }
+            });
+
+            this.notifications.clear();
+            this._log(`Очищено уведомлений: ${count}`);
+            
+            return count;
+        } catch (error) {
+            this._logError('Ошибка очистки уведомлений', error);
+            return 0;
+        }
     }
 
     /**
@@ -294,19 +375,35 @@ class NotificationManager extends BaseManager {
      * Обновляет настройки менеджера.
      * 
      * @param {Object} options - Новые настройки
-     * @param {boolean} options.autoClear - Автоматически очищать предыдущие уведомления
-     * @param {number} options.maxNotifications - Максимальное количество уведомлений
-     * @param {string} options.position - Позиция уведомлений
+     * @param {boolean} [options.autoClear] - Автоматически очищать предыдущие уведомления
+     * @param {number} [options.maxNotifications] - Максимальное количество уведомлений
+     * @param {string} [options.position] - Позиция уведомлений
+     * @throws {TypeError} Если options не является объектом
+     * @returns {void}
      */
     updateSettings(options) {
-        if (typeof options.autoClear === 'boolean') {
-            this.autoClear = options.autoClear;
+        if (!options || typeof options !== 'object') {
+            throw new TypeError('options должен быть объектом');
         }
-        if (typeof options.maxNotifications === 'number' && options.maxNotifications > 0) {
-            this.maxNotifications = options.maxNotifications;
-        }
-        if (typeof options.position === 'string') {
-            this.position = options.position;
+
+        try {
+            if (typeof options.autoClear === 'boolean') {
+                this.autoClear = options.autoClear;
+                this._log(`autoClear обновлен: ${this.autoClear}`);
+            }
+            
+            if (typeof options.maxNotifications === 'number' && options.maxNotifications > 0) {
+                this.maxNotifications = Math.max(1, Math.floor(options.maxNotifications));
+                this._log(`maxNotifications обновлен: ${this.maxNotifications}`);
+            }
+            
+            if (typeof options.position === 'string') {
+                this.position = options.position;
+                this._log(`position обновлен: ${this.position}`);
+            }
+        } catch (error) {
+            this._logError('Ошибка обновления настроек', error);
+            throw error;
         }
     }
 
@@ -356,11 +453,23 @@ class NotificationManager extends BaseManager {
 
     /**
      * Очищает ресурсы при уничтожении менеджера.
+     * 
+     * @returns {void}
      */
     destroy() {
-        this.clearNotifications();
-        this.notifications.clear();
-        this.timeouts.clear();
+        this._log('Очистка ресурсов NotificationManager');
+        
+        try {
+            this.clearNotifications();
+            this.notifications.clear();
+            this.timeouts.clear();
+            
+            this._log('NotificationManager уничтожен');
+        } catch (error) {
+            this._logError('Ошибка при уничтожении NotificationManager', error);
+        }
+        
+        super.destroy();
     }
 }
 
