@@ -370,8 +370,11 @@ class MindfulTracker {
             console.log('Received message:', request);
             
             try {
-                switch (request.action) {
+                const messageType = request.type || request.action;
+                
+                switch (messageType) {
                     case 'getStatus':
+                    case 'getTrackingStatus':
                         sendResponse({
                             isOnline: this.isOnline,
                             isTracking: this.stats.isTracking,
@@ -382,8 +385,17 @@ class MindfulTracker {
                             }
                         });
                         break;
+                    
+                    case 'getTodayStats':
+                        sendResponse({
+                            events: this.stats.eventsTracked,
+                            domains: this.stats.domainsVisited.size,
+                            queue: this.eventQueue.length
+                        });
+                        break;
                         
                     case 'testConnection':
+                    case 'checkConnection':
                         this.testConnection().then(result => {
                             sendResponse(result);
                         }).catch(error => {
@@ -393,7 +405,7 @@ class MindfulTracker {
                         return true; // Асинхронный ответ
                         
                     case 'updateBackendUrl':
-                        this.backendUrl = request.url;
+                        this.backendUrl = request.url || request.data?.url;
                         console.log('Backend URL updated to:', this.backendUrl);
                         sendResponse({ success: true });
                         break;
@@ -404,13 +416,15 @@ class MindfulTracker {
                         break;
                         
                     default:
-                        console.warn('Unknown action:', request.action);
-                        sendResponse({ success: false, error: 'Unknown action' });
+                        console.warn('Unknown message type:', messageType);
+                        sendResponse({ success: false, error: 'Unknown message type' });
                 }
             } catch (error) {
                 console.error('Error handling message:', error);
                 sendResponse({ success: false, error: error.message });
             }
+            
+            return false;
         });
     }
 
