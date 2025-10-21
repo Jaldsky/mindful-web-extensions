@@ -1,4 +1,4 @@
-const BaseManager = require('./BaseManager.js');
+import BaseManager from './BaseManager.js';
 
 /**
  * @typedef {Object} TrackingStatus
@@ -302,3 +302,5 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof window !== 'undefined') {
     window.ServiceWorkerManager = ServiceWorkerManager;
 }
+
+export default ServiceWorkerManager;

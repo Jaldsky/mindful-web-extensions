@@ -55,12 +55,22 @@ Mindful Web Extensions — это набор расширений для бра�
 - **Backend Server**: Ensure your FastAPI backend is running on `http://localhost:8000`
 - **API Endpoint**: Must be available `POST /api/v1/events/send`
 - **Chrome Browser**: Version 88+ with Manifest V3 support
+- **Node.js**: Version 14+ for building the extension
 
-#### 2. Install Extension
+#### 2. Build Extension
+```bash
+cd extensions/chrome
+npm install          # Install dependencies
+npm run build        # Build the extension
+```
+
+This will create a `dist/` folder with the bundled extension files.
+
+#### 3. Install Extension
 1. Open Chrome and go to `chrome://extensions/`
 2. Enable **Developer mode** in the top right corner
 3. Click **"Load unpacked"**
-4. Select the folder `extensions/сhrome_extension/`
+4. Select the folder `extensions/chrome/dist/`
 5. Verify installation: Extension should appear in the list and auto-activate
 
 #### 3. Configure
@@ -81,21 +91,31 @@ Mindful Web Extensions — это набор расширений для бра�
 - **Бэкенд сервер**: Убедитесь, что ваш FastAPI бэкенд запущен на `http://localhost:8000`
 - **Эндпоинт API**: Должен быть доступен `POST /api/v1/events/send`
 - **Chrome браузер**: Версия 88+ с поддержкой Manifest V3
+- **Node.js**: Версия 14+ для сборки расширения
 
-#### 2. Установка расширения
+#### 2. Сборка расширения
+```bash
+cd extensions/chrome
+npm install          # Установка зависимостей
+npm run build        # Сборка расширения
+```
+
+Это создаст папку `dist/` с файлами расширения.
+
+#### 3. Установка расширения
 1. Откройте Chrome и перейдите в `chrome://extensions/`
 2. Включите **"Режим разработчика"** (Developer mode) в правом верхнем углу
 3. Нажмите **"Загрузить распакованное расширение"** (Load unpacked)
-4. Выберите папку `extensions/сhrome_extension/`
+4. Выберите папку `extensions/chrome/dist/`
 5. Проверьте установку: Расширение должно появиться в списке и автоматически активироваться
 
-#### 3. Настройка
+#### 4. Настройка
 1. Кликните на иконку расширения в панели инструментов
 2. Нажмите **"Settings"** для открытия страницы настроек
 3. Измените URL бэкенда при необходимости (по умолчанию: `http://localhost:8000/api/v1/events/send`)
 4. Нажмите **"Save Settings"**
 
-#### 4. Проверка работы
+#### 5. Проверка работы
 1. В popup расширения убедитесь, что статус **"Connection: Online"**
 2. Нажмите **"Test Connection"** для проверки связи с бэкендом
 3. Откройте несколько вкладок и переключайтесь между ними
@@ -173,27 +193,32 @@ Events are sent in the following format:
 
 #### Architecture
 - **Service Worker** (`background.js`): Main tracking logic
-- **Popup** (`popup.html/js`): Interface for status monitoring
-- **Options** (`options.html/js`): Settings page
+- **Popup** (`src/popup.js`): Entry point for popup interface
+- **App Managers** (`src/app_manager/`): Modular manager classes
+- **Options** (`options.js`): Settings page
 - **Manifest V3**: Modern Chrome extensions standard
+- **Webpack**: Module bundler for ES6 modules
+
+#### Building
+```bash
+cd extensions/chrome
+
+# Development build
+npm run build
+
+# Production build (minified)
+npm run build:prod
+
+# Watch mode (auto-rebuild)
+npm run watch
+```
 
 #### Debugging
 1. Open `chrome://extensions/`
 2. Find the extension and click **"Inspect views: service worker"**
 3. Use console to view logs
 4. In popup, click **"Run Diagnostics"** for diagnostics
-
-#### File Structure
-```
-сhrome_extension/
-├── manifest.json          # Extension configuration
-├── background.js          # Service worker (main logic)
-├── popup.html            # Popup interface
-├── popup.js              # Popup functionality
-├── options.html          # Settings page
-├── options.js            # Settings functionality
-└── test.html             # Testing page
-```
+5. Use source maps for debugging bundled code
 
 #### Code Quality & Pre-commit Hooks
 This project uses automated code quality checks:

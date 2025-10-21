@@ -1,8 +1,8 @@
-const BaseManager = typeof window !== 'undefined' ? window.BaseManager : require('./BaseManager.js');
-const DOMManager = typeof window !== 'undefined' ? window.DOMManager : require('./DOMManager.js');
-const NotificationManager = typeof window !== 'undefined' ? window.NotificationManager : require('./NotificationManager.js');
-const ServiceWorkerManager = typeof window !== 'undefined' ? window.ServiceWorkerManager : require('./ServiceWorkerManager.js');
-const DiagnosticsManager = typeof window !== 'undefined' ? window.DiagnosticsManager : require('./DiagnosticsManager.js');
+import BaseManager from './BaseManager.js';
+import DOMManager from './DOMManager.js';
+import NotificationManager from './NotificationManager.js';
+import ServiceWorkerManager from './ServiceWorkerManager.js';
+import DiagnosticsManager from './DiagnosticsManager.js';
 
 /**
  * Главный менеджер приложения, координирующий работу всех компонентов popup.
@@ -370,14 +370,6 @@ if (typeof module !== 'undefined' && module.exports) {
 
 if (typeof window !== 'undefined') {
     window.AppManager = AppManager;
-
-    document.addEventListener('DOMContentLoaded', () => {
-        window.appManager = new AppManager();
-    });
-
-    window.addEventListener('beforeunload', () => {
-        if (window.appManager) {
-            window.appManager.destroy();
-        }
-    });
 }
+
+export default AppManager;
