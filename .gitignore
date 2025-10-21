@@ -7,6 +7,7 @@
 # Modules
 node_modules/
 package-lock.json
+dist/
 
 # Coverage directory
 coverage/

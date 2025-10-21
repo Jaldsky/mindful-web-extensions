@@ -166,3 +166,5 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof window !== 'undefined') {
     window.BaseManager = BaseManager;
 }
+
+export default BaseManager;

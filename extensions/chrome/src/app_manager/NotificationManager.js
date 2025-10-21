@@ -1,4 +1,4 @@
-const BaseManager = require('./BaseManager.js');
+import BaseManager from './BaseManager.js';
 
 /**
  * Менеджер уведомлений для отображения сообщений пользователю.
@@ -480,3 +480,5 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof window !== 'undefined') {
     window.NotificationManager = NotificationManager;
 }
+
+export default NotificationManager;

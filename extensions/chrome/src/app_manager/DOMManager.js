@@ -1,4 +1,4 @@
-const BaseManager = require('./BaseManager.js');
+import BaseManager from './BaseManager.js';
 
 /**
  * @typedef {Object} DOMElements
@@ -336,3 +336,5 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof window !== 'undefined') {
     window.DOMManager = DOMManager;
 }
+
+export default DOMManager;
