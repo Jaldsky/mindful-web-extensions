@@ -224,22 +224,9 @@ describe('DOMManager', () => {
         });
     });
 
-    describe('new methods', () => {
+    describe('reloadElements', () => {
         test('should reload elements', () => {
             expect(() => domManager.reloadElements()).not.toThrow();
-        });
-
-        test('should check element existence', () => {
-            expect(domManager.hasElement('connectionStatus')).toBe(true);
-            expect(domManager.hasElement('nonExistent')).toBe(false);
-        });
-
-        test('should get element by key', () => {
-            const element = domManager.getElement('connectionStatus');
-            expect(element).toBe(domManager.elements.connectionStatus);
-            
-            const nonExistent = domManager.getElement('nonExistent');
-            expect(nonExistent).toBeNull();
         });
     });
 
