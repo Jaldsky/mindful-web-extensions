@@ -1,5 +1,5 @@
 /**
- * Entry point for the popup page
+ * Entry point for the app page
  * Initializes the AppManager when the DOM is ready
  */
 import AppManager from './app_manager/AppManager.js';

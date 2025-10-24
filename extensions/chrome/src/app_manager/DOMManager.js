@@ -176,7 +176,7 @@ class DOMManager extends BaseManager {
     }
 
     /**
-     * Обновляет отображение статуса подключения в popup.
+     * Обновляет отображение статуса подключения в app.
      * 
      * @param {boolean} isOnline - Подключен ли интернет
      * @throws {TypeError} Если isOnline не является булевым значением
@@ -207,7 +207,7 @@ class DOMManager extends BaseManager {
     }
 
     /**
-     * Обновляет отображение статуса отслеживания в popup.
+     * Обновляет отображение статуса отслеживания в app.
      * 
      * @param {boolean} isTracking - Активно ли отслеживание
      * @throws {TypeError} Если isTracking не является булевым значением

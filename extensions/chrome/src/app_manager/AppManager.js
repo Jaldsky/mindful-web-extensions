@@ -5,7 +5,7 @@ const ServiceWorkerManager = require('./ServiceWorkerManager.js');
 const DiagnosticsManager = require('./DiagnosticsManager.js');
 
 /**
- * Главный менеджер приложения, координирующий работу всех компонентов popup.
+ * Главный менеджер приложения, координирующий работу всех компонентов app.
  * Использует композицию для объединения функциональности различных менеджеров.
  * 
  * @class AppManager
@@ -301,7 +301,7 @@ class AppManager extends BaseManager {
     }
 
     /**
-     * Очищает ресурсы при закрытии popup.
+     * Очищает ресурсы при закрытии app.
      *
      * @returns {void}
      */

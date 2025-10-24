@@ -6,7 +6,7 @@ module.exports = {
   devtool: 'cheap-module-source-map',
   entry: {
     background: './background.js',
-    popup: './src/popup.js',
+    app: './src/app.js',
     options: './options.js'
   },
   resolve: {
@@ -21,7 +21,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: 'manifest.json', to: 'manifest.json' },
-        { from: 'popup.html', to: 'popup.html' },
+        { from: 'app.html', to: 'app.html' },
         { from: 'options.html', to: 'options.html' },
         { from: 'icons', to: 'icons' }
       ]
