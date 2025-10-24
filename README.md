@@ -355,23 +355,17 @@ The extension uses the following permissions:
 #### Automated Testing
 ```bash
 # Install dependencies
+cd extensions/chrome
 npm install
 
 # Run all tests
 npm test
-
-# Run Chrome extension tests
-npm run test:chrome
 
 # Run tests with coverage
 npm run test:coverage
 
 # Run tests in watch mode
 npm run test:watch
-
-# Interactive test runner
-cd extensions/chrome/tests
-./run-tests.sh
 ```
 
 #### Code Quality Checks
@@ -404,13 +398,11 @@ git commit -m "your message"  # Pre-commit hooks run automatically
 #### Автоматизированное тестирование
 ```bash
 # Установка зависимостей
+cd extensions/chrome
 npm install
 
 # Запуск всех тестов
 npm test
-
-# Тесты Chrome расширения
-npm run test:chrome
 
 # Тесты с покрытием кода
 npm run test:coverage

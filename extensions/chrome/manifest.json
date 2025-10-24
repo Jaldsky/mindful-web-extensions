@@ -22,7 +22,7 @@
   ],
   "options_page": "options.html",
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "app.html",
     "default_title": "Mindful Web"
   },
   "content_security_policy": {
