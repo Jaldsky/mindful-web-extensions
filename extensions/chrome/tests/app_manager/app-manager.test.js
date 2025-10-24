@@ -8,7 +8,7 @@ jest.mock('../../src/app_manager/NotificationManager.js');
 jest.mock('../../src/app_manager/ServiceWorkerManager.js');
 jest.mock('../../src/app_manager/DiagnosticsManager.js');
 
-const BaseManager = require('../../src/app_manager/BaseManager.js');
+const BaseManager = require('../../src/BaseManager.js');
 const DOMManager = require('../../src/app_manager/DOMManager.js');
 const NotificationManager = require('../../src/app_manager/NotificationManager.js');
 const ServiceWorkerManager = require('../../src/app_manager/ServiceWorkerManager.js');
@@ -35,12 +35,18 @@ describe('AppManager', () => {
         consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
         consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
+        const testConnectionEl = document.getElementById('testConnection');
+        const runDiagnosticsEl = document.getElementById('runDiagnostics');
+        
+        if (testConnectionEl) testConnectionEl.textContent = 'Test Connection';
+        if (runDiagnosticsEl) runDiagnosticsEl.textContent = 'Run Diagnostics';
+        
         mockDOMManager = {
             elements: {
                 openSettings: document.getElementById('openSettings'),
-                testConnection: document.getElementById('testConnection'),
+                testConnection: testConnectionEl,
                 reloadExtension: document.getElementById('reloadExtension'),
-                runDiagnostics: document.getElementById('runDiagnostics')
+                runDiagnostics: runDiagnosticsEl
             },
             updateConnectionStatus: jest.fn(),
             updateTrackingStatus: jest.fn(),
@@ -300,11 +306,18 @@ describe('AppManager', () => {
 
     describe('testConnection', () => {
         beforeEach(() => {
+            jest.useFakeTimers();
             appManager = new AppManager({ enableLogging: false });
         });
 
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
         test('should update button state to loading', async () => {
-            await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await testPromise;
             
             expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
                 mockDOMManager.elements.testConnection,
@@ -314,7 +327,9 @@ describe('AppManager', () => {
         });
 
         test('should check connection', async () => {
-            await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await testPromise;
             
             expect(mockServiceWorkerManager.checkConnection).toHaveBeenCalled();
         });
@@ -322,7 +337,9 @@ describe('AppManager', () => {
         test('should show success notification when online', async () => {
             mockServiceWorkerManager.checkConnection.mockResolvedValue(true);
             
-            const result = await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            const result = await testPromise;
             
             expect(result).toBe(true);
             expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Connection Successful!', 'success');
@@ -332,7 +349,9 @@ describe('AppManager', () => {
         test('should show error notification when offline', async () => {
             mockServiceWorkerManager.checkConnection.mockResolvedValue(false);
             
-            const result = await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            const result = await testPromise;
             
             expect(result).toBe(false);
             expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Connection Failed', 'error');
@@ -342,7 +361,9 @@ describe('AppManager', () => {
         test('should update state on success', async () => {
             mockServiceWorkerManager.checkConnection.mockResolvedValue(true);
             
-            await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await testPromise;
             
             expect(appManager.state.isOnline).toBe(true);
         });
@@ -350,14 +371,18 @@ describe('AppManager', () => {
         test('should handle connection error', async () => {
             mockServiceWorkerManager.checkConnection.mockRejectedValue(new Error('Network error'));
             
-            const result = await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            const result = await testPromise;
             
             expect(result).toBe(false);
             expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Connection Test Error', 'error');
         });
 
         test('should restore button state after completion', async () => {
-            await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await testPromise;
             
             expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
                 mockDOMManager.elements.testConnection,
@@ -369,7 +394,9 @@ describe('AppManager', () => {
         test('should restore button state even on error', async () => {
             mockServiceWorkerManager.checkConnection.mockRejectedValue(new Error('Error'));
             
-            await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await testPromise;
             
             expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
                 mockDOMManager.elements.testConnection,
@@ -623,16 +650,25 @@ describe('AppManager', () => {
 
     describe('integration tests', () => {
         beforeEach(() => {
+            jest.useFakeTimers();
             appManager = new AppManager({ enableLogging: false });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
         });
 
         test('should handle complete lifecycle', async () => {
             expect(appManager.isInitialized).toBe(true);
 
-            await appManager.testConnection();
+            const testPromise = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await testPromise;
             expect(mockServiceWorkerManager.checkConnection).toHaveBeenCalled();
 
-            await appManager.runDiagnostics();
+            const diagPromise = appManager.runDiagnostics();
+            jest.advanceTimersByTime(500);
+            await diagPromise;
             expect(mockDiagnosticsManager.runDiagnostics).toHaveBeenCalled();
 
             appManager.destroy();
@@ -642,9 +678,17 @@ describe('AppManager', () => {
         test('should handle multiple test connections', async () => {
             mockServiceWorkerManager.checkConnection.mockClear();
             
-            await appManager.testConnection();
-            await appManager.testConnection();
-            await appManager.testConnection();
+            const test1 = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await test1;
+            
+            const test2 = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await test2;
+            
+            const test3 = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await test3;
             
             expect(mockServiceWorkerManager.checkConnection).toHaveBeenCalledTimes(3);
         });
@@ -652,10 +696,14 @@ describe('AppManager', () => {
         test('should continue working after failed operations', async () => {
             mockServiceWorkerManager.checkConnection.mockRejectedValue(new Error('Failed'));
             
-            await appManager.testConnection();
+            const test1 = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await test1;
             
             mockServiceWorkerManager.checkConnection.mockResolvedValue(true);
-            const result = await appManager.testConnection();
+            const test2 = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            const result = await test2;
             
             expect(result).toBe(true);
         });
@@ -687,4 +735,3 @@ describe('AppManager', () => {
         });
     });
 });
-

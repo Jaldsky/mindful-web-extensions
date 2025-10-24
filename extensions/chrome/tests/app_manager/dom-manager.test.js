@@ -68,7 +68,7 @@ describe('DOMManager', () => {
 
             expect(result).toBe(true);
             const statusElement = domManager.elements.connectionStatus;
-            expect(statusElement.textContent).toContain('Подключено');
+            expect(statusElement.textContent).toContain('Connected');
             expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_ONLINE);
         });
 
@@ -77,7 +77,7 @@ describe('DOMManager', () => {
             
             expect(result).toBe(true);
             const statusElement = domManager.elements.connectionStatus;
-            expect(statusElement.textContent).toContain('Отключено');
+            expect(statusElement.textContent).toContain('Disconnected');
             expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_OFFLINE);
         });
 
@@ -111,7 +111,7 @@ describe('DOMManager', () => {
             
             expect(result).toBe(true);
             const statusElement = domManager.elements.trackingStatus;
-            expect(statusElement.textContent).toContain('Активно');
+            expect(statusElement.textContent).toContain('Active');
             expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_ACTIVE);
         });
 
@@ -120,7 +120,7 @@ describe('DOMManager', () => {
             
             expect(result).toBe(true);
             const statusElement = domManager.elements.trackingStatus;
-            expect(statusElement.textContent).toContain('Неактивно');
+            expect(statusElement.textContent).toContain('Inactive');
             expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_INACTIVE);
         });
 

@@ -3,7 +3,7 @@
  * Тестирует базовую функциональность управления состоянием
  */
 
-const BaseManager = require('../../src/app_manager/BaseManager.js');
+const BaseManager = require('../../src/BaseManager.js');
 
 describe('BaseManager', () => {
     let baseManager;

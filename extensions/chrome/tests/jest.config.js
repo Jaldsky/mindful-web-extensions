@@ -14,10 +14,6 @@ module.exports = {
 
     moduleFileExtensions: ['js', 'json'],
 
-    transform: {
-        '^.+\\.js$': 'babel-jest'
-    },
-
     collectCoverage: true,
     coverageDirectory: 'coverage',
     coverageReporters: ['text', 'lcov', 'html'],
@@ -34,10 +30,6 @@ module.exports = {
     globals: {
         chrome: true
     },
-
-    transformIgnorePatterns: [
-        'node_modules/(?!(.*\\.mjs$))'
-    ],
 
     clearMocks: true,
     restoreMocks: true

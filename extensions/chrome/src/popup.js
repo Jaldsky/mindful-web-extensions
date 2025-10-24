@@ -13,4 +13,3 @@ window.addEventListener('beforeunload', () => {
         window.appManager.destroy();
     }
 });
-
