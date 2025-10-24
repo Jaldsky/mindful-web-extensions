@@ -1,8 +1,8 @@
-import BaseManager from './BaseManager.js';
-import DOMManager from './DOMManager.js';
-import NotificationManager from './NotificationManager.js';
-import ServiceWorkerManager from './ServiceWorkerManager.js';
-import DiagnosticsManager from './DiagnosticsManager.js';
+const BaseManager = require('../BaseManager.js');
+const DOMManager = require('./DOMManager.js');
+const NotificationManager = require('./NotificationManager.js');
+const ServiceWorkerManager = require('./ServiceWorkerManager.js');
+const DiagnosticsManager = require('./DiagnosticsManager.js');
 
 /**
  * Главный менеджер приложения, координирующий работу всех компонентов popup.
@@ -386,10 +386,9 @@ class AppManager extends BaseManager {
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = AppManager;
+    module.exports.default = AppManager;
 }
 
 if (typeof window !== 'undefined') {
     window.AppManager = AppManager;
 }
-
-export default AppManager;

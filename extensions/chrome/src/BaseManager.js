@@ -159,12 +159,11 @@ class BaseManager {
     }
 }
 
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = BaseManager;
-}
-
 if (typeof window !== 'undefined') {
     window.BaseManager = BaseManager;
 }
 
-export default BaseManager;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = BaseManager;
+    module.exports.default = BaseManager;
+}

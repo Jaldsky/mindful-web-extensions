@@ -1,4 +1,4 @@
-import BaseManager from './BaseManager.js';
+const BaseManager = require('../BaseManager.js');
 
 /**
  * @typedef {Object} TrackingStatus
@@ -297,10 +297,9 @@ class ServiceWorkerManager extends BaseManager {
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ServiceWorkerManager;
+    module.exports.default = ServiceWorkerManager;
 }
 
 if (typeof window !== 'undefined') {
     window.ServiceWorkerManager = ServiceWorkerManager;
 }
-
-export default ServiceWorkerManager;

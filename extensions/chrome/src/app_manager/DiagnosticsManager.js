@@ -1,4 +1,4 @@
-import BaseManager from './BaseManager.js';
+const BaseManager = require('../BaseManager.js');
 
 /**
  * @typedef {Object} DiagnosticCheck
@@ -482,10 +482,9 @@ class DiagnosticsManager extends BaseManager {
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = DiagnosticsManager;
+    module.exports.default = DiagnosticsManager;
 }
 
 if (typeof window !== 'undefined') {
     window.DiagnosticsManager = DiagnosticsManager;
 }
-
-export default DiagnosticsManager;
