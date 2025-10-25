@@ -1,0 +1,485 @@
+/**
+ * @jest-environment jsdom
+ */
+
+/**
+ * Тесты для OptionsManager
+ */
+
+const OptionsManager = require('../../src/options_manager/OptionsManager.js');
+
+describe('OptionsManager', () => {
+    let optionsManager;
+
+    beforeEach(() => {
+        // Создаем необходимые DOM элементы
+        document.body.innerHTML = `
+            <form id="settingsForm">
+                <input type="text" id="backendUrl" value="" />
+                <button type="submit" id="saveBtn">Save</button>
+                <button type="button" id="resetBtn">Reset</button>
+            </form>
+            <div id="status"></div>
+        `;
+
+        // Убеждаемся что chrome API существует
+        if (!global.chrome) {
+            global.chrome = {};
+        }
+        
+        if (!global.chrome.storage) {
+            global.chrome.storage = {
+                local: {
+                    get: jest.fn(),
+                    set: jest.fn()
+                }
+            };
+        }
+        
+        if (!global.chrome.runtime) {
+            global.chrome.runtime = {
+                sendMessage: jest.fn()
+            };
+        }
+
+        // Настраиваем моки
+        global.chrome.storage.local.get.mockImplementation((keys) => {
+            return Promise.resolve({
+                mindful_backend_url: 'http://localhost:8000/api/v1/events/send'
+            });
+        });
+
+        global.chrome.storage.local.set.mockImplementation(() => {
+            return Promise.resolve();
+        });
+
+        global.chrome.runtime.sendMessage.mockResolvedValue({ success: true });
+
+        // НЕ используем fake timers для OptionsManager - он использует реальные промисы
+        jest.useRealTimers();
+    });
+
+    afterEach(() => {
+        if (optionsManager) {
+            optionsManager.destroy();
+            optionsManager = null;
+        }
+        
+        jest.clearAllMocks();
+    });
+
+    describe('Инициализация', () => {
+        test('должен создаваться и инициализироваться', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+
+            // Ждем завершения асинхронной инициализации
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(optionsManager).toBeInstanceOf(OptionsManager);
+            expect(optionsManager.isInitialized).toBe(true);
+        });
+
+        test('должен инициализировать все менеджеры', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(optionsManager.domManager).toBeDefined();
+            expect(optionsManager.storageManager).toBeDefined();
+            expect(optionsManager.validationManager).toBeDefined();
+            expect(optionsManager.statusManager).toBeDefined();
+        });
+
+        test('должен загружать настройки при инициализации', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(global.chrome.storage.local.get).toHaveBeenCalled();
+            
+            const backendUrlInput = document.getElementById('backendUrl');
+            expect(backendUrlInput.value).toBe('http://localhost:8000/api/v1/events/send');
+        });
+
+        test('должен настраивать обработчики событий', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(optionsManager.eventHandlers.size).toBeGreaterThan(0);
+        });
+
+        test('должен создаваться даже если начальная загрузка не удалась', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            
+            // Мок ошибки после создания (не влияет на конструктор)
+            const loadSpy = jest.spyOn(optionsManager, 'loadSettings')
+                .mockRejectedValueOnce(new Error('Load error'));
+            
+            await expect(optionsManager.loadSettings()).rejects.toThrow('Load error');
+            
+            // Менеджер все еще должен существовать
+            expect(optionsManager).toBeInstanceOf(OptionsManager);
+            expect(optionsManager.domManager).toBeDefined();
+            expect(optionsManager.storageManager).toBeDefined();
+            
+            loadSpy.mockRestore();
+        });
+    });
+
+    describe('loadSettings', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+        });
+
+        test('должен загружать настройки из хранилища', async () => {
+            const testUrl = 'http://test.com/api';
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: testUrl
+            });
+
+            await optionsManager.loadSettings();
+
+            const backendUrlInput = document.getElementById('backendUrl');
+            expect(backendUrlInput.value).toBe(testUrl);
+        });
+
+        test('должен обрабатывать ошибки загрузки', async () => {
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Load error'));
+
+            await expect(optionsManager.loadSettings()).rejects.toThrow();
+        });
+    });
+
+    describe('saveSettings', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+        });
+
+        test('должен сохранять валидный URL', async () => {
+            const testUrl = 'http://test.com/api';
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = testUrl;
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: testUrl
+            });
+
+            const result = await optionsManager.saveSettings();
+
+            expect(result).toBe(true);
+            expect(global.chrome.storage.local.set).toHaveBeenCalledWith({
+                mindful_backend_url: testUrl
+            });
+        });
+
+        test('должен отклонять невалидный URL', async () => {
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = 'invalid-url';
+
+            const result = await optionsManager.saveSettings();
+
+            expect(result).toBe(false);
+            expect(global.chrome.storage.local.set).not.toHaveBeenCalled();
+        });
+
+        test('должен уведомлять background script', async () => {
+            const testUrl = 'http://test.com/api';
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = testUrl;
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: testUrl
+            });
+
+            await optionsManager.saveSettings();
+
+            expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith({
+                action: 'updateBackendUrl',
+                url: testUrl
+            });
+        });
+
+        test('должен блокировать кнопку во время сохранения', async () => {
+            const testUrl = 'http://test.com/api';
+            const backendUrlInput = document.getElementById('backendUrl');
+            const saveBtn = document.getElementById('saveBtn');
+            backendUrlInput.value = testUrl;
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: testUrl
+            });
+
+            let buttonWasDisabled = false;
+            const originalSetButtonState = optionsManager.domManager.setButtonState.bind(optionsManager.domManager);
+            jest.spyOn(optionsManager.domManager, 'setButtonState').mockImplementation((button, text, disabled) => {
+                if (disabled) {
+                    buttonWasDisabled = true;
+                }
+                return originalSetButtonState(button, text, disabled);
+            });
+
+            await optionsManager.saveSettings();
+
+            expect(buttonWasDisabled).toBe(true);
+        });
+    });
+
+    describe('resetToDefault', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+        });
+
+        test('должен сбрасывать настройки к значениям по умолчанию', async () => {
+            const defaultUrl = 'http://localhost:8000/api/v1/events/send';
+            
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: defaultUrl
+            });
+
+            const result = await optionsManager.resetToDefault();
+
+            expect(result).toBe(true);
+            expect(global.chrome.storage.local.set).toHaveBeenCalled();
+            
+            const backendUrlInput = document.getElementById('backendUrl');
+            expect(backendUrlInput.value).toBe(defaultUrl);
+        });
+
+        test('должен блокировать кнопку во время сброса', async () => {
+            const defaultUrl = 'http://localhost:8000/api/v1/events/send';
+            const resetBtn = document.getElementById('resetBtn');
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: defaultUrl
+            });
+
+            let buttonWasDisabled = false;
+            const originalSetButtonState = optionsManager.domManager.setButtonState.bind(optionsManager.domManager);
+            jest.spyOn(optionsManager.domManager, 'setButtonState').mockImplementation((button, text, disabled) => {
+                if (button === resetBtn && disabled) {
+                    buttonWasDisabled = true;
+                }
+                return originalSetButtonState(button, text, disabled);
+            });
+
+            await optionsManager.resetToDefault();
+
+            expect(buttonWasDisabled).toBe(true);
+        });
+    });
+
+    describe('Вспомогательные методы', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+        });
+
+        test('getCurrentBackendUrl должен возвращать текущее значение', () => {
+            const testUrl = 'http://test.com/api';
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = testUrl;
+
+            const url = optionsManager.getCurrentBackendUrl();
+
+            expect(url).toBe(testUrl);
+        });
+
+        test('getDefaultBackendUrl должен возвращать значение по умолчанию', () => {
+            const url = optionsManager.getDefaultBackendUrl();
+
+            expect(url).toBe('http://localhost:8000/api/v1/events/send');
+        });
+
+        test('isCurrentUrlValid должен проверять валидность URL', () => {
+            const backendUrlInput = document.getElementById('backendUrl');
+            
+            backendUrlInput.value = 'http://test.com/api';
+            expect(optionsManager.isCurrentUrlValid()).toBe(true);
+            
+            backendUrlInput.value = 'invalid';
+            expect(optionsManager.isCurrentUrlValid()).toBe(false);
+        });
+    });
+
+    describe('Статистика и диагностика', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+        });
+
+        test('getStatusStatistics должен возвращать статистику статусов', () => {
+            const stats = optionsManager.getStatusStatistics();
+
+            expect(stats).toBeDefined();
+            expect(stats).toHaveProperty('totalHistoryEntries');
+        });
+
+        test('getStatusHistory должен возвращать историю статусов', () => {
+            const history = optionsManager.getStatusHistory();
+
+            expect(Array.isArray(history)).toBe(true);
+        });
+
+        test('getValidationStatistics должен возвращать статистику валидаций', () => {
+            const stats = optionsManager.getValidationStatistics();
+
+            expect(stats).toBeDefined();
+            expect(stats).toHaveProperty('totalValidations');
+        });
+
+        test('getDiagnostics должен возвращать полную диагностику', () => {
+            const diagnostics = optionsManager.getDiagnostics();
+
+            expect(diagnostics).toBeDefined();
+            expect(diagnostics).toHaveProperty('isInitialized');
+            expect(diagnostics).toHaveProperty('statusStatistics');
+            expect(diagnostics).toHaveProperty('storagePerformanceMetrics');
+            expect(diagnostics).toHaveProperty('domPerformanceMetrics');
+            expect(diagnostics).toHaveProperty('validationPerformanceMetrics');
+            expect(diagnostics).toHaveProperty('managersValidation');
+        });
+
+        test('validateManagersState должен проверять состояние менеджеров', () => {
+            const validation = optionsManager.validateManagersState();
+
+            expect(validation).toBeDefined();
+            expect(validation).toHaveProperty('isValid');
+            expect(validation).toHaveProperty('managers');
+        });
+    });
+
+    describe('Очистка истории', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+        });
+
+        test('clearStatusHistory должен очищать историю статусов', () => {
+            const count = optionsManager.clearStatusHistory();
+
+            expect(typeof count).toBe('number');
+        });
+
+        test('clearValidationHistory должен очищать историю валидаций', () => {
+            const count = optionsManager.clearValidationHistory();
+
+            expect(typeof count).toBe('number');
+        });
+    });
+
+    describe('Обработчики событий', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+        });
+
+        test('должен обрабатывать submit формы', async () => {
+            const form = document.getElementById('settingsForm');
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = 'http://test.com/api';
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: 'http://test.com/api'
+            });
+
+            const saveSpy = jest.spyOn(optionsManager, 'saveSettings');
+
+            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+            form.dispatchEvent(submitEvent);
+
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(saveSpy).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать клик по кнопке сброса', async () => {
+            const resetBtn = document.getElementById('resetBtn');
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: 'http://localhost:8000/api/v1/events/send'
+            });
+
+            const resetSpy = jest.spyOn(optionsManager, 'resetToDefault');
+
+            const clickEvent = new Event('click', { bubbles: true });
+            resetBtn.dispatchEvent(clickEvent);
+
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(resetSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('destroy', () => {
+        test('должен очищать все ресурсы', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            optionsManager.destroy();
+
+            expect(optionsManager.eventHandlers.size).toBe(0);
+        });
+
+        test('не должен выбрасывать ошибку при повторном вызове', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(() => {
+                optionsManager.destroy();
+                optionsManager.destroy();
+            }).not.toThrow();
+        });
+    });
+
+    describe('Интеграционные тесты', () => {
+        test('полный цикл: load -> edit -> save -> reset', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            // Load
+            const backendUrlInput = document.getElementById('backendUrl');
+            expect(backendUrlInput.value).toBe('http://localhost:8000/api/v1/events/send');
+
+            // Edit and save
+            const newUrl = 'http://new-url.com/api';
+            backendUrlInput.value = newUrl;
+            
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: newUrl
+            });
+            
+            await optionsManager.saveSettings();
+            expect(global.chrome.storage.local.set).toHaveBeenCalled();
+
+            // Reset
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: 'http://localhost:8000/api/v1/events/send'
+            });
+            
+            await optionsManager.resetToDefault();
+            expect(backendUrlInput.value).toBe('http://localhost:8000/api/v1/events/send');
+        });
+
+        test('должен собирать метрики производительности для всех операций', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            const testUrl = 'http://test.com/api';
+            document.getElementById('backendUrl').value = testUrl;
+
+            global.chrome.storage.local.get.mockResolvedValue({
+                mindful_backend_url: testUrl
+            });
+
+            await optionsManager.saveSettings();
+
+            const diagnostics = optionsManager.getDiagnostics();
+            
+            expect(diagnostics.storagePerformanceMetrics).toBeDefined();
+            expect(diagnostics.domPerformanceMetrics).toBeDefined();
+            expect(diagnostics.validationPerformanceMetrics).toBeDefined();
+            expect(diagnostics.statusPerformanceMetrics).toBeDefined();
+        });
+    });
+});

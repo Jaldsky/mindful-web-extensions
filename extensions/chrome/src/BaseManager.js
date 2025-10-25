@@ -32,6 +32,7 @@ class BaseManager {
      * @param {Object} [options.constants] - Переопределение констант
      * @param {Object} [options.initialState] - Начальное состояние
      * @param {boolean} [options.enableLogging=false] - Включить логирование
+     * @param {boolean} [options.enablePerformanceTracking=true] - Включить отслеживание производительности
      */
     constructor(options = {}) {
         /** @type {Object} */
@@ -53,6 +54,12 @@ class BaseManager {
         
         /** @type {boolean} */
         this.enableLogging = options.enableLogging || false;
+        
+        /** @type {boolean} */
+        this.enablePerformanceTracking = options.enablePerformanceTracking !== false;
+        
+        /** @type {Map<string, number>} */
+        this.performanceMetrics = new Map();
     }
 
     /**
@@ -148,6 +155,97 @@ class BaseManager {
     }
 
     /**
+     * Выполняет синхронную операцию с измерением времени.
+     * 
+     * @protected
+     * @param {string} operationName - Название операции
+     * @param {Function} operation - Функция операции
+     * @returns {*} Результат операции
+     */
+    _executeWithTiming(operationName, operation) {
+        if (!this.enablePerformanceTracking) {
+            return operation();
+        }
+
+        const startTime = performance.now();
+        
+        try {
+            const result = operation();
+            const duration = Math.round(performance.now() - startTime);
+            
+            this.performanceMetrics.set(`${operationName}_lastDuration`, duration);
+            this._log(`${operationName} завершена за ${duration}мс`);
+            
+            return result;
+        } catch (error) {
+            const duration = Math.round(performance.now() - startTime);
+            this._logError(`${operationName} завершилась с ошибкой за ${duration}мс`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Выполняет асинхронную операцию с измерением времени.
+     * 
+     * @protected
+     * @param {string} operationName - Название операции
+     * @param {Function} operation - Асинхронная функция операции
+     * @returns {Promise<*>} Результат операции
+     */
+    async _executeWithTimingAsync(operationName, operation) {
+        if (!this.enablePerformanceTracking) {
+            return await operation();
+        }
+
+        const startTime = performance.now();
+        
+        try {
+            const result = await operation();
+            const duration = Math.round(performance.now() - startTime);
+            
+            this.performanceMetrics.set(`${operationName}_lastDuration`, duration);
+            this._log(`${operationName} завершена за ${duration}мс`);
+            
+            return result;
+        } catch (error) {
+            const duration = Math.round(performance.now() - startTime);
+            this._logError(`${operationName} завершилась с ошибкой за ${duration}мс`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Получает метрики производительности операций.
+     * 
+     * @returns {Object} Объект с метриками
+     */
+    getPerformanceMetrics() {
+        try {
+            return Object.fromEntries(this.performanceMetrics);
+        } catch (error) {
+            this._logError('Ошибка получения метрик производительности', error);
+            return {};
+        }
+    }
+
+    /**
+     * Очищает метрики производительности.
+     * 
+     * @protected
+     * @returns {void}
+     */
+    _clearPerformanceMetrics() {
+        try {
+            if (this.performanceMetrics) {
+                this.performanceMetrics.clear();
+                this._log('Метрики производительности очищены');
+            }
+        } catch (error) {
+            this._logError('Ошибка очистки метрик производительности', error);
+        }
+    }
+
+    /**
      * Очищает ресурсы менеджера.
      * Переопределите этот метод в дочерних классах для специфичной очистки.
      * 
@@ -155,6 +253,7 @@ class BaseManager {
      */
     destroy() {
         this._log('Базовая очистка ресурсов');
+        this._clearPerformanceMetrics();
         this.resetState();
     }
 }
