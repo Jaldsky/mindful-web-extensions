@@ -7,6 +7,8 @@ const BaseManager = require('../BaseManager.js');
  * @property {HTMLButtonElement|null} saveBtn - Кнопка сохранения
  * @property {HTMLButtonElement|null} resetBtn - Кнопка сброса
  * @property {HTMLElement|null} status - Элемент статуса
+ * @property {HTMLButtonElement|null} runDiagnostics - Кнопка диагностики
+ * @property {HTMLButtonElement|null} reloadExtension - Кнопка перезагрузки
  */
 
 /**
@@ -28,7 +30,9 @@ class DOMManager extends BaseManager {
         BACKEND_URL: 'backendUrl',
         SAVE_BTN: 'saveBtn',
         RESET_BTN: 'resetBtn',
-        STATUS: 'status'
+        STATUS: 'status',
+        RUN_DIAGNOSTICS: 'runDiagnostics',
+        RELOAD_EXTENSION: 'reloadExtension'
     };
 
     /**
@@ -126,7 +130,9 @@ class DOMManager extends BaseManager {
             backendUrl: getElement(DOMManager.ELEMENT_IDS.BACKEND_URL),
             saveBtn: getElement(DOMManager.ELEMENT_IDS.SAVE_BTN),
             resetBtn: getElement(DOMManager.ELEMENT_IDS.RESET_BTN),
-            status: getElement(DOMManager.ELEMENT_IDS.STATUS)
+            status: getElement(DOMManager.ELEMENT_IDS.STATUS),
+            runDiagnostics: getElement(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS),
+            reloadExtension: getElement(DOMManager.ELEMENT_IDS.RELOAD_EXTENSION)
         };
     }
 

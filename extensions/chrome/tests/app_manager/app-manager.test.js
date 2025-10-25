@@ -36,17 +36,13 @@ describe('AppManager', () => {
         consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
         const testConnectionEl = document.getElementById('testConnection');
-        const runDiagnosticsEl = document.getElementById('runDiagnostics');
         
         if (testConnectionEl) testConnectionEl.textContent = 'Test Connection';
-        if (runDiagnosticsEl) runDiagnosticsEl.textContent = 'Run Diagnostics';
         
         mockDOMManager = {
             elements: {
                 openSettings: document.getElementById('openSettings'),
-                testConnection: testConnectionEl,
-                reloadExtension: document.getElementById('reloadExtension'),
-                runDiagnostics: runDiagnosticsEl
+                testConnection: testConnectionEl
             },
             updateConnectionStatus: jest.fn(),
             updateTrackingStatus: jest.fn(),
@@ -88,7 +84,6 @@ describe('AppManager', () => {
         DiagnosticsManager.mockImplementation(() => mockDiagnosticsManager);
 
         global.chrome.runtime.openOptionsPage = jest.fn();
-        global.chrome.runtime.reload = jest.fn();
     });
 
     afterEach(() => {
@@ -105,14 +100,11 @@ describe('AppManager', () => {
         test('should have BUTTON_LABELS constant', () => {
             expect(AppManager.BUTTON_LABELS).toBeDefined();
             expect(AppManager.BUTTON_LABELS.TEST_CONNECTION).toBeDefined();
-            expect(AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS).toBeDefined();
         });
 
         test('BUTTON_LABELS should have correct structure', () => {
             expect(AppManager.BUTTON_LABELS.TEST_CONNECTION.DEFAULT).toBe('🔍 Test Connection');
             expect(AppManager.BUTTON_LABELS.TEST_CONNECTION.LOADING).toBe('🔍 Checking...');
-            expect(AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.DEFAULT).toBe('🔧 Run Diagnostics');
-            expect(AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.LOADING).toBe('🔧 Analyzing...');
         });
     });
 
@@ -285,28 +277,10 @@ describe('AppManager', () => {
             expect(handler).toBeDefined();
         });
 
-        test('should setup event handler for reloadExtension button', () => {
-            const handler = appManager.eventHandlers.get('reloadExtension');
-            
-            expect(handler).toBeDefined();
-        });
-
-        test('should setup event handler for runDiagnostics button', () => {
-            const handler = appManager.eventHandlers.get('runDiagnostics');
-            
-            expect(handler).toBeDefined();
-        });
-
         test('should store original text for testConnection button', () => {
             const originalText = appManager.originalButtonTexts.get('testConnection');
             
             expect(originalText).toBe('Test Connection');
-        });
-
-        test('should store original text for runDiagnostics button', () => {
-            const originalText = appManager.originalButtonTexts.get('runDiagnostics');
-            
-            expect(originalText).toBe('Run Diagnostics');
         });
 
         test('should store all handlers in eventHandlers Map', () => {
@@ -411,76 +385,6 @@ describe('AppManager', () => {
             expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
                 mockDOMManager.elements.testConnection,
                 'Test Connection',
-                false
-            );
-        });
-    });
-
-    describe('runDiagnostics', () => {
-        beforeEach(() => {
-            appManager = new AppManager({ enableLogging: false });
-        });
-
-        test('should update button state to loading', async () => {
-            await appManager.runDiagnostics();
-            
-            expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
-                mockDOMManager.elements.runDiagnostics,
-                AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.LOADING,
-                true
-            );
-        });
-
-        test('should run diagnostics', async () => {
-            await appManager.runDiagnostics();
-            
-            expect(mockDiagnosticsManager.runDiagnostics).toHaveBeenCalled();
-        });
-
-        test('should display diagnostic results', async () => {
-            const mockResults = { overall: 'ok', checks: [] };
-            mockDiagnosticsManager.runDiagnostics.mockResolvedValue(mockResults);
-            
-            await appManager.runDiagnostics();
-            
-            expect(mockDiagnosticsManager.displayDiagnosticResults).toHaveBeenCalledWith(mockResults);
-        });
-
-        test('should return diagnostic results', async () => {
-            const mockResults = { overall: 'ok', checks: [] };
-            mockDiagnosticsManager.runDiagnostics.mockResolvedValue(mockResults);
-            
-            const result = await appManager.runDiagnostics();
-            
-            expect(result).toEqual(mockResults);
-        });
-
-        test('should handle diagnostics error', async () => {
-            const error = new Error('Diagnostics failed');
-            mockDiagnosticsManager.runDiagnostics.mockRejectedValue(error);
-            
-            await expect(appManager.runDiagnostics()).rejects.toThrow('Diagnostics failed');
-            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Diagnostics Error', 'error');
-        });
-
-        test('should restore button state after completion', async () => {
-            await appManager.runDiagnostics();
-            
-            expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
-                mockDOMManager.elements.runDiagnostics,
-                'Run Diagnostics',
-                false
-            );
-        });
-
-        test('should restore button state even on error', async () => {
-            mockDiagnosticsManager.runDiagnostics.mockRejectedValue(new Error('Error'));
-            
-            await expect(appManager.runDiagnostics()).rejects.toThrow();
-            
-            expect(mockDOMManager.setButtonState).toHaveBeenCalledWith(
-                mockDOMManager.elements.runDiagnostics,
-                'Run Diagnostics',
                 false
             );
         });
@@ -675,11 +579,6 @@ describe('AppManager', () => {
             jest.advanceTimersByTime(500);
             await testPromise;
             expect(mockServiceWorkerManager.checkConnection).toHaveBeenCalled();
-
-            const diagPromise = appManager.runDiagnostics();
-            jest.advanceTimersByTime(500);
-            await diagPromise;
-            expect(mockDiagnosticsManager.runDiagnostics).toHaveBeenCalled();
 
             appManager.destroy();
             expect(appManager.isInitialized).toBe(false);

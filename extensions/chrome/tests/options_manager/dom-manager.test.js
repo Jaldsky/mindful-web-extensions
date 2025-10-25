@@ -19,6 +19,8 @@ describe('DOMManager', () => {
                 <button type="button" id="resetBtn">Reset</button>
             </form>
             <div id="status"></div>
+            <button type="button" id="runDiagnostics">Run Diagnostics</button>
+            <button type="button" id="reloadExtension">Reload Extension</button>
         `;
 
         domManager = new DOMManager({ enableLogging: false });
@@ -45,6 +47,8 @@ describe('DOMManager', () => {
             expect(domManager.elements.saveBtn).toBeInstanceOf(HTMLButtonElement);
             expect(domManager.elements.resetBtn).toBeInstanceOf(HTMLButtonElement);
             expect(domManager.elements.status).toBeInstanceOf(HTMLDivElement);
+            expect(domManager.elements.runDiagnostics).toBeInstanceOf(HTMLButtonElement);
+            expect(domManager.elements.reloadExtension).toBeInstanceOf(HTMLButtonElement);
         });
 
         test('должен создаваться с пользовательскими настройками', () => {
@@ -66,6 +70,8 @@ describe('DOMManager', () => {
             expect(DOMManager.ELEMENT_IDS.SAVE_BTN).toBe('saveBtn');
             expect(DOMManager.ELEMENT_IDS.RESET_BTN).toBe('resetBtn');
             expect(DOMManager.ELEMENT_IDS.STATUS).toBe('status');
+            expect(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS).toBe('runDiagnostics');
+            expect(DOMManager.ELEMENT_IDS.RELOAD_EXTENSION).toBe('reloadExtension');
         });
     });
 
@@ -264,10 +270,10 @@ describe('DOMManager', () => {
         test('должен корректно считать доступные элементы', () => {
             const stats = domManager.getElementsStatistics();
 
-            expect(stats.total).toBe(5);
-            expect(stats.available).toBe(5);
+            expect(stats.total).toBe(7);
+            expect(stats.available).toBe(7);
             expect(stats.missing).toEqual([]);
-            expect(stats.inDOM).toBe(5);
+            expect(stats.inDOM).toBe(7);
             expect(stats.notInDOM).toEqual([]);
         });
 
@@ -277,10 +283,10 @@ describe('DOMManager', () => {
 
             const stats = domManager.getElementsStatistics();
 
-            expect(stats.total).toBe(5);
-            expect(stats.available).toBe(4);
+            expect(stats.total).toBe(7);
+            expect(stats.available).toBe(6);
             expect(stats.missing).toEqual(['saveBtn']);
-            expect(stats.inDOM).toBe(4);
+            expect(stats.inDOM).toBe(6);
         });
     });
 
@@ -362,7 +368,7 @@ describe('DOMManager', () => {
             const stats = domManager.getElementsStatistics();
 
             expect(Object.keys(metrics).length).toBeGreaterThan(0);
-            expect(stats.total).toBe(5);
+            expect(stats.total).toBe(7);
         });
     });
 

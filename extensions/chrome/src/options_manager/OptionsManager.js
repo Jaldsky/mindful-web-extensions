@@ -4,6 +4,9 @@ const DOMManager = require('./DOMManager.js');
 const StorageManager = require('./StorageManager.js');
 const StatusManager = require('./StatusManager.js');
 const ValidationManager = require('./ValidationManager.js');
+const ServiceWorkerManager = require('../app_manager/ServiceWorkerManager.js');
+const DiagnosticsManager = require('../app_manager/DiagnosticsManager.js');
+const NotificationManager = require('../app_manager/NotificationManager.js');
 
 /**
  * Главный менеджер настроек, координирующий работу всех компонентов options page.
@@ -88,6 +91,15 @@ class OptionsManager extends BaseManager {
                 enableQueue: true
             });
         }
+
+        // Инициализация менеджеров для диагностики
+        this.notificationManager = new NotificationManager({ enableLogging: this.enableLogging });
+        this.serviceWorkerManager = new ServiceWorkerManager({ enableLogging: this.enableLogging });
+        this.diagnosticsManager = new DiagnosticsManager(
+            this.serviceWorkerManager,
+            this.notificationManager,
+            { enableLogging: this.enableLogging }
+        );
 
         // Хранилище обработчиков событий
         this.eventHandlers = new Map();
@@ -262,6 +274,34 @@ class OptionsManager extends BaseManager {
             this.originalButtonTexts.set('saveBtn', this.domManager.elements.saveBtn.textContent);
         } else {
             this._log('Предупреждение: кнопка сохранения не найдена');
+        }
+
+        // Обработчик кнопки диагностики
+        if (this.domManager.elements.runDiagnostics) {
+            this.originalButtonTexts.set('runDiagnostics', this.domManager.elements.runDiagnostics.textContent);
+            
+            const diagnosticsClickHandler = async () => {
+                await this.runDiagnostics();
+            };
+            
+            this.domManager.elements.runDiagnostics.addEventListener('click', diagnosticsClickHandler);
+            this.eventHandlers.set('runDiagnostics', diagnosticsClickHandler);
+            handlersCount++;
+        } else {
+            this._log('Предупреждение: кнопка диагностики не найдена, обработчик не установлен');
+        }
+
+        // Обработчик кнопки перезагрузки
+        if (this.domManager.elements.reloadExtension) {
+            const reloadClickHandler = () => {
+                this.reloadExtension();
+            };
+            
+            this.domManager.elements.reloadExtension.addEventListener('click', reloadClickHandler);
+            this.eventHandlers.set('reloadExtension', reloadClickHandler);
+            handlersCount++;
+        } else {
+            this._log('Предупреждение: кнопка перезагрузки не найдена, обработчик не установлен');
         }
 
         const setupTime = Math.round(performance.now() - setupStartTime);
@@ -497,6 +537,104 @@ class OptionsManager extends BaseManager {
             
             if (!buttonRestored) {
                 this._log('Предупреждение: не удалось восстановить состояние кнопки сброса');
+            }
+        }
+    }
+
+    /**
+     * Запускает диагностику системы.
+     * 
+     * @async
+     * @returns {Promise<Object>} Результаты диагностики
+     */
+    async runDiagnostics() {
+        const button = this.domManager.elements.runDiagnostics;
+        const originalText = this.originalButtonTexts.get('runDiagnostics') || 'Run Diagnostics';
+        const operationStartTime = performance.now();
+        
+        try {
+            this._log('Запуск диагностики');
+
+            // Блокируем кнопку и меняем текст
+            const buttonStateSet = this.domManager.setButtonState(
+                button,
+                OptionsManager.BUTTON_LABELS.RUN_DIAGNOSTICS.LOADING,
+                true
+            );
+            
+            if (!buttonStateSet) {
+                this._log('Предупреждение: не удалось обновить состояние кнопки диагностики');
+            }
+
+            // Минимальная задержка для визуальной обратной связи (500ms)
+            const minDelay = new Promise(resolve => setTimeout(resolve, 500));
+            const diagnosticsRun = this.diagnosticsManager.runDiagnostics();
+            
+            const [results] = await Promise.all([diagnosticsRun, minDelay]);
+            
+            // Отображаем результаты
+            this.diagnosticsManager.displayDiagnosticResults(results);
+
+            const totalTime = Math.round(performance.now() - operationStartTime);
+            this._log('Диагностика завершена', { 
+                overall: results.overall,
+                totalTime: `${totalTime}мс`
+            });
+
+            return results;
+        } catch (error) {
+            const totalTime = Math.round(performance.now() - operationStartTime);
+            this._logError(`Ошибка диагностики (${totalTime}мс)`, error);
+            
+            const statusShown = this.statusManager.showError('Diagnostics Error');
+            
+            if (!statusShown) {
+                this._log('Предупреждение: не удалось отобразить статус ошибки диагностики');
+            }
+            
+            throw error;
+        } finally {
+            // Восстанавливаем кнопку
+            const buttonRestored = this.domManager.setButtonState(
+                button,
+                originalText,
+                false
+            );
+            
+            if (!buttonRestored) {
+                this._log('Предупреждение: не удалось восстановить состояние кнопки диагностики');
+            }
+        }
+    }
+
+    /**
+     * Перезагружает расширение.
+     * 
+     * @returns {void}
+     */
+    reloadExtension() {
+        try {
+            this._log('Перезагрузка расширения');
+            
+            // Показываем уведомление
+            const statusShown = this.statusManager.showSuccess('Reloading extension...');
+            
+            if (!statusShown) {
+                this._log('Предупреждение: не удалось отобразить статус перезагрузки');
+            }
+            
+            // Небольшая задержка чтобы пользователь увидел сообщение
+            setTimeout(() => {
+                chrome.runtime.reload();
+            }, 500);
+            
+        } catch (error) {
+            this._logError('Ошибка перезагрузки расширения', error);
+            
+            const statusShown = this.statusManager.showError('Reload Error');
+            
+            if (!statusShown) {
+                this._log('Предупреждение: не удалось отобразить статус ошибки перезагрузки');
             }
         }
     }
@@ -753,6 +891,21 @@ class OptionsManager extends BaseManager {
      */
     _destroyManagers() {
         try {
+            if (this.diagnosticsManager) {
+                this.diagnosticsManager.destroy();
+                this.diagnosticsManager = null;
+            }
+
+            if (this.serviceWorkerManager) {
+                this.serviceWorkerManager.destroy();
+                this.serviceWorkerManager = null;
+            }
+
+            if (this.notificationManager) {
+                this.notificationManager.destroy();
+                this.notificationManager = null;
+            }
+
             if (this.validationManager) {
                 this.validationManager.destroy();
                 this.validationManager = null;
