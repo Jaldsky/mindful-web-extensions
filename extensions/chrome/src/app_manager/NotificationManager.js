@@ -45,6 +45,18 @@ class NotificationManager extends BaseManager {
         
         /** @type {Map<HTMLElement, number>} */
         this.timeouts = new Map();
+        
+        /** @type {Map<string, number>} */
+        this.performanceMetrics = new Map();
+        
+        /** @type {Map<string, number>} */
+        this.notificationStats = new Map([
+            ['total', 0],
+            ['success', 0],
+            ['error', 0],
+            ['warning', 0],
+            ['info', 0]
+        ]);
 
         this._initializeStyles();
         this._log('NotificationManager инициализирован', {
@@ -155,6 +167,10 @@ class NotificationManager extends BaseManager {
             this._addNotificationToDOM(notification);
             this._animateIn(notification);
             this._scheduleRemoval(notification, options.duration);
+            
+            // Обновляем статистику
+            this.notificationStats.set('total', this.notificationStats.get('total') + 1);
+            this.notificationStats.set(type, (this.notificationStats.get(type) || 0) + 1);
 
             this._log(`Уведомление создано: ${type}`, { message, options });
 
@@ -452,6 +468,33 @@ class NotificationManager extends BaseManager {
     }
 
     /**
+     * Получает метрики производительности.
+     * 
+     * @returns {Object} Метрики производительности
+     */
+    getPerformanceMetrics() {
+        const metrics = {};
+        this.performanceMetrics.forEach((value, key) => {
+            metrics[key] = value;
+        });
+        return metrics;
+    }
+    
+    /**
+     * Получает статистику уведомлений.
+     * 
+     * @returns {Object} Статистика уведомлений
+     */
+    getNotificationStatistics() {
+        const stats = {};
+        this.notificationStats.forEach((value, key) => {
+            stats[key] = value;
+        });
+        stats.currentActive = this.notifications.size;
+        return stats;
+    }
+
+    /**
      * Очищает ресурсы при уничтожении менеджера.
      * 
      * @returns {void}
@@ -463,6 +506,8 @@ class NotificationManager extends BaseManager {
             this.clearNotifications();
             this.notifications.clear();
             this.timeouts.clear();
+            this.performanceMetrics.clear();
+            this.notificationStats.clear();
             
             this._log('NotificationManager уничтожен');
         } catch (error) {

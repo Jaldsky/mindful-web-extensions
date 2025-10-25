@@ -530,4 +530,76 @@ describe('NotificationManager', () => {
             consoleErrorSpy.mockRestore();
         });
     });
+
+    describe('Performance Metrics', () => {
+        test('should have performanceMetrics Map', () => {
+            expect(notificationManager.performanceMetrics).toBeInstanceOf(Map);
+        });
+
+        test('getPerformanceMetrics should return object', () => {
+            const metrics = notificationManager.getPerformanceMetrics();
+            
+            expect(typeof metrics).toBe('object');
+        });
+
+        test('should clear performance metrics on destroy', () => {
+            notificationManager.performanceMetrics.set('test', 100);
+            
+            notificationManager.destroy();
+            
+            expect(notificationManager.performanceMetrics.size).toBe(0);
+        });
+    });
+
+    describe('Notification Statistics', () => {
+        test('should have notificationStats Map', () => {
+            expect(notificationManager.notificationStats).toBeInstanceOf(Map);
+        });
+
+        test('getNotificationStatistics should return statistics object', () => {
+            const stats = notificationManager.getNotificationStatistics();
+            
+            expect(stats).toHaveProperty('total');
+            expect(stats).toHaveProperty('success');
+            expect(stats).toHaveProperty('error');
+            expect(stats).toHaveProperty('warning');
+            expect(stats).toHaveProperty('info');
+            expect(stats).toHaveProperty('currentActive');
+        });
+
+        test('should update statistics when showing notifications', () => {
+            notificationManager.showSuccess('Success message');
+            notificationManager.showError('Error message');
+            notificationManager.showWarning('Warning message');
+            
+            const stats = notificationManager.getNotificationStatistics();
+            
+            expect(stats.total).toBe(3);
+            expect(stats.success).toBe(1);
+            expect(stats.error).toBe(1);
+            expect(stats.warning).toBe(1);
+        });
+
+        test('should track currently active notifications', () => {
+            // Создаем менеджер без autoClear чтобы уведомления накапливались
+            const managerWithoutAutoClear = new NotificationManager({ autoClear: false });
+            
+            managerWithoutAutoClear.showSuccess('Message 1');
+            managerWithoutAutoClear.showSuccess('Message 2');
+            
+            const stats = managerWithoutAutoClear.getNotificationStatistics();
+            
+            expect(stats.currentActive).toBe(2);
+            
+            managerWithoutAutoClear.destroy();
+        });
+
+        test('should clear notification stats on destroy', () => {
+            notificationManager.showSuccess('Test');
+            
+            notificationManager.destroy();
+            
+            expect(notificationManager.notificationStats.size).toBe(0);
+        });
+    });
 });

@@ -41,12 +41,16 @@ class AppManager extends BaseManager {
             ...options
         });
 
-        this.domManager = new DOMManager();
-        this.notificationManager = new NotificationManager();
-        this.serviceWorkerManager = new ServiceWorkerManager();
+        const enableLogging = this.enableLogging;
+
+        // Инициализация менеджеров с общим настройками логирования
+        this.domManager = new DOMManager({ enableLogging });
+        this.notificationManager = new NotificationManager({ enableLogging });
+        this.serviceWorkerManager = new ServiceWorkerManager({ enableLogging });
         this.diagnosticsManager = new DiagnosticsManager(
             this.serviceWorkerManager, 
-            this.notificationManager
+            this.notificationManager,
+            { enableLogging }
         );
 
         this.updateInterval = null;

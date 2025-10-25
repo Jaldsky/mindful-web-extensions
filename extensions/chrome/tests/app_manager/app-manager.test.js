@@ -146,6 +146,16 @@ describe('AppManager', () => {
             expect(appManager.originalButtonTexts).toBeInstanceOf(Map);
         });
 
+        test('should pass enableLogging to child managers', () => {
+            appManager = new AppManager({ enableLogging: false });
+            
+            // Проверяем что менеджеры были созданы (вызваны конструкторы)
+            expect(DOMManager).toHaveBeenCalled();
+            expect(NotificationManager).toHaveBeenCalled();
+            expect(ServiceWorkerManager).toHaveBeenCalled();
+            expect(DiagnosticsManager).toHaveBeenCalled();
+        });
+
         test('should have isInitialized property', () => {
             appManager = new AppManager({ enableLogging: false });
 
