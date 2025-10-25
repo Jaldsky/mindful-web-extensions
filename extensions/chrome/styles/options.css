@@ -113,6 +113,23 @@ input[type="url"]:focus {
     margin-top: var(--spacing-xl);
 }
 
+.status-message {
+    display: none;
+    padding: 12px 16px;
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    margin-top: var(--spacing-lg);
+}
+
+.status-message.visible {
+    display: block;
+}
+
+.status-message.hidden {
+    display: none;
+}
+
 /* Diagnostic section */
 .diagnostic-section {
     margin-top: var(--spacing-xxl);

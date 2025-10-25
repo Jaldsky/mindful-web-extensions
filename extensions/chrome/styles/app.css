@@ -158,3 +158,89 @@ body {
     opacity: 1;
 }
 
+.notification {
+    position: fixed;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    max-width: 350px;
+    word-wrap: break-word;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.closable {
+    cursor: pointer;
+}
+
+.notification.notification-success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.notification.notification-error {
+    background-color: #f44336;
+    color: white;
+}
+
+.notification.notification-warning {
+    background-color: #ff9800;
+    color: white;
+}
+
+.notification.notification-info {
+    background-color: #2196F3;
+    color: white;
+}
+
+/* Notification positions */
+.notification.position-top-right {
+    top: 20px;
+    right: 20px;
+}
+
+.notification.position-top-left {
+    top: 20px;
+    left: 20px;
+    transform: translateX(-100%);
+}
+
+.notification.position-top-left.show {
+    transform: translateX(0);
+}
+
+.notification.position-bottom-right {
+    bottom: 20px;
+    right: 20px;
+}
+
+.notification.position-bottom-left {
+    bottom: 20px;
+    left: 20px;
+    transform: translateX(-100%);
+}
+
+.notification.position-bottom-left.show {
+    transform: translateX(0);
+}
+
+.notification.hiding {
+    transform: translateX(100%);
+}
+
+.notification.position-top-left.hiding,
+.notification.position-bottom-left.hiding {
+    transform: translateX(-100%);
+}
+

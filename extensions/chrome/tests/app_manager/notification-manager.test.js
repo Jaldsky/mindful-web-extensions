@@ -61,12 +61,6 @@ describe('NotificationManager', () => {
             expect(NotificationManager.NOTIFICATION_TYPES.WARNING).toBe('warning');
             expect(NotificationManager.NOTIFICATION_TYPES.INFO).toBe('info');
         });
-
-        test('should initialize styles on creation', () => {
-            const styleElement = document.getElementById('notification-styles');
-            expect(styleElement).toBeDefined();
-            expect(styleElement.tagName).toBe('STYLE');
-        });
     });
 
     describe('showNotification', () => {
