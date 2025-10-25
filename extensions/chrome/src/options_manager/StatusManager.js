@@ -1,4 +1,5 @@
 const BaseManager = require('../BaseManager.js');
+const CONFIG = require('../../config.js');
 
 /**
  * @typedef {Object} StatusHistoryEntry
@@ -30,30 +31,25 @@ class StatusManager extends BaseManager {
      * @readonly
      * @enum {string}
      */
-    static STATUS_TYPES = {
-        SUCCESS: 'success',
-        ERROR: 'error',
-        WARNING: 'warning',
-        INFO: 'info'
-    };
+    static STATUS_TYPES = CONFIG.STATUS_TYPES;
 
     /**
      * Длительность отображения статуса по умолчанию (мс)
      * @readonly
      */
-    static DEFAULT_DISPLAY_DURATION = 3000;
+    static DEFAULT_DISPLAY_DURATION = CONFIG.STATUS_SETTINGS.DEFAULT_DURATION;
 
     /**
      * Максимальный размер истории статусов
      * @readonly
      */
-    static MAX_HISTORY_SIZE = 50;
+    static MAX_HISTORY_SIZE = CONFIG.STATUS_SETTINGS.MAX_HISTORY_SIZE;
 
     /**
      * Максимальный размер очереди
      * @readonly
      */
-    static MAX_QUEUE_SIZE = 10;
+    static MAX_QUEUE_SIZE = CONFIG.STATUS_SETTINGS.MAX_QUEUE_SIZE;
 
     /**
      * Создает экземпляр StatusManager.

@@ -5,7 +5,7 @@ module.exports = {
   mode: 'development',
   devtool: 'cheap-module-source-map',
   entry: {
-    background: './background.js',
+    tracker: './tracker.js',
     app: './src/app.js',
     options: './src/options.js'
   },

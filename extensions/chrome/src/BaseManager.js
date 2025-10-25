@@ -1,3 +1,5 @@
+const CONFIG = require('../config.js');
+
 /**
  * @typedef {Object} ManagerState
  * @property {boolean} isOnline - Статус подключения к сети
@@ -18,12 +20,7 @@ class BaseManager {
      * @readonly
      * @enum {number}
      */
-    static DEFAULT_CONSTANTS = {
-        UPDATE_INTERVAL: 2000,
-        NOTIFICATION_DURATION: 3000,
-        PING_TIMEOUT: 5000,
-        THROTTLE_DELAY: 1000
-    };
+    static DEFAULT_CONSTANTS = CONFIG.BASE;
 
     /**
      * Создает экземпляр BaseManager.

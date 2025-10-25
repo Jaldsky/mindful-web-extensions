@@ -1,4 +1,5 @@
 const BaseManager = require('../BaseManager.js');
+const CONFIG = require('../../config.js');
 const DOMManager = require('./DOMManager.js');
 const StorageManager = require('./StorageManager.js');
 const StatusManager = require('./StatusManager.js');
@@ -17,16 +18,7 @@ class OptionsManager extends BaseManager {
      * @readonly
      * @static
      */
-    static BUTTON_LABELS = {
-        SAVE: {
-            DEFAULT: 'Save Settings',
-            LOADING: 'Saving...'
-        },
-        RESET: {
-            DEFAULT: 'Reset to Default',
-            LOADING: 'Resetting...'
-        }
-    };
+    static BUTTON_LABELS = CONFIG.BUTTON_LABELS;
 
     /**
      * Сообщения для статусов

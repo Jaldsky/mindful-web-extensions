@@ -192,7 +192,7 @@ Events are sent in the following format:
 ### 🇬🇧 English
 
 #### Architecture
-- **Service Worker** (`background.js`): Main tracking logic
+- **Service Worker** (`tracker.js`): Main tracking logic
 - **Popup** (`src/popup.js`): Entry point for popup interface
 - **App Managers** (`src/app_manager/`): Modular manager classes
 - **Options** (`options.js`): Settings page
@@ -266,7 +266,7 @@ rm -rf .husky
 ### 🇷🇺 Русский
 
 #### Архитектура
-- **Service Worker** (`background.js`): Основная логика трекинга
+- **Service Worker** (`tracker.js`): Основная логика трекинга
 - **Popup** (`popup.html/js`): Интерфейс для мониторинга статуса
 - **Options** (`options.html/js`): Страница настроек
 - **Manifest V3**: Современный стандарт расширений Chrome

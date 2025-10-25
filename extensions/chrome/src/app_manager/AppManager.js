@@ -1,4 +1,5 @@
 const BaseManager = require('../BaseManager.js');
+const CONFIG = require('../../config.js');
 const DOMManager = require('./DOMManager.js');
 const NotificationManager = require('./NotificationManager.js');
 const ServiceWorkerManager = require('./ServiceWorkerManager.js');
@@ -17,16 +18,7 @@ class AppManager extends BaseManager {
      * @readonly
      * @static
      */
-    static BUTTON_LABELS = {
-        TEST_CONNECTION: {
-            DEFAULT: '🔍 Test Connection',
-            LOADING: '🔍 Checking...'
-        },
-        RUN_DIAGNOSTICS: {
-            DEFAULT: '🔧 Run Diagnostics',
-            LOADING: '🔧 Analyzing...'
-        }
-    };
+    static BUTTON_LABELS = CONFIG.BUTTON_LABELS;
 
     /**
      * Создает экземпляр AppManager.

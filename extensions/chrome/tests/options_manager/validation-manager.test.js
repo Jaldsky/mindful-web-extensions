@@ -2,6 +2,7 @@
  * Тесты для ValidationManager
  */
 
+const CONFIG = require('../../config.js');
 const ValidationManager = require('../../src/options_manager/ValidationManager.js');
 
 describe('ValidationManager', () => {
@@ -22,7 +23,7 @@ describe('ValidationManager', () => {
             expect(validationManager).toBeInstanceOf(ValidationManager);
             expect(validationManager.strictProtocol).toBe(true);
             expect(validationManager.enableHistory).toBe(false);
-            expect(validationManager.maxHistorySize).toBe(100);
+            expect(validationManager.maxHistorySize).toBe(CONFIG.VALIDATION.MAX_HISTORY_SIZE);
             expect(validationManager.history).toEqual([]);
         });
 

@@ -1,4 +1,5 @@
 const BaseManager = require('../BaseManager.js');
+const CONFIG = require('../../config.js');
 
 /**
  * @typedef {Object} OptionsStorageData
@@ -27,9 +28,7 @@ class StorageManager extends BaseManager {
      * @readonly
      * @enum {string}
      */
-    static STORAGE_KEYS = {
-        BACKEND_URL: 'mindful_backend_url'
-    };
+    static STORAGE_KEYS = CONFIG.STORAGE_KEYS;
 
     /**
      * Значения по умолчанию
@@ -37,14 +36,14 @@ class StorageManager extends BaseManager {
      * @enum {string}
      */
     static DEFAULT_VALUES = {
-        BACKEND_URL: 'http://localhost:8000/api/v1/events/send'
+        BACKEND_URL: CONFIG.BACKEND.DEFAULT_URL
     };
 
     /**
      * Таймаут для уведомлений background script (мс)
      * @readonly
      */
-    static NOTIFICATION_TIMEOUT = 5000;
+    static NOTIFICATION_TIMEOUT = CONFIG.BASE.PING_TIMEOUT;
 
     /**
      * Создает экземпляр StorageManager.
