@@ -73,7 +73,28 @@ class DOMManager extends BaseManager {
         /** @type {DOMElements} */
         this.elements = {};
         
+        /** @type {Map<string, number>} */
+        this.performanceMetrics = new Map();
+        
+        this._validateDOMAvailability();
         this._initializeElements();
+    }
+    
+    /**
+     * Проверяет доступность DOM API.
+     * 
+     * @private
+     * @throws {Error} Если document недоступен
+     * @returns {void}
+     */
+    _validateDOMAvailability() {
+        if (typeof document === 'undefined') {
+            throw new Error('document API недоступен');
+        }
+        
+        if (typeof document.getElementById !== 'function') {
+            throw new Error('document.getElementById недоступен');
+        }
     }
 
     /**
@@ -316,6 +337,57 @@ class DOMManager extends BaseManager {
         this._log('Перезагрузка DOM элементов');
         this._initializeElements();
     }
+    
+    /**
+     * Получает метрики производительности.
+     * 
+     * @returns {Object} Метрики производительности
+     */
+    getPerformanceMetrics() {
+        const metrics = {};
+        this.performanceMetrics.forEach((value, key) => {
+            metrics[key] = value;
+        });
+        return metrics;
+    }
+    
+    /**
+     * Получает статистику доступности элементов.
+     * 
+     * @returns {Object} Статистика элементов
+     */
+    getElementsStatistics() {
+        try {
+            const stats = {
+                total: 0,
+                available: 0,
+                missing: [],
+                inDOM: 0,
+                notInDOM: []
+            };
+
+            Object.entries(this.elements).forEach(([key, element]) => {
+                stats.total++;
+                
+                if (element) {
+                    stats.available++;
+                    
+                    if (document.body && document.body.contains(element)) {
+                        stats.inDOM++;
+                    } else {
+                        stats.notInDOM.push(key);
+                    }
+                } else {
+                    stats.missing.push(key);
+                }
+            });
+
+            return stats;
+        } catch (error) {
+            this._logError('Ошибка получения статистики элементов', error);
+            return {};
+        }
+    }
 
     /**
      * Очищает ресурсы при уничтожении менеджера.
@@ -325,6 +397,7 @@ class DOMManager extends BaseManager {
     destroy() {
         this._log('Очистка ресурсов DOMManager');
         this.elements = {};
+        this.performanceMetrics.clear();
         super.destroy();
     }
 }

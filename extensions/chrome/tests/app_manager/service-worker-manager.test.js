@@ -670,4 +670,24 @@ describe('ServiceWorkerManager', () => {
             jest.useRealTimers();
         });
     });
+
+    describe('Performance Metrics', () => {
+        test('should have performanceMetrics Map', () => {
+            expect(serviceWorkerManager.performanceMetrics).toBeInstanceOf(Map);
+        });
+
+        test('getPerformanceMetrics should return object', () => {
+            const metrics = serviceWorkerManager.getPerformanceMetrics();
+            
+            expect(typeof metrics).toBe('object');
+        });
+
+        test('should clear performance metrics on destroy', () => {
+            serviceWorkerManager.performanceMetrics.set('test', 100);
+            
+            serviceWorkerManager.destroy();
+            
+            expect(serviceWorkerManager.performanceMetrics.size).toBe(0);
+        });
+    });
 });

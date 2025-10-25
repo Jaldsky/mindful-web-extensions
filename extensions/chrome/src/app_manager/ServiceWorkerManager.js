@@ -59,6 +59,9 @@ class ServiceWorkerManager extends BaseManager {
         /** @type {number} */
         this.messageTimeout = options.messageTimeout || this.CONSTANTS.PING_TIMEOUT;
         
+        /** @type {Map<string, number>} */
+        this.performanceMetrics = new Map();
+        
         this._setupMessageListener();
         this._log('ServiceWorkerManager инициализирован', { messageTimeout: this.messageTimeout });
     }
@@ -270,6 +273,19 @@ class ServiceWorkerManager extends BaseManager {
     }
 
     /**
+     * Получает метрики производительности.
+     * 
+     * @returns {Object} Метрики производительности
+     */
+    getPerformanceMetrics() {
+        const metrics = {};
+        this.performanceMetrics.forEach((value, key) => {
+            metrics[key] = value;
+        });
+        return metrics;
+    }
+
+    /**
      * Очищает ресурсы и удаляет слушатели.
      * Вызывайте этот метод при уничтожении менеджера.
      * 
@@ -285,6 +301,7 @@ class ServiceWorkerManager extends BaseManager {
             }
             
             this.messageHandlers.clear();
+            this.performanceMetrics.clear();
             
             this._log('ServiceWorkerManager уничтожен');
         } catch (error) {

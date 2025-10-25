@@ -315,4 +315,97 @@ describe('DOMManager', () => {
             consoleErrorSpy.mockRestore();
         });
     });
+
+    describe('Performance Metrics', () => {
+        test('should have performanceMetrics Map', () => {
+            expect(domManager.performanceMetrics).toBeInstanceOf(Map);
+        });
+
+        test('getPerformanceMetrics should return object', () => {
+            const metrics = domManager.getPerformanceMetrics();
+            
+            expect(typeof metrics).toBe('object');
+        });
+
+        test('should clear performance metrics on destroy', () => {
+            domManager.performanceMetrics.set('test', 100);
+            
+            domManager.destroy();
+            
+            expect(domManager.performanceMetrics.size).toBe(0);
+        });
+    });
+
+    describe('Elements Statistics', () => {
+        test('getElementsStatistics should return statistics object', () => {
+            const stats = domManager.getElementsStatistics();
+            
+            expect(stats).toHaveProperty('total');
+            expect(stats).toHaveProperty('available');
+            expect(stats).toHaveProperty('missing');
+            expect(stats).toHaveProperty('inDOM');
+            expect(stats).toHaveProperty('notInDOM');
+        });
+
+        test('should count total elements correctly', () => {
+            const stats = domManager.getElementsStatistics();
+            
+            expect(stats.total).toBe(9); // 9 элементов в app_manager
+            expect(stats.available).toBeGreaterThan(0);
+        });
+
+        test('should detect missing elements', () => {
+            domManager.elements.testConnection = null;
+            
+            const stats = domManager.getElementsStatistics();
+            
+            expect(stats.missing).toContain('testConnection');
+        });
+
+        test('should detect elements not in DOM', () => {
+            const detachedElement = document.createElement('div');
+            domManager.elements.testElement = detachedElement;
+            
+            const stats = domManager.getElementsStatistics();
+            
+            expect(stats.notInDOM).toContain('testElement');
+        });
+
+        test('should handle errors gracefully', () => {
+            domManager.elements = null;
+            
+            const stats = domManager.getElementsStatistics();
+            
+            expect(stats).toEqual({});
+        });
+    });
+
+    describe('DOM Availability Validation', () => {
+        test('should validate document availability on construction', () => {
+            expect(() => {
+                new DOMManager({ enableLogging: false });
+            }).not.toThrow();
+        });
+
+        test('should throw error if document is undefined', () => {
+            const originalDocument = global.document;
+            const originalDescriptor = Object.getOwnPropertyDescriptor(global, 'document');
+            
+            Object.defineProperty(global, 'document', {
+                get: () => undefined,
+                configurable: true
+            });
+
+            expect(() => {
+                new DOMManager();
+            }).toThrow('document API недоступен');
+
+            // Восстанавливаем document
+            if (originalDescriptor) {
+                Object.defineProperty(global, 'document', originalDescriptor);
+            } else {
+                global.document = originalDocument;
+            }
+        });
+    });
 });
