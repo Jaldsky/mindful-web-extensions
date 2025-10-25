@@ -20,6 +20,8 @@ describe('OptionsManager', () => {
                 <button type="button" id="resetBtn">Reset</button>
             </form>
             <div id="status"></div>
+            <button type="button" id="runDiagnostics">Run Diagnostics</button>
+            <button type="button" id="reloadExtension">Reload Extension</button>
         `;
 
         // Убеждаемся что chrome API существует
@@ -38,7 +40,8 @@ describe('OptionsManager', () => {
         
         if (!global.chrome.runtime) {
             global.chrome.runtime = {
-                sendMessage: jest.fn()
+                sendMessage: jest.fn(),
+                reload: jest.fn()
             };
         }
 
@@ -54,6 +57,11 @@ describe('OptionsManager', () => {
         });
 
         global.chrome.runtime.sendMessage.mockResolvedValue({ success: true });
+        
+        // Мок для chrome.runtime.reload
+        if (!global.chrome.runtime.reload) {
+            global.chrome.runtime.reload = jest.fn();
+        }
 
         // НЕ используем fake timers для OptionsManager - он использует реальные промисы
         jest.useRealTimers();
@@ -408,6 +416,111 @@ describe('OptionsManager', () => {
             await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
 
             expect(resetSpy).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать клик по кнопке диагностики', async () => {
+            const runDiagnosticsBtn = document.getElementById('runDiagnostics');
+            const diagnosticsSpy = jest.spyOn(optionsManager, 'runDiagnostics').mockResolvedValue({
+                overall: 'ok'
+            });
+
+            const clickEvent = new Event('click', { bubbles: true });
+            runDiagnosticsBtn.dispatchEvent(clickEvent);
+
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(diagnosticsSpy).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать клик по кнопке перезагрузки', async () => {
+            const reloadBtn = document.getElementById('reloadExtension');
+            const reloadSpy = jest.spyOn(optionsManager, 'reloadExtension');
+
+            const clickEvent = new Event('click', { bubbles: true });
+            reloadBtn.dispatchEvent(clickEvent);
+
+            await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(reloadSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('runDiagnostics', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+        });
+
+        test('должен запускать диагностику', async () => {
+            const runDiagnosticsSpy = jest.spyOn(optionsManager.diagnosticsManager, 'runDiagnostics')
+                .mockResolvedValue({ overall: 'ok', checks: {} });
+            const displaySpy = jest.spyOn(optionsManager.diagnosticsManager, 'displayDiagnosticResults')
+                .mockImplementation(() => {});
+
+            const result = await optionsManager.runDiagnostics();
+
+            expect(runDiagnosticsSpy).toHaveBeenCalled();
+            expect(displaySpy).toHaveBeenCalled();
+            expect(result).toBeDefined();
+            expect(result.overall).toBe('ok');
+        });
+
+        test('должен обрабатывать ошибки диагностики', async () => {
+            jest.spyOn(optionsManager.diagnosticsManager, 'runDiagnostics')
+                .mockRejectedValue(new Error('Diagnostics failed'));
+
+            await expect(optionsManager.runDiagnostics()).rejects.toThrow('Diagnostics failed');
+        });
+
+        test('должен блокировать кнопку во время диагностики', async () => {
+            const button = document.getElementById('runDiagnostics');
+            jest.spyOn(optionsManager.diagnosticsManager, 'runDiagnostics')
+                .mockResolvedValue({ overall: 'ok', checks: {} });
+            jest.spyOn(optionsManager.diagnosticsManager, 'displayDiagnosticResults')
+                .mockImplementation(() => {});
+
+            let buttonWasDisabled = false;
+            const originalSetButtonState = optionsManager.domManager.setButtonState.bind(optionsManager.domManager);
+            jest.spyOn(optionsManager.domManager, 'setButtonState').mockImplementation((btn, text, disabled) => {
+                if (btn === button && disabled) {
+                    buttonWasDisabled = true;
+                }
+                return originalSetButtonState(btn, text, disabled);
+            });
+
+            await optionsManager.runDiagnostics();
+
+            expect(buttonWasDisabled).toBe(true);
+        });
+    });
+
+    describe('reloadExtension', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        test('должен вызывать chrome.runtime.reload', () => {
+            optionsManager.reloadExtension();
+            
+            // Прокручиваем таймер для setTimeout
+            jest.advanceTimersByTime(500);
+
+            expect(global.chrome.runtime.reload).toHaveBeenCalled();
+        });
+
+        test('должен показывать статус успеха перед перезагрузкой', () => {
+            const showSuccessSpy = jest.spyOn(optionsManager.statusManager, 'showSuccess');
+
+            optionsManager.reloadExtension();
+            
+            // Проверяем что статус был показан до перезагрузки
+            expect(showSuccessSpy).toHaveBeenCalledWith('Reloading extension...');
         });
     });
 

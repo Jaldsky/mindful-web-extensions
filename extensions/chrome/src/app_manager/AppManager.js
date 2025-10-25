@@ -141,26 +141,6 @@ class AppManager extends BaseManager {
             this.eventHandlers.set('testConnection', handler);
         }
 
-        if (this.domManager.elements.reloadExtension) {
-            const handler = () => {
-                this._log('Перезагрузка расширения');
-                chrome.runtime.reload();
-            };
-            this.domManager.elements.reloadExtension.addEventListener('click', handler);
-            this.eventHandlers.set('reloadExtension', handler);
-        }
-
-        if (this.domManager.elements.runDiagnostics) {
-            // Store original button text
-            this.originalButtonTexts.set('runDiagnostics', this.domManager.elements.runDiagnostics.textContent);
-            
-            const handler = async () => {
-                await this.runDiagnostics();
-            };
-            this.domManager.elements.runDiagnostics.addEventListener('click', handler);
-            this.eventHandlers.set('runDiagnostics', handler);
-        }
-
         this._log(`Настроено обработчиков: ${this.eventHandlers.size}`);
     }
 
@@ -208,49 +188,6 @@ class AppManager extends BaseManager {
             this.domManager.updateConnectionStatus(false);
             this.updateState({ isOnline: false });
             return false;
-        } finally {
-            this.domManager.setButtonState(
-                button,
-                originalText,
-                false
-            );
-        }
-    }
-
-    /**
-     * Запускает диагностику системы.
-     *
-     * @async
-     * @returns {Promise<Object>} Результаты диагностики
-     */
-    async runDiagnostics() {
-        const button = this.domManager.elements.runDiagnostics;
-        const originalText = this.originalButtonTexts.get('runDiagnostics') || 'Run Diagnostics';
-        
-        try {
-            this._log('Запуск диагностики');
-
-            this.domManager.setButtonState(
-                button,
-                AppManager.BUTTON_LABELS.RUN_DIAGNOSTICS.LOADING,
-                true
-            );
-
-            // Минимальная задержка для визуальной обратной связи (500ms)
-            const minDelay = new Promise(resolve => setTimeout(resolve, 500));
-            const diagnosticsRun = this.diagnosticsManager.runDiagnostics();
-            
-            const [results] = await Promise.all([diagnosticsRun, minDelay]);
-            
-            this.diagnosticsManager.displayDiagnosticResults(results);
-
-            this._log('Диагностика завершена', { overall: results.overall });
-
-            return results;
-        } catch (error) {
-            this._logError('Ошибка диагностики', error);
-            this.notificationManager.showNotification('Diagnostics Error', 'error');
-            throw error;
         } finally {
             this.domManager.setButtonState(
                 button,
