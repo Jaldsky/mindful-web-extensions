@@ -7,7 +7,7 @@ module.exports = {
   entry: {
     background: './background.js',
     app: './src/app.js',
-    options: './options.js'
+    options: './src/options.js'
   },
   resolve: {
     extensions: ['.js']

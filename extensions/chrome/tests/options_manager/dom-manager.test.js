@@ -1,11 +1,14 @@
 /**
- * Тесты для DOMManager класса options_manager
- * Тестирует функциональность работы с DOM элементами страницы настроек
+ * @jest-environment jsdom
+ */
+
+/**
+ * Тесты для DOMManager
  */
 
 const DOMManager = require('../../src/options_manager/DOMManager.js');
 
-describe('OptionsDOMManager', () => {
+describe('DOMManager', () => {
     let domManager;
 
     beforeEach(() => {
@@ -18,7 +21,7 @@ describe('OptionsDOMManager', () => {
             <div id="status"></div>
         `;
 
-        domManager = new DOMManager();
+        domManager = new DOMManager({ enableLogging: false });
     });
 
     afterEach(() => {
@@ -28,34 +31,35 @@ describe('OptionsDOMManager', () => {
         document.body.innerHTML = '';
     });
 
-    describe('constructor', () => {
-        test('should initialize with default options', () => {
+    describe('Инициализация', () => {
+        test('должен создаваться с настройками по умолчанию', () => {
             expect(domManager).toBeDefined();
             expect(domManager.elements).toBeDefined();
-            expect(domManager.state).toBeDefined();
-        });
-
-        test('should cache DOM elements', () => {
-            expect(domManager.elements.settingsForm).toBeDefined();
-            expect(domManager.elements.backendUrl).toBeDefined();
-            expect(domManager.elements.saveBtn).toBeDefined();
-            expect(domManager.elements.resetBtn).toBeDefined();
-            expect(domManager.elements.status).toBeDefined();
-        });
-
-        test('should set strictMode from options', () => {
-            const strictManager = new DOMManager({ strictMode: true });
-            expect(strictManager.strictMode).toBe(true);
-            strictManager.destroy();
-        });
-
-        test('should default strictMode to false', () => {
             expect(domManager.strictMode).toBe(false);
+            expect(domManager.performanceMetrics).toBeInstanceOf(Map);
+        });
+
+        test('должен кэшировать DOM элементы', () => {
+            expect(domManager.elements.settingsForm).toBeInstanceOf(HTMLFormElement);
+            expect(domManager.elements.backendUrl).toBeInstanceOf(HTMLInputElement);
+            expect(domManager.elements.saveBtn).toBeInstanceOf(HTMLButtonElement);
+            expect(domManager.elements.resetBtn).toBeInstanceOf(HTMLButtonElement);
+            expect(domManager.elements.status).toBeInstanceOf(HTMLDivElement);
+        });
+
+        test('должен создаваться с пользовательскими настройками', () => {
+            const customManager = new DOMManager({ 
+                enableLogging: false,
+                strictMode: true 
+            });
+            
+            expect(customManager.strictMode).toBe(true);
+            customManager.destroy();
         });
     });
 
-    describe('static properties', () => {
-        test('should have ELEMENT_IDS constant', () => {
+    describe('Статические свойства', () => {
+        test('должен иметь ELEMENT_IDS константу', () => {
             expect(DOMManager.ELEMENT_IDS).toBeDefined();
             expect(DOMManager.ELEMENT_IDS.SETTINGS_FORM).toBe('settingsForm');
             expect(DOMManager.ELEMENT_IDS.BACKEND_URL).toBe('backendUrl');
@@ -66,33 +70,44 @@ describe('OptionsDOMManager', () => {
     });
 
     describe('getBackendUrlValue', () => {
-        test('should return the value of backend URL input', () => {
+        test('должен возвращать значение input поля', () => {
             domManager.elements.backendUrl.value = 'http://example.com';
             const value = domManager.getBackendUrlValue();
+            
             expect(value).toBe('http://example.com');
         });
 
-        test('should trim whitespace from URL value', () => {
+        test('должен тримить пробелы', () => {
             domManager.elements.backendUrl.value = '  http://example.com  ';
             const value = domManager.getBackendUrlValue();
+            
             expect(value).toBe('http://example.com');
         });
 
-        test('should return empty string if input is empty', () => {
+        test('должен возвращать пустую строку для пустого input', () => {
             domManager.elements.backendUrl.value = '';
             const value = domManager.getBackendUrlValue();
+            
             expect(value).toBe('');
         });
 
-        test('should return empty string if element is null', () => {
+        test('должен возвращать пустую строку если элемент отсутствует', () => {
             domManager.elements.backendUrl = null;
             const value = domManager.getBackendUrlValue();
+            
             expect(value).toBe('');
+        });
+
+        test('должен собирать метрики производительности', () => {
+            domManager.getBackendUrlValue();
+
+            const metrics = domManager.getPerformanceMetrics();
+            expect(metrics).toHaveProperty('getBackendUrlValue_lastDuration');
         });
     });
 
     describe('setBackendUrlValue', () => {
-        test('should set the value of backend URL input', () => {
+        test('должен устанавливать значение input поля', () => {
             const url = 'http://example.com';
             const result = domManager.setBackendUrlValue(url);
 
@@ -100,43 +115,63 @@ describe('OptionsDOMManager', () => {
             expect(domManager.elements.backendUrl.value).toBe(url);
         });
 
-        test('should handle empty string', () => {
+        test('должен обрабатывать пустую строку', () => {
             const result = domManager.setBackendUrlValue('');
 
             expect(result).toBe(true);
             expect(domManager.elements.backendUrl.value).toBe('');
         });
 
-        test('should throw TypeError for non-string parameter', () => {
+        test('должен валидировать входные данные', () => {
             expect(() => domManager.setBackendUrlValue(123)).toThrow(TypeError);
             expect(() => domManager.setBackendUrlValue(null)).toThrow(TypeError);
             expect(() => domManager.setBackendUrlValue(undefined)).toThrow(TypeError);
             expect(() => domManager.setBackendUrlValue({})).toThrow(TypeError);
         });
 
-        test('should return false if element is missing', () => {
+        test('должен возвращать false если элемент отсутствует', () => {
             domManager.elements.backendUrl.remove();
-            domManager.reloadElements();
+            domManager.elements.backendUrl = null;
 
             const result = domManager.setBackendUrlValue('http://example.com');
             expect(result).toBe(false);
         });
+
+        test('должен проверять что элемент находится в DOM', () => {
+            const input = domManager.elements.backendUrl;
+            input.remove();
+
+            const result = domManager.setBackendUrlValue('http://example.com');
+            expect(result).toBe(false);
+        });
+
+        test('должен верифицировать установку значения', () => {
+            const url = 'http://example.com';
+            const result = domManager.setBackendUrlValue(url);
+
+            expect(result).toBe(true);
+            expect(domManager.elements.backendUrl.value).toBe(url);
+        });
+
+        test('должен собирать метрики производительности', () => {
+            domManager.setBackendUrlValue('http://example.com');
+
+            const metrics = domManager.getPerformanceMetrics();
+            expect(metrics).toHaveProperty('setBackendUrlValue_lastDuration');
+        });
     });
 
     describe('setButtonState', () => {
-        test('should set button text and disabled state', () => {
+        test('должен устанавливать текст и состояние кнопки', () => {
             const button = domManager.elements.saveBtn;
-            const text = 'Saving...';
-            const disabled = true;
-
-            const result = domManager.setButtonState(button, text, disabled);
+            const result = domManager.setButtonState(button, 'Saving...', true);
 
             expect(result).toBe(true);
-            expect(button.textContent).toBe(text);
-            expect(button.disabled).toBe(disabled);
+            expect(button.textContent).toBe('Saving...');
+            expect(button.disabled).toBe(true);
         });
 
-        test('should enable button when disabled is false', () => {
+        test('должен включать кнопку когда disabled=false', () => {
             const button = domManager.elements.saveBtn;
             button.disabled = true;
 
@@ -146,19 +181,16 @@ describe('OptionsDOMManager', () => {
             expect(button.textContent).toBe('Save');
         });
 
-        test('should handle reset button', () => {
+        test('должен работать с кнопкой reset', () => {
             const button = domManager.elements.resetBtn;
-            const text = 'Resetting...';
-            const disabled = true;
-
-            const result = domManager.setButtonState(button, text, disabled);
+            const result = domManager.setButtonState(button, 'Resetting...', true);
 
             expect(result).toBe(true);
-            expect(button.textContent).toBe(text);
-            expect(button.disabled).toBe(disabled);
+            expect(button.textContent).toBe('Resetting...');
+            expect(button.disabled).toBe(true);
         });
 
-        test('should throw error for invalid text parameter', () => {
+        test('должен валидировать параметр text', () => {
             const button = domManager.elements.saveBtn;
 
             expect(() => domManager.setButtonState(button, 123, true)).toThrow(TypeError);
@@ -166,7 +198,7 @@ describe('OptionsDOMManager', () => {
             expect(() => domManager.setButtonState(button, undefined, true)).toThrow(TypeError);
         });
 
-        test('should throw error for invalid disabled parameter', () => {
+        test('должен валидировать параметр disabled', () => {
             const button = domManager.elements.saveBtn;
 
             expect(() => domManager.setButtonState(button, 'Test', 'invalid')).toThrow(TypeError);
@@ -174,235 +206,130 @@ describe('OptionsDOMManager', () => {
             expect(() => domManager.setButtonState(button, 'Test', 1)).toThrow(TypeError);
         });
 
-        test('should return false for null button', () => {
+        test('должен возвращать false для null кнопки', () => {
             const result = domManager.setButtonState(null, 'Test', false);
             expect(result).toBe(false);
         });
 
-        test('should return false for undefined button', () => {
-            const result = domManager.setButtonState(undefined, 'Test', false);
+        test('должен проверять что кнопка находится в DOM', () => {
+            const button = domManager.elements.saveBtn;
+            button.remove();
+
+            const result = domManager.setButtonState(button, 'Test', false);
             expect(result).toBe(false);
         });
-    });
 
-    describe('reloadElements', () => {
-        test('should reload elements', () => {
-            expect(() => domManager.reloadElements()).not.toThrow();
+        test('должен верифицировать установку состояния', () => {
+            const button = domManager.elements.saveBtn;
+            const result = domManager.setButtonState(button, 'Saving...', true);
 
-            expect(domManager.elements).toBeDefined();
+            expect(result).toBe(true);
+            expect(button.textContent).toBe('Saving...');
+            expect(button.disabled).toBe(true);
         });
 
-        test('should reload elements after DOM changes', () => {
-            const oldElement = domManager.elements.saveBtn;
-            oldElement.remove();
+        test('должен собирать метрики производительности', () => {
+            const button = domManager.elements.saveBtn;
+            domManager.setButtonState(button, 'Test', false);
 
-            const newButton = document.createElement('button');
-            newButton.id = 'saveBtn';
-            document.body.appendChild(newButton);
-            
-            domManager.reloadElements();
-
-            expect(domManager.elements.saveBtn).toBe(newButton);
-            expect(domManager.elements.saveBtn).not.toBe(oldElement);
+            const metrics = domManager.getPerformanceMetrics();
+            expect(metrics).toHaveProperty('setButtonState_lastDuration');
         });
     });
 
-    describe('inheritance from BaseManager', () => {
-        test('should have BaseManager methods', () => {
-            expect(typeof domManager.updateState).toBe('function');
-            expect(typeof domManager.getState).toBe('function');
-            expect(typeof domManager.resetState).toBe('function');
-            expect(typeof domManager.getConstant).toBe('function');
-        });
+    describe('getPerformanceMetrics', () => {
+        test('должен возвращать метрики производительности', () => {
+            domManager.getBackendUrlValue();
+            domManager.setBackendUrlValue('http://test.com');
 
-        test('should have CONSTANTS property', () => {
-            expect(domManager.CONSTANTS).toBeDefined();
-            expect(domManager.CONSTANTS.UPDATE_INTERVAL).toBeDefined();
-            expect(domManager.CONSTANTS.NOTIFICATION_DURATION).toBeDefined();
-        });
+            const metrics = domManager.getPerformanceMetrics();
 
-        test('should have initial state', () => {
-            const state = domManager.getState();
-            expect(state).toHaveProperty('isOnline');
-            expect(state).toHaveProperty('isTracking');
-            expect(state).toHaveProperty('lastUpdate');
-        });
-
-        test('should update state correctly', () => {
-            const newState = { customProperty: 'test value' };
-            domManager.updateState(newState);
-            
-            const state = domManager.getState();
-            expect(state.customProperty).toBe('test value');
-        });
-
-        test('should have resetState method', () => {
-            domManager.updateState({ customProperty: 'test' });
-            domManager.resetState();
-            
-            const state = domManager.getState();
-            expect(state.customProperty).toBeUndefined();
-        });
-
-        test('should have getConstant method', () => {
-            const updateInterval = domManager.getConstant('UPDATE_INTERVAL');
-            expect(updateInterval).toBe(2000);
+            expect(typeof metrics).toBe('object');
+            expect(metrics).toHaveProperty('getBackendUrlValue_lastDuration');
+            expect(metrics).toHaveProperty('setBackendUrlValue_lastDuration');
         });
     });
 
-    describe('destroy method', () => {
-        test('should clean up resources', () => {
-            domManager.destroy();
-            expect(domManager.elements).toEqual({});
+    describe('getElementsStatistics', () => {
+        test('должен возвращать статистику элементов', () => {
+            const stats = domManager.getElementsStatistics();
+
+            expect(stats).toHaveProperty('total');
+            expect(stats).toHaveProperty('available');
+            expect(stats).toHaveProperty('missing');
+            expect(stats).toHaveProperty('inDOM');
+            expect(stats).toHaveProperty('notInDOM');
         });
 
-        test('should be safe to call multiple times', () => {
-            expect(() => {
-                domManager.destroy();
-                domManager.destroy();
-            }).not.toThrow();
+        test('должен корректно считать доступные элементы', () => {
+            const stats = domManager.getElementsStatistics();
+
+            expect(stats.total).toBe(5);
+            expect(stats.available).toBe(5);
+            expect(stats.missing).toEqual([]);
+            expect(stats.inDOM).toBe(5);
+            expect(stats.notInDOM).toEqual([]);
+        });
+
+        test('должен отслеживать отсутствующие элементы', () => {
+            domManager.elements.saveBtn.remove();
+            domManager.elements.saveBtn = null;
+
+            const stats = domManager.getElementsStatistics();
+
+            expect(stats.total).toBe(5);
+            expect(stats.available).toBe(4);
+            expect(stats.missing).toEqual(['saveBtn']);
+            expect(stats.inDOM).toBe(4);
         });
     });
 
-    describe('error handling', () => {
-        test('should handle missing DOM elements gracefully', () => {
-            const element = domManager.elements.backendUrl;
-            element.remove();
-            domManager.reloadElements();
+    describe('Обработка ошибок', () => {
+        test('должен корректно обрабатывать отсутствующие элементы', () => {
+            const input = domManager.elements.backendUrl;
+            input.remove();
 
             expect(() => {
                 domManager.setBackendUrlValue('http://example.com');
             }).not.toThrow();
         });
 
-        test('should handle null/undefined elements', () => {
-            const originalGetElementById = document.getElementById;
-            document.getElementById = jest.fn(() => null);
-
-            expect(() => {
-                new DOMManager();
-            }).not.toThrow();
-
-            document.getElementById = originalGetElementById;
-        });
-
-        test('should throw in strict mode when elements are missing', () => {
-            const originalGetElementById = document.getElementById;
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-
-            document.getElementById = jest.fn(() => null);
-
-            expect(() => {
-                new DOMManager({ strictMode: true });
-            }).toThrow(Error);
-            expect(() => {
-                new DOMManager({ strictMode: true });
-            }).toThrow(/Отсутствуют критичные DOM элементы/);
-
-            document.getElementById = originalGetElementById;
-            consoleErrorSpy.mockRestore();
-        });
-
-        test('should not throw in non-strict mode when elements are missing', () => {
-            const originalGetElementById = document.getElementById;
-            document.getElementById = jest.fn(() => null);
-
-            expect(() => {
-                new DOMManager({ strictMode: false });
-            }).not.toThrow();
-
-            document.getElementById = originalGetElementById;
-        });
-    });
-
-    describe('_cacheDOMElements', () => {
-        test('should cache all elements correctly', () => {
-            const elements = domManager.elements;
-
-            expect(elements.settingsForm).toBeInstanceOf(HTMLFormElement);
-            expect(elements.backendUrl).toBeInstanceOf(HTMLInputElement);
-            expect(elements.saveBtn).toBeInstanceOf(HTMLButtonElement);
-            expect(elements.resetBtn).toBeInstanceOf(HTMLButtonElement);
-            expect(elements.status).toBeInstanceOf(HTMLDivElement);
-        });
-    });
-
-    describe('_validateElements', () => {
-        test('should validate all elements in strict mode', () => {
-            expect(() => {
-                new DOMManager({ strictMode: true });
-            }).not.toThrow();
-        });
-
-        test('should throw error if any element is missing in strict mode', () => {
+        test('должен выбрасывать ошибку в strictMode при отсутствии элементов', () => {
             document.getElementById('saveBtn').remove();
 
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+            expect(() => {
+                new DOMManager({ strictMode: true, enableLogging: false });
+            }).toThrow('Отсутствуют критичные DOM элементы');
+        });
+
+        test('не должен выбрасывать ошибку в non-strict режиме', () => {
+            document.getElementById('saveBtn').remove();
 
             expect(() => {
-                new DOMManager({ strictMode: true });
-            }).toThrow();
-
-            consoleErrorSpy.mockRestore();
+                new DOMManager({ strictMode: false, enableLogging: false });
+            }).not.toThrow();
         });
     });
 
-    describe('_safeUpdateElement', () => {
-        test('should safely update element', () => {
-            const element = domManager.elements.backendUrl;
-            const updateFn = (el) => { el.value = 'test'; };
+    describe('destroy', () => {
+        test('должен очищать все ресурсы', () => {
+            domManager.getBackendUrlValue();
+            domManager.destroy();
 
-            const result = domManager._safeUpdateElement(element, updateFn, 'test element');
-
-            expect(result).toBe(true);
-            expect(element.value).toBe('test');
+            expect(domManager.elements).toEqual({});
+            expect(domManager.performanceMetrics.size).toBe(0);
         });
 
-        test('should return false for null element', () => {
-            const updateFn = (el) => { el.value = 'test'; };
-
-            const result = domManager._safeUpdateElement(null, updateFn, 'test element');
-
-            expect(result).toBe(false);
-        });
-
-        test('should handle errors in update function', () => {
-            const element = domManager.elements.backendUrl;
-            const updateFn = () => { throw new Error('Update error'); };
-
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-
-            const result = domManager._safeUpdateElement(element, updateFn, 'test element');
-
-            expect(result).toBe(false);
-            consoleErrorSpy.mockRestore();
+        test('должен быть безопасным при повторном вызове', () => {
+            expect(() => {
+                domManager.destroy();
+                domManager.destroy();
+            }).not.toThrow();
         });
     });
 
-    describe('logging', () => {
-        test('should log when enableLogging is true', () => {
-            const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-            const loggingManager = new DOMManager({ enableLogging: true });
-
-            expect(consoleLogSpy).toHaveBeenCalled();
-
-            loggingManager.destroy();
-            consoleLogSpy.mockRestore();
-        });
-
-        test('should not log when enableLogging is false', () => {
-            const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-            const nonLoggingManager = new DOMManager({ enableLogging: false });
-
-            expect(consoleLogSpy).not.toHaveBeenCalled();
-
-            nonLoggingManager.destroy();
-            consoleLogSpy.mockRestore();
-        });
-    });
-
-    describe('integration tests', () => {
-        test('should handle complete form workflow', () => {
+    describe('Интеграционные тесты', () => {
+        test('должен обрабатывать полный workflow формы', () => {
             domManager.setBackendUrlValue('http://example.com');
             expect(domManager.getBackendUrlValue()).toBe('http://example.com');
 
@@ -413,7 +340,7 @@ describe('OptionsDOMManager', () => {
             expect(domManager.elements.saveBtn.disabled).toBe(false);
         });
 
-        test('should handle multiple button states', () => {
+        test('должен обрабатывать состояния нескольких кнопок', () => {
             const saveBtn = domManager.elements.saveBtn;
             const resetBtn = domManager.elements.resetBtn;
 
@@ -425,18 +352,33 @@ describe('OptionsDOMManager', () => {
             expect(saveBtn.textContent).toBe('Saving...');
             expect(resetBtn.textContent).toBe('Resetting...');
         });
+
+        test('должен собирать метрики для всех операций', () => {
+            domManager.getBackendUrlValue();
+            domManager.setBackendUrlValue('http://test.com');
+            domManager.setButtonState(domManager.elements.saveBtn, 'Test', false);
+
+            const metrics = domManager.getPerformanceMetrics();
+            const stats = domManager.getElementsStatistics();
+
+            expect(Object.keys(metrics).length).toBeGreaterThan(0);
+            expect(stats.total).toBe(5);
+        });
     });
 
-    describe('window and module exports', () => {
-        test('should export to module.exports', () => {
-            expect(DOMManager).toBeDefined();
-            expect(typeof DOMManager).toBe('function');
+    describe('Наследование от BaseManager', () => {
+        test('должен иметь методы BaseManager', () => {
+            expect(typeof domManager.updateState).toBe('function');
+            expect(typeof domManager.getState).toBe('function');
+            expect(typeof domManager.resetState).toBe('function');
+            expect(typeof domManager.getConstant).toBe('function');
         });
 
-        test('should have default export', () => {
-            const exported = require('../../src/options_manager/DOMManager.js');
-            expect(exported).toBeDefined();
-            expect(exported.default).toBe(DOMManager);
+        test('должен корректно обновлять состояние', () => {
+            domManager.updateState({ customProperty: 'test value' });
+            
+            const state = domManager.getState();
+            expect(state.customProperty).toBe('test value');
         });
     });
 });

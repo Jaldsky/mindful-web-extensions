@@ -12,6 +12,7 @@ const BaseManager = require('../BaseManager.js');
 /**
  * Менеджер для работы с DOM элементами страницы настроек.
  * Отвечает за кэширование и базовые операции с элементами UI.
+ * Включает измерение производительности и верификацию операций.
  * 
  * @class DOMManager
  * @extends BaseManager
@@ -46,29 +47,63 @@ class DOMManager extends BaseManager {
         /** @type {DOMElements} */
         this.elements = {};
         
+        // Валидируем доступность DOM API
+        this._validateDOMAvailability();
+        
         this._initializeElements();
     }
 
     /**
-     * Инициализирует и кэширует DOM элементы.
+     * Проверяет доступность DOM API.
+     * 
+     * @private
+     * @throws {Error} Если DOM API недоступен
+     * @returns {void}
+     */
+    _validateDOMAvailability() {
+        if (typeof document === 'undefined' || !document.getElementById) {
+            const error = new Error('DOM API недоступен');
+            this._logError('Критическая ошибка инициализации', error);
+            throw error;
+        }
+        
+        if (!document.body) {
+            this._log('Предупреждение: document.body еще не доступен');
+        }
+        
+        this._log('DOM API доступен');
+    }
+
+    /**
+     * Инициализирует и кэширует DOM элементы с измерением производительности.
      * 
      * @private
      * @returns {void}
      */
     _initializeElements() {
-        try {
-            this.elements = this._cacheDOMElements();
-            this._log('DOM элементы инициализированы', this.elements);
+        return this._executeWithTiming('initializeElements', () => {
+            try {
+                this.elements = this._cacheDOMElements();
+                
+                const foundElements = Object.entries(this.elements)
+                    .filter(([, el]) => el !== null).length;
+                const totalElements = Object.keys(this.elements).length;
+                
+                this._log('DOM элементы инициализированы', {
+                    found: `${foundElements}/${totalElements}`,
+                    elements: Object.keys(this.elements).filter(key => this.elements[key])
+                });
 
-            if (this.strictMode) {
-                this._validateElements();
+                if (this.strictMode) {
+                    this._validateElements();
+                }
+            } catch (error) {
+                this._logError('Ошибка инициализации DOM элементов', error);
+                if (this.strictMode) {
+                    throw error;
+                }
             }
-        } catch (error) {
-            this._logError('Ошибка инициализации DOM элементов', error);
-            if (this.strictMode) {
-                throw error;
-            }
-        }
+        });
     }
 
     /**
@@ -119,41 +154,70 @@ class DOMManager extends BaseManager {
     }
 
     /**
-     * Безопасно обновляет элемент DOM.
+     * Безопасно обновляет элемент DOM с верификацией и измерением времени.
      * 
      * @private
      * @param {HTMLElement|null} element - DOM элемент
      * @param {Function} updateFn - Функция обновления
+     * @param {Function} [verifyFn] - Функция верификации (optional)
      * @param {string} [elementName='element'] - Название элемента для логирования
      * @returns {boolean} true если обновление успешно
      */
-    _safeUpdateElement(element, updateFn, elementName = 'element') {
+    _safeUpdateElement(element, updateFn, verifyFn, elementName = 'element') {
         if (!element) {
             this._log(`Невозможно обновить ${elementName}: элемент не найден`);
             return false;
         }
 
+        // Проверяем, что элемент в DOM
+        if (!document.body.contains(element)) {
+            this._logError(`${elementName} не находится в DOM`);
+            return false;
+        }
+
+        const startTime = performance.now();
+
         try {
             updateFn(element);
-            this._log(`${elementName} обновлен успешно`);
+            
+            // Верификация если функция предоставлена
+            if (verifyFn && !verifyFn(element)) {
+                this._logError(`Верификация обновления ${elementName} не удалась`);
+                return false;
+            }
+            
+            const duration = Math.round(performance.now() - startTime);
+            this._log(`${elementName} обновлен успешно (${duration}мс)`);
+            
             return true;
         } catch (error) {
-            this._logError(`Ошибка обновления ${elementName}`, error);
+            const duration = Math.round(performance.now() - startTime);
+            this._logError(`Ошибка обновления ${elementName} (${duration}мс)`, error);
             return false;
         }
     }
 
     /**
-     * Получает значение поля URL бэкенда.
+     * Получает значение поля URL бэкенда с измерением производительности.
      * 
      * @returns {string} Значение поля URL
      */
     getBackendUrlValue() {
-        return this.elements.backendUrl?.value.trim() || '';
+        return this._executeWithTiming('getBackendUrlValue', () => {
+            if (!this.elements.backendUrl) {
+                this._log('Элемент backendUrl не найден');
+                return '';
+            }
+            
+            const value = this.elements.backendUrl.value.trim();
+            this._log('Значение URL получено', { length: value.length });
+            
+            return value;
+        });
     }
 
     /**
-     * Устанавливает значение поля URL бэкенда.
+     * Устанавливает значение поля URL бэкенда с верификацией.
      * 
      * @param {string} url - URL для установки
      * @throws {TypeError} Если url не является строкой
@@ -164,17 +228,20 @@ class DOMManager extends BaseManager {
             throw new TypeError('url должен быть строкой');
         }
 
-        return this._safeUpdateElement(
-            this.elements.backendUrl,
-            (element) => {
-                element.value = url;
-            },
-            'поле URL бэкенда'
-        );
+        return this._executeWithTiming('setBackendUrlValue', () => {
+            return this._safeUpdateElement(
+                this.elements.backendUrl,
+                (element) => {
+                    element.value = url;
+                },
+                (element) => element.value === url, // Верификация
+                'поле URL бэкенда'
+            );
+        });
     }
 
     /**
-     * Устанавливает состояние кнопки (текст и активность).
+     * Устанавливает состояние кнопки (текст и активность) с верификацией.
      * 
      * @param {HTMLButtonElement|null} button - Элемент кнопки
      * @param {string} text - Текст кнопки
@@ -191,25 +258,58 @@ class DOMManager extends BaseManager {
             throw new TypeError('disabled должен быть булевым значением');
         }
 
-        return this._safeUpdateElement(
-            button,
-            (element) => {
-                element.textContent = text;
-                element.disabled = disabled;
-            },
-            'кнопка'
-        );
+        return this._executeWithTiming('setButtonState', () => {
+            return this._safeUpdateElement(
+                button,
+                (element) => {
+                    element.textContent = text;
+                    element.disabled = disabled;
+                },
+                (element) => {
+                    // Верификация: проверяем, что текст и состояние установлены
+                    return element.textContent === text && element.disabled === disabled;
+                },
+                'кнопка'
+            );
+        });
     }
 
     /**
-     * Перезагружает кэш DOM элементов.
-     * Полезно если DOM был изменен динамически.
+     * Получает статистику доступности элементов.
      * 
-     * @returns {void}
+     * @returns {Object} Статистика элементов
      */
-    reloadElements() {
-        this._log('Перезагрузка DOM элементов');
-        this._initializeElements();
+    getElementsStatistics() {
+        try {
+            const stats = {
+                total: 0,
+                available: 0,
+                missing: [],
+                inDOM: 0,
+                notInDOM: []
+            };
+
+            Object.entries(this.elements).forEach(([key, element]) => {
+                stats.total++;
+                
+                if (element) {
+                    stats.available++;
+                    
+                    if (document.body && document.body.contains(element)) {
+                        stats.inDOM++;
+                    } else {
+                        stats.notInDOM.push(key);
+                    }
+                } else {
+                    stats.missing.push(key);
+                }
+            });
+
+            return stats;
+        } catch (error) {
+            this._logError('Ошибка получения статистики элементов', error);
+            return {};
+        }
     }
 
     /**
@@ -219,7 +319,16 @@ class DOMManager extends BaseManager {
      */
     destroy() {
         this._log('Очистка ресурсов DOMManager');
-        this.elements = {};
+        
+        try {
+            // Очищаем ссылки на элементы
+            this.elements = {};
+            
+            this._log('DOMManager уничтожен');
+        } catch (error) {
+            this._logError('Ошибка при уничтожении DOMManager', error);
+        }
+        
         super.destroy();
     }
 }
