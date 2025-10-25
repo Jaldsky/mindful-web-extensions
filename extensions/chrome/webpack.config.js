@@ -23,7 +23,8 @@ module.exports = {
         { from: 'manifest.json', to: 'manifest.json' },
         { from: 'app.html', to: 'app.html' },
         { from: 'options.html', to: 'options.html' },
-        { from: 'icons', to: 'icons' }
+        { from: 'icons', to: 'icons' },
+        { from: 'styles', to: 'styles' }
       ]
     })
   ],

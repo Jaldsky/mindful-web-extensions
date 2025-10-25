@@ -329,14 +329,14 @@ class StatusManager extends BaseManager {
             // Очищаем предыдущий таймер
             this._clearHideTimeout();
 
-            // Устанавливаем текст и класс
+            // Устанавливаем текст и класс (используем CSS классы из styles/common.css)
             this.statusElement.textContent = message;
-            this.statusElement.className = `status ${type}`;
+            this.statusElement.className = `status-message ${type}`;
             this.statusElement.style.display = 'block';
 
             // Верификация отображения
             const isVisible = this.statusElement.style.display === 'block';
-            const hasCorrectClass = this.statusElement.className === `status ${type}`;
+            const hasCorrectClass = this.statusElement.className === `status-message ${type}`;
             const hasCorrectText = this.statusElement.textContent === message;
 
             if (!isVisible || !hasCorrectClass || !hasCorrectText) {
@@ -460,7 +460,7 @@ class StatusManager extends BaseManager {
             
             this.statusElement.style.display = 'none';
             this.statusElement.textContent = '';
-            this.statusElement.className = 'status';
+            this.statusElement.className = 'status-message';
 
             // Верификация скрытия
             const isHidden = this.statusElement.style.display === 'none';

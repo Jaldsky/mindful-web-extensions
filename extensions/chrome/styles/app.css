@@ -1,0 +1,160 @@
+/**
+ * Styles for the extension popup (app.html)
+ */
+
+body {
+    width: 300px;
+    padding: var(--spacing-xl);
+    background-color: var(--color-bg-secondary);
+}
+
+/* Header section */
+.header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.logo {
+    font-size: var(--font-size-xl);
+    font-weight: bold;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.subtitle {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+/* Status section */
+.status {
+    background: var(--color-bg-primary);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.status-item:last-child {
+    margin-bottom: 0;
+}
+
+.status-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+}
+
+.status-value {
+    font-size: var(--font-size-xs);
+    padding: 4px 8px;
+    border-radius: var(--border-radius-xl);
+    font-weight: 500;
+}
+
+/* Stats section */
+.stats {
+    background: var(--color-bg-primary);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.stats-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.stats-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stats-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Actions section */
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.actions button {
+    padding: 10px 16px;
+    width: 100%;
+    min-width: 260px;
+    height: 44px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actions button::before {
+    display: inline-block;
+    width: 0;
+    margin-right: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: width var(--transition-normal), 
+                margin-right var(--transition-normal), 
+                opacity var(--transition-normal);
+}
+
+/* Settings button */
+.settings-btn {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.settings-btn::before {
+    content: '⚙️';
+}
+
+.settings-btn:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+}
+
+.settings-btn:hover:not(:disabled)::before {
+    width: 1.2em;
+    margin-right: 4px;
+    opacity: 1;
+}
+
+/* Test button */
+.test-btn {
+    background-color: var(--color-secondary);
+    color: white;
+}
+
+.test-btn::before {
+    content: '🔍';
+}
+
+.test-btn:hover:not(:disabled) {
+    background-color: var(--color-secondary-hover);
+}
+
+.test-btn:hover:not(:disabled)::before {
+    width: 1.2em;
+    margin-right: 4px;
+    opacity: 1;
+}
+

@@ -89,7 +89,7 @@ describe('StatusManager', () => {
 
             expect(result).toBe(true);
             expect(statusElement.textContent).toBe('Operation successful');
-            expect(statusElement.className).toBe('status success');
+            expect(statusElement.className).toBe('status-message success');
             expect(statusElement.style.display).toBe('block');
         });
 
@@ -106,7 +106,7 @@ describe('StatusManager', () => {
 
             expect(result).toBe(true);
             expect(statusElement.textContent).toBe('Error occurred');
-            expect(statusElement.className).toBe('status error');
+            expect(statusElement.className).toBe('status-message error');
             expect(statusElement.style.display).toBe('block');
         });
     });
@@ -117,7 +117,7 @@ describe('StatusManager', () => {
 
             expect(result).toBe(true);
             expect(statusElement.textContent).toBe('Info message');
-            expect(statusElement.className).toBe('status info');
+            expect(statusElement.className).toBe('status-message info');
             expect(statusElement.style.display).toBe('block');
         });
 
@@ -131,7 +131,7 @@ describe('StatusManager', () => {
             const result = await statusManager.showStatus('Test message', 'invalid-type');
 
             expect(result).toBe(true);
-            expect(statusElement.className).toBe('status info'); // должен использовать INFO по умолчанию
+            expect(statusElement.className).toBe('status-message info'); // должен использовать INFO по умолчанию
         });
     });
 
