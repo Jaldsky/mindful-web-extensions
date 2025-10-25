@@ -1,4 +1,5 @@
 const BaseManager = require('../BaseManager.js');
+const CONFIG = require('../../config.js');
 
 /**
  * @typedef {Object} TrackingStatus
@@ -33,12 +34,7 @@ class ServiceWorkerManager extends BaseManager {
      * @readonly
      * @enum {string}
      */
-    static MESSAGE_TYPES = {
-        PING: 'ping',
-        CHECK_CONNECTION: 'checkConnection',
-        GET_TRACKING_STATUS: 'getTrackingStatus',
-        GET_TODAY_STATS: 'getTodayStats'
-    };
+    static MESSAGE_TYPES = CONFIG.MESSAGE_TYPES;
 
     /**
      * Создает экземпляр ServiceWorkerManager.

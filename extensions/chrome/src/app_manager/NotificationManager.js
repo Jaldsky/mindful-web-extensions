@@ -1,4 +1,5 @@
 const BaseManager = require('../BaseManager.js');
+const CONFIG = require('../../config.js');
 
 /**
  * Менеджер уведомлений для отображения сообщений пользователю.
@@ -13,12 +14,7 @@ class NotificationManager extends BaseManager {
      * @readonly
      * @enum {string}
      */
-    static NOTIFICATION_TYPES = {
-        SUCCESS: 'success',
-        ERROR: 'error',
-        WARNING: 'warning',
-        INFO: 'info'
-    };
+    static NOTIFICATION_TYPES = CONFIG.STATUS_TYPES;
 
     /**
      * Создает экземпляр NotificationManager.
@@ -35,13 +31,13 @@ class NotificationManager extends BaseManager {
         this.notifications = new Set();
         
         /** @type {boolean} */
-        this.autoClear = options.autoClear !== false;
+        this.autoClear = options.autoClear !== undefined ? options.autoClear : CONFIG.NOTIFICATIONS.AUTO_CLEAR;
         
         /** @type {number} */
-        this.maxNotifications = Math.max(1, options.maxNotifications || 3);
+        this.maxNotifications = Math.max(1, options.maxNotifications || CONFIG.NOTIFICATIONS.MAX_COUNT);
         
         /** @type {string} */
-        this.position = options.position || 'top-right';
+        this.position = options.position || CONFIG.NOTIFICATIONS.POSITION;
         
         /** @type {Map<HTMLElement, number>} */
         this.timeouts = new Map();

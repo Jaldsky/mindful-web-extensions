@@ -20,7 +20,7 @@ module.exports = {
     collectCoverageFrom: [
         '../src/**/*.js',
         '../AppManager.js',
-        '../background.js',
+        '../tracker.js',
         '!**/node_modules/**',
         '!**/tests/**'
     ],

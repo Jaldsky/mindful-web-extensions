@@ -1,4 +1,5 @@
 const BaseManager = require('../BaseManager.js');
+const CONFIG = require('../../config.js');
 
 /**
  * @typedef {Object} ValidationResult
@@ -49,7 +50,7 @@ class ValidationManager extends BaseManager {
      * @readonly
      * @static
      */
-    static MAX_HISTORY_SIZE = 100;
+    static MAX_HISTORY_SIZE = CONFIG.VALIDATION.MAX_HISTORY_SIZE;
 
     /**
      * Создает экземпляр ValidationManager.
