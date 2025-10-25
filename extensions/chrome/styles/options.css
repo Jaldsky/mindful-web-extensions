@@ -1,0 +1,128 @@
+/**
+ * Styles for the options page (options.html)
+ */
+
+body {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+    background-color: var(--color-bg-tertiary);
+}
+
+/* Container */
+.container {
+    background: var(--color-bg-primary);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xxl);
+    box-shadow: var(--shadow-md);
+}
+
+h1 {
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xxl);
+    text-align: center;
+    font-size: var(--font-size-xl);
+}
+
+h2 {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Form styles */
+.form-group {
+    margin-bottom: var(--spacing-xl);
+}
+
+label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+input[type="url"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-sm);
+    transition: border-color var(--transition-normal);
+    font-family: var(--font-family);
+}
+
+input[type="url"]:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.help-text {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+/* Button groups */
+.button-group {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xxl);
+}
+
+/* Button variants */
+.save-btn {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+}
+
+.reset-btn {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+.reset-btn:hover:not(:disabled) {
+    background-color: var(--color-danger-hover);
+}
+
+.reload-btn {
+    background-color: var(--color-warning);
+    color: white;
+}
+
+.reload-btn:hover:not(:disabled) {
+    background-color: var(--color-warning-hover);
+}
+
+.debug-btn {
+    background-color: var(--color-info);
+    color: white;
+}
+
+.debug-btn:hover:not(:disabled) {
+    background-color: var(--color-info-hover);
+}
+
+/* Status message */
+.status {
+    margin-top: var(--spacing-xl);
+}
+
+/* Diagnostic section */
+.diagnostic-section {
+    margin-top: var(--spacing-xxl);
+    padding-top: var(--spacing-xxl);
+    border-top: 1px solid var(--border-color);
+}
+
+.diagnostic-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+

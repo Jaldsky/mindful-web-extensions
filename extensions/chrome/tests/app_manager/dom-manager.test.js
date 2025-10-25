@@ -49,10 +49,10 @@ describe('DOMManager', () => {
     describe('static properties', () => {
         test('should have CSS_CLASSES constant', () => {
             expect(DOMManager.CSS_CLASSES).toBeDefined();
-            expect(DOMManager.CSS_CLASSES.STATUS_ONLINE).toBe('status-online');
-            expect(DOMManager.CSS_CLASSES.STATUS_OFFLINE).toBe('status-offline');
-            expect(DOMManager.CSS_CLASSES.STATUS_ACTIVE).toBe('status-active');
-            expect(DOMManager.CSS_CLASSES.STATUS_INACTIVE).toBe('status-inactive');
+            expect(DOMManager.CSS_CLASSES.STATUS_ONLINE).toBe('status-value status-online');
+            expect(DOMManager.CSS_CLASSES.STATUS_OFFLINE).toBe('status-value status-offline');
+            expect(DOMManager.CSS_CLASSES.STATUS_ACTIVE).toBe('status-value status-active');
+            expect(DOMManager.CSS_CLASSES.STATUS_INACTIVE).toBe('status-value status-inactive');
         });
 
         test('should have ELEMENT_IDS constant', () => {

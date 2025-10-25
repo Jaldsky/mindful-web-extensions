@@ -30,14 +30,15 @@ const BaseManager = require('../BaseManager.js');
 class DOMManager extends BaseManager {
     /**
      * CSS классы для статусов
+     * Эти классы определены в styles/common.css
      * @readonly
      * @enum {string}
      */
     static CSS_CLASSES = {
-        STATUS_ONLINE: 'status-online',
-        STATUS_OFFLINE: 'status-offline',
-        STATUS_ACTIVE: 'status-active',
-        STATUS_INACTIVE: 'status-inactive'
+        STATUS_ONLINE: 'status-value status-online',
+        STATUS_OFFLINE: 'status-value status-offline',
+        STATUS_ACTIVE: 'status-value status-active',
+        STATUS_INACTIVE: 'status-value status-inactive'
     };
 
     /**
@@ -215,6 +216,8 @@ class DOMManager extends BaseManager {
                 this.elements.connectionStatus,
                 (element) => {
                     element.textContent = isOnline ? 'Connected' : 'Disconnected';
+                    // Очищаем предыдущие классы и применяем новые
+                    element.className = '';
                     element.className = isOnline 
                         ? DOMManager.CSS_CLASSES.STATUS_ONLINE 
                         : DOMManager.CSS_CLASSES.STATUS_OFFLINE;
@@ -246,6 +249,8 @@ class DOMManager extends BaseManager {
                 this.elements.trackingStatus,
                 (element) => {
                     element.textContent = isTracking ? 'Active' : 'Inactive';
+                    // Очищаем предыдущие классы и применяем новые
+                    element.className = '';
                     element.className = isTracking 
                         ? DOMManager.CSS_CLASSES.STATUS_ACTIVE 
                         : DOMManager.CSS_CLASSES.STATUS_INACTIVE;
