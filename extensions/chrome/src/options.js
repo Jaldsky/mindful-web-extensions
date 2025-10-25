@@ -33,8 +33,7 @@ async function initializeOptionsPage() {
         const statusElement = document.getElementById('status');
         if (statusElement) {
             statusElement.textContent = 'Failed to initialize settings page. Please reload.';
-            statusElement.className = 'status error';
-            statusElement.style.display = 'block';
+            statusElement.className = 'status-message error visible';
         }
     }
 }

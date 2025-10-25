@@ -54,7 +54,6 @@ class NotificationManager extends BaseManager {
             ['info', 0]
         ]);
 
-        this._initializeStyles();
         this._log('NotificationManager инициализирован', {
             autoClear: this.autoClear,
             maxNotifications: this.maxNotifications,
@@ -72,59 +71,6 @@ class NotificationManager extends BaseManager {
     _logWarning(message) {
         // eslint-disable-next-line no-console
         console.warn(`[NotificationManager] ${message}`);
-    }
-
-    /**
-     * Инициализирует CSS стили для уведомлений.
-     * 
-     * @private
-     * @returns {void}
-     */
-    _initializeStyles() {
-        if (document.getElementById('notification-styles')) return;
-
-        const style = document.createElement('style');
-        style.id = 'notification-styles';
-        style.textContent = `
-            .notification {
-                position: fixed;
-                padding: 15px 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 10000;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-size: 14px;
-                font-weight: 500;
-                max-width: 350px;
-                word-wrap: break-word;
-                opacity: 0;
-                transform: translateX(100%);
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                cursor: pointer;
-                user-select: none;
-            }
-            .notification.show {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            .notification.notification-success {
-                background-color: #4CAF50;
-                color: white;
-            }
-            .notification.notification-error {
-                background-color: #f44336;
-                color: white;
-            }
-            .notification.notification-warning {
-                background-color: #ff9800;
-                color: white;
-            }
-            .notification.notification-info {
-                background-color: #2196F3;
-                color: white;
-            }
-        `;
-        document.head.appendChild(style);
     }
 
     /**
@@ -188,15 +134,17 @@ class NotificationManager extends BaseManager {
      */
     _createNotificationElement(message, type, options) {
         const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
+        const classes = ['notification', `notification-${type}`];
+        
+        if (options.closable !== false) {
+            classes.push('closable');
+            notification.addEventListener('click', () => this.removeNotification(notification));
+        }
+        
+        notification.className = classes.join(' ');
         notification.textContent = message;
         notification.setAttribute('data-type', type);
         notification.setAttribute('data-timestamp', Date.now().toString());
-
-        if (options.closable !== false) {
-            notification.style.cursor = 'pointer';
-            notification.addEventListener('click', () => this.removeNotification(notification));
-        }
 
         return notification;
     }
@@ -209,15 +157,8 @@ class NotificationManager extends BaseManager {
      * @returns {void}
      */
     _positionNotification(notification) {
-        const positions = {
-            'top-right': { top: '20px', right: '20px' },
-            'top-left': { top: '20px', left: '20px' },
-            'bottom-right': { bottom: '20px', right: '20px' },
-            'bottom-left': { bottom: '20px', left: '20px' }
-        };
-
-        const position = positions[this.position] || positions['top-right'];
-        Object.assign(notification.style, position);
+        const positionClass = `position-${this.position || 'top-right'}`;
+        notification.classList.add(positionClass);
     }
 
     /**
@@ -291,7 +232,7 @@ class NotificationManager extends BaseManager {
             this.notifications.delete(notification);
 
             notification.classList.remove('show');
-            notification.style.transform = 'translateX(100%)';
+            notification.classList.add('hiding');
 
             setTimeout(() => {
                 try {

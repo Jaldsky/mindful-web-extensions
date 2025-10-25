@@ -89,8 +89,8 @@ describe('StatusManager', () => {
 
             expect(result).toBe(true);
             expect(statusElement.textContent).toBe('Operation successful');
-            expect(statusElement.className).toBe('status-message success');
-            expect(statusElement.style.display).toBe('block');
+            expect(statusElement.className).toBe('status-message success visible');
+            expect(statusElement.classList.contains('visible')).toBe(true);
         });
 
         test('должен использовать defaultDuration', async () => {
@@ -106,8 +106,8 @@ describe('StatusManager', () => {
 
             expect(result).toBe(true);
             expect(statusElement.textContent).toBe('Error occurred');
-            expect(statusElement.className).toBe('status-message error');
-            expect(statusElement.style.display).toBe('block');
+            expect(statusElement.className).toBe('status-message error visible');
+            expect(statusElement.classList.contains('visible')).toBe(true);
         });
     });
 
@@ -117,8 +117,8 @@ describe('StatusManager', () => {
 
             expect(result).toBe(true);
             expect(statusElement.textContent).toBe('Info message');
-            expect(statusElement.className).toBe('status-message info');
-            expect(statusElement.style.display).toBe('block');
+            expect(statusElement.className).toBe('status-message info visible');
+            expect(statusElement.classList.contains('visible')).toBe(true);
         });
 
         test('должен валидировать пустое сообщение', () => {
@@ -131,7 +131,7 @@ describe('StatusManager', () => {
             const result = await statusManager.showStatus('Test message', 'invalid-type');
 
             expect(result).toBe(true);
-            expect(statusElement.className).toBe('status-message info'); // должен использовать INFO по умолчанию
+            expect(statusElement.className).toBe('status-message info visible'); // должен использовать INFO по умолчанию
         });
     });
 
@@ -141,7 +141,7 @@ describe('StatusManager', () => {
             const result = statusManager.hideStatus();
 
             expect(result).toBe(true);
-            expect(statusElement.style.display).toBe('none');
+            expect(statusElement.classList.contains('hidden')).toBe(true);
         });
 
         test('должен очищать hideTimeout', async () => {

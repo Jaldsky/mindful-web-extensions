@@ -329,14 +329,14 @@ class StatusManager extends BaseManager {
             // Очищаем предыдущий таймер
             this._clearHideTimeout();
 
-            // Устанавливаем текст и класс (используем CSS классы из styles/common.css)
+            // Устанавливаем текст и класс (используем CSS классы из styles/options.css)
             this.statusElement.textContent = message;
-            this.statusElement.className = `status-message ${type}`;
-            this.statusElement.style.display = 'block';
+            this.statusElement.className = `status-message ${type} visible`;
 
             // Верификация отображения
-            const isVisible = this.statusElement.style.display === 'block';
-            const hasCorrectClass = this.statusElement.className === `status-message ${type}`;
+            const isVisible = this.statusElement.classList.contains('visible');
+            const hasCorrectClass = this.statusElement.classList.contains('status-message') && 
+                                   this.statusElement.classList.contains(type);
             const hasCorrectText = this.statusElement.textContent === message;
 
             if (!isVisible || !hasCorrectClass || !hasCorrectText) {
@@ -458,12 +458,11 @@ class StatusManager extends BaseManager {
         try {
             this._clearHideTimeout();
             
-            this.statusElement.style.display = 'none';
             this.statusElement.textContent = '';
-            this.statusElement.className = 'status-message';
+            this.statusElement.className = 'status-message hidden';
 
             // Верификация скрытия
-            const isHidden = this.statusElement.style.display === 'none';
+            const isHidden = this.statusElement.classList.contains('hidden');
             const isCleared = this.statusElement.textContent === '';
 
             if (!isHidden || !isCleared) {
