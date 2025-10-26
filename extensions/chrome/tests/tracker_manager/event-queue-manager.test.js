@@ -86,7 +86,7 @@ describe('EventQueueManager', () => {
 
         test('должен иметь начальные значения', () => {
             expect(eventQueueManager.queue).toEqual([]);
-            expect(eventQueueManager.batchSize).toBe(10);
+            expect(eventQueueManager.batchSize).toBe(100); // Увеличен для защиты от переполнения
             expect(eventQueueManager.isOnline).toBe(true);
         });
 
@@ -114,21 +114,46 @@ describe('EventQueueManager', () => {
             expect(statisticsManager.updateQueueSize).toHaveBeenCalledWith(1);
         });
 
-        test('должен обрабатывать батч при достижении размера', async () => {
+        test('должен отправлять батч только при достижении 100 событий (аварийная мера)', async () => {
             // Мокируем sendEvents для успешной отправки
             backendManager.sendEvents.mockResolvedValue({ success: true });
             storageManager.saveEventQueue.mockResolvedValue(true);
 
-            // Добавляем события до размера батча
+            // Добавляем 99 событий - не должно отправиться
+            for (let i = 0; i < 99; i++) {
+                eventQueueManager.addEvent('active', `test${i}.com`);
+            }
+
+            await Promise.resolve();
+            await Promise.resolve();
+
+            // Не должно было отправиться при 99 событиях
+            expect(backendManager.sendEvents).not.toHaveBeenCalled();
+
+            // Добавляем 100-е событие - должно отправиться
+            eventQueueManager.addEvent('active', 'test99.com');
+
+            await Promise.resolve();
+            await Promise.resolve();
+
+            // Теперь должно отправиться при 100 событиях
+            expect(backendManager.sendEvents).toHaveBeenCalled();
+        });
+
+        test('должен НЕ отправлять автоматически при малом количестве событий', async () => {
+            // Мокируем sendEvents
+            backendManager.sendEvents.mockResolvedValue({ success: true });
+
+            // Добавляем 10 событий (как раньше было достаточно)
             for (let i = 0; i < 10; i++) {
                 eventQueueManager.addEvent('active', `test${i}.com`);
             }
 
-            // Проматываем pending промисы
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(backendManager.sendEvents).toHaveBeenCalled();
+            // НЕ должно отправиться автоматически - только по таймеру
+            expect(backendManager.sendEvents).not.toHaveBeenCalled();
         });
     });
 

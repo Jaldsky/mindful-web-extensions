@@ -44,7 +44,7 @@ describe('BaseManager', () => {
                 constants: { CUSTOM_VALUE: 999 }
             });
 
-            expect(customManager.CONSTANTS.UPDATE_INTERVAL).toBe(2000); // default
+            expect(customManager.CONSTANTS.UPDATE_INTERVAL).toBe(20000); // default
             expect(customManager.CONSTANTS.CUSTOM_VALUE).toBe(999); // custom
 
             customManager.destroy();
@@ -253,7 +253,7 @@ describe('BaseManager', () => {
         test('должен возвращать значение константы', () => {
             const value = manager.getConstant('UPDATE_INTERVAL');
 
-            expect(value).toBe(2000);
+            expect(value).toBe(20000);
         });
 
         test('должен возвращать undefined для несуществующей константы', () => {

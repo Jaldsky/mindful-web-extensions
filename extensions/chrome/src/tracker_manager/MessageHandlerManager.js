@@ -119,7 +119,7 @@ class MessageHandlerManager extends BaseManager {
 
                 case MessageHandlerManager.MESSAGE_TYPES.TEST_CONNECTION:
                 case MessageHandlerManager.MESSAGE_TYPES.CHECK_CONNECTION:
-                    this._handleTestConnection(sendResponse);
+                    this._handleTestConnection(sendResponse, messageType);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.UPDATE_BACKEND_URL:
@@ -203,27 +203,84 @@ class MessageHandlerManager extends BaseManager {
     }
 
     /**
-     * Обрабатывает запрос тестирования соединения.
+     * Обрабатывает запрос проверки/тестирования соединения.
+     * 
+     * CHECK_CONNECTION - использует healthcheck (не отправляет события)
+     * TEST_CONNECTION - отправляет накопленные реальные события из очереди
      * 
      * @private
      * @param {Function} sendResponse - Функция для отправки ответа
+     * @param {string} messageType - Тип сообщения
      * @returns {void}
      */
-    _handleTestConnection(sendResponse) {
-        this._log('Тестирование соединения');
+    _handleTestConnection(sendResponse, messageType) {
+        const isCheckConnection = messageType === MessageHandlerManager.MESSAGE_TYPES.CHECK_CONNECTION;
         
-        this.backendManager.testConnection()
-            .then(result => {
-                this._log('Результат тестирования соединения', result);
-                sendResponse(result);
-            })
-            .catch(error => {
-                this._logError('Ошибка тестирования соединения', error);
-                sendResponse({ 
-                    success: false, 
-                    error: error.message 
+        if (isCheckConnection) {
+            // Легковесная проверка через healthcheck
+            this._log('Проверка доступности (healthcheck)');
+            
+            this.backendManager.checkHealth()
+                .then(result => {
+                    this._log('Результат healthcheck', result);
+                    sendResponse(result);
+                })
+                .catch(error => {
+                    this._logError('Ошибка healthcheck', error);
+                    sendResponse({ 
+                        success: false, 
+                        error: error.message 
+                    });
                 });
-            });
+        } else {
+            // TEST_CONNECTION - отправляем накопленные реальные события
+            const queueSize = this.eventQueueManager.getQueueSize();
+            
+            if (queueSize === 0) {
+                this._log('Очередь пуста, проверяем healthcheck');
+                // Если нет событий, просто проверим healthcheck
+                this.backendManager.checkHealth()
+                    .then(result => {
+                        sendResponse({ 
+                            success: result.success, 
+                            message: 'No events in queue, backend is available',
+                            queueSize: 0
+                        });
+                    })
+                    .catch(error => {
+                        sendResponse({ 
+                            success: false, 
+                            error: error.message 
+                        });
+                    });
+            } else {
+                this._log('Принудительная отправка событий из очереди', { queueSize });
+                
+                // Отправляем все накопленные события
+                this.eventQueueManager.processQueue()
+                    .then(() => {
+                        const remainingQueueSize = this.eventQueueManager.getQueueSize();
+                        this._log('События успешно отправлены', { 
+                            sent: queueSize - remainingQueueSize,
+                            remaining: remainingQueueSize 
+                        });
+                        sendResponse({ 
+                            success: true,
+                            message: `Successfully sent ${queueSize - remainingQueueSize} events`,
+                            sentEvents: queueSize - remainingQueueSize,
+                            remainingInQueue: remainingQueueSize
+                        });
+                    })
+                    .catch(error => {
+                        this._logError('Ошибка отправки событий', error);
+                        sendResponse({ 
+                            success: false, 
+                            error: error.message,
+                            queueSize: this.eventQueueManager.getQueueSize()
+                        });
+                    });
+            }
+        }
     }
 
     /**

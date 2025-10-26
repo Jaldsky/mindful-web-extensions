@@ -38,6 +38,13 @@ class EventQueueManager extends BaseManager {
     static DEFAULT_RETRY_DELAY = CONFIG.BACKEND.RETRY_DELAY;
 
     /**
+     * Максимальный размер очереди по умолчанию
+     * @readonly
+     * @static
+     */
+    static DEFAULT_MAX_QUEUE_SIZE = CONFIG.TRACKER.MAX_QUEUE_SIZE;
+
+    /**
      * Создает экземпляр EventQueueManager.
      * 
      * @param {Object} dependencies - Зависимости менеджера
@@ -48,6 +55,7 @@ class EventQueueManager extends BaseManager {
      * @param {number} [options.batchSize] - Размер батча
      * @param {number} [options.batchTimeout] - Таймаут батча (мс)
      * @param {number} [options.retryDelay] - Задержка повторной попытки (мс)
+     * @param {number} [options.maxQueueSize] - Максимальный размер очереди
      * @param {boolean} [options.enableLogging=false] - Включить логирование
      */
     constructor(dependencies, options = {}) {
@@ -79,6 +87,9 @@ class EventQueueManager extends BaseManager {
         /** @type {number} */
         this.retryDelay = options.retryDelay || EventQueueManager.DEFAULT_RETRY_DELAY;
         
+        /** @type {number} */
+        this.maxQueueSize = options.maxQueueSize || EventQueueManager.DEFAULT_MAX_QUEUE_SIZE;
+        
         /** @type {boolean} */
         this.isOnline = true;
         
@@ -91,17 +102,21 @@ class EventQueueManager extends BaseManager {
         this.updateState({
             queueSize: 0,
             batchSize: this.batchSize,
+            maxQueueSize: this.maxQueueSize,
             isOnline: this.isOnline
         });
         
         this._log('EventQueueManager инициализирован', { 
             batchSize: this.batchSize,
-            batchTimeout: this.batchTimeout 
+            batchTimeout: this.batchTimeout,
+            maxQueueSize: this.maxQueueSize
         });
     }
 
     /**
      * Добавляет событие в очередь.
+     * События накапливаются и отправляются только по таймеру (каждые 30 секунд).
+     * BATCH_SIZE используется только как защита от переполнения очереди.
      * 
      * @param {string} eventType - Тип события ('active' или 'inactive')
      * @param {string} domain - Домен
@@ -115,6 +130,16 @@ class EventQueueManager extends BaseManager {
                 timestamp: new Date().toISOString()
             };
 
+            if (this.queue.length >= this.maxQueueSize) {
+                this._logError('КРИТИЧЕСКАЯ ОШИБКА: Очередь достигла максимального размера! Удаляем старые события.', {
+                    queueSize: this.queue.length,
+                    maxQueueSize: this.maxQueueSize
+                });
+                // Удаляем 10% самых старых событий
+                const removeCount = Math.floor(this.maxQueueSize * 0.1);
+                this.queue.splice(0, removeCount);
+            }
+
             this.queue.push(event);
             this.statisticsManager.addEvent(eventType, domain);
             this.statisticsManager.updateQueueSize(this.queue.length);
@@ -126,9 +151,13 @@ class EventQueueManager extends BaseManager {
                 queueSize: this.queue.length 
             });
 
-            // Если очередь достигла размера батча, отправляем сразу
+            // Защита от переполнения: если очередь превысила BATCH_SIZE, отправляем немедленно
+            // Это аварийная мера, в нормальных условиях события отправляются по таймеру
             if (this.queue.length >= this.batchSize) {
-                this._log('Размер батча достигнут, запуск обработки');
+                this._log('ВНИМАНИЕ: Размер очереди превысил BATCH_SIZE, аварийная отправка', { 
+                    queueSize: this.queue.length,
+                    batchSize: this.batchSize 
+                });
                 this.processQueue();
             }
         });
@@ -136,6 +165,10 @@ class EventQueueManager extends BaseManager {
 
     /**
      * Запускает периодическую обработку батчей.
+     * 
+     * ОСНОВНОЙ МЕХАНИЗМ ОТПРАВКИ: События накапливаются в очереди и отправляются
+     * на сервер строго раз в 30 секунд (batchTimeout), независимо от количества событий.
+     * Это минимизирует нагрузку на сервер и оптимизирует сетевой трафик.
      * 
      * @returns {void}
      */
@@ -147,12 +180,18 @@ class EventQueueManager extends BaseManager {
 
         this.batchInterval = setInterval(() => {
             if (this.queue.length > 0) {
-                this._log('Периодическая обработка батча', { queueSize: this.queue.length });
+                this._log('Периодическая обработка батча (основной механизм)', { 
+                    queueSize: this.queue.length,
+                    interval: `${this.batchTimeout / 1000}s`
+                });
                 this.processQueue();
             }
         }, this.batchTimeout);
 
-        this._log('Batch processor запущен', { interval: this.batchTimeout });
+        this._log('Batch processor запущен', { 
+            interval: this.batchTimeout,
+            intervalSeconds: `${this.batchTimeout / 1000}s`
+        });
     }
 
     /**

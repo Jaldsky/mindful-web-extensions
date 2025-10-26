@@ -144,50 +144,58 @@ describe('BackendManager', () => {
         });
     });
 
-    describe('testConnection', () => {
-        test('должен успешно тестировать соединение', async () => {
+    describe('checkHealth', () => {
+        test('должен успешно проверять доступность через healthcheck', async () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 status: 200,
                 text: async () => 'OK'
             });
 
-            const result = await backendManager.testConnection();
+            const result = await backendManager.checkHealth();
 
             expect(result.success).toBe(true);
             expect(fetchMock).toHaveBeenCalled();
+            // Проверяем что использован метод GET
+            expect(fetchMock.mock.calls[0][1].method).toBe('GET');
         });
 
         test('должен обрабатывать неуспешные ответы', async () => {
             fetchMock.mockResolvedValue({
                 ok: false,
-                status: 404,
-                statusText: 'Not Found',
-                text: async () => 'Not found'
+                status: 503,
+                statusText: 'Service Unavailable',
+                text: async () => 'Service unavailable'
             });
 
-            const result = await backendManager.testConnection();
+            const result = await backendManager.checkHealth();
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('HTTP 404');
+            expect(result.error).toContain('HTTP 503');
         });
 
         test('должен обрабатывать ошибки сети', async () => {
             fetchMock.mockRejectedValue(new Error('Connection refused'));
 
-            const result = await backendManager.testConnection();
+            const result = await backendManager.checkHealth();
 
             expect(result.success).toBe(false);
             expect(result.error).toContain('Connection refused');
         });
 
-        test('должен требовать userId', async () => {
+        test('не требует userId для healthcheck', async () => {
             backendManager.userId = null;
 
-            const result = await backendManager.testConnection();
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                text: async () => 'OK'
+            });
 
-            expect(result.success).toBe(false);
-            expect(result.error).toContain('User ID не установлен');
+            const result = await backendManager.checkHealth();
+
+            // Healthcheck должен работать без userId
+            expect(result.success).toBe(true);
         });
     });
 
