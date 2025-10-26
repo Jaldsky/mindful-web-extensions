@@ -7,7 +7,7 @@ const ValidationManager = require('./ValidationManager.js');
 const ServiceWorkerManager = require('../app_manager/ServiceWorkerManager.js');
 const DiagnosticsManager = require('../app_manager/DiagnosticsManager.js');
 const NotificationManager = require('../app_manager/NotificationManager.js');
-const LocaleManager = require('../locales/LocaleManager.js');
+const LocaleManager = require('../locale_manager/LocaleManager.js');
 
 /**
  * Главный менеджер настроек, координирующий работу всех компонентов options page.

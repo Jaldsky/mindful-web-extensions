@@ -7,14 +7,14 @@ jest.mock('../../src/app_manager/DOMManager.js');
 jest.mock('../../src/app_manager/NotificationManager.js');
 jest.mock('../../src/app_manager/ServiceWorkerManager.js');
 jest.mock('../../src/app_manager/DiagnosticsManager.js');
-jest.mock('../../src/locales/LocaleManager.js');
+jest.mock('../../src/locale_manager/LocaleManager.js');
 
 const BaseManager = require('../../src/BaseManager.js');
 const DOMManager = require('../../src/app_manager/DOMManager.js');
 const NotificationManager = require('../../src/app_manager/NotificationManager.js');
 const ServiceWorkerManager = require('../../src/app_manager/ServiceWorkerManager.js');
 const DiagnosticsManager = require('../../src/app_manager/DiagnosticsManager.js');
-const LocaleManager = require('../../src/locales/LocaleManager.js');
+const LocaleManager = require('../../src/locale_manager/LocaleManager.js');
 
 global.window.BaseManager = BaseManager;
 global.window.DOMManager = DOMManager;
