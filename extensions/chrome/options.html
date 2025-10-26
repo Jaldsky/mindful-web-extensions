@@ -3,41 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mindful Web - Settings</title>
+    <title data-i18n="options.title">Mindful Web - Settings</title>
     <link rel="stylesheet" href="styles/common.css">
     <link rel="stylesheet" href="styles/options.css">
 </head>
 <body>
     <div class="container">
-        <h1>Mindful Web Settings</h1>
+        <div class="header-with-language">
+            <h1 data-i18n="options.heading">Mindful Web Settings</h1>
+            <button class="language-toggle" id="languageToggle" title="Switch language">
+                <span class="language-icon">🌐</span>
+                <span class="language-code" id="currentLanguage">EN</span>
+            </button>
+        </div>
         
         <form id="settingsForm">
             <div class="form-group">
-                <label for="backendUrl">Backend URL:</label>
+                <label for="backendUrl" data-i18n="options.form.backendUrlLabel">Backend URL:</label>
                 <input 
                     type="url" 
                     id="backendUrl" 
+                    data-i18n-attr="placeholder"
+                    data-i18n="options.form.backendUrlPlaceholder"
                     placeholder="http://localhost:8000/api/v1/events/send"
                     required
                 >
-                <div class="help-text">
+                <div class="help-text" data-i18n="options.form.backendUrlHelp">
                     Enter the URL of your Mindful Web backend API endpoint
                 </div>
             </div>
             
             <div class="button-group">
-                <button type="submit" id="saveBtn" class="save-btn">Save Settings</button>
-                <button type="button" id="resetBtn" class="reset-btn">Reset to Default</button>
+                <button type="submit" id="saveBtn" class="save-btn" data-i18n="options.buttons.save">Save Settings</button>
+                <button type="button" id="resetBtn" class="reset-btn" data-i18n="options.buttons.reset">Reset to Default</button>
             </div>
         </form>
         
         <div id="status" class="status-message"></div>
         
         <div class="diagnostic-section">
-            <h2>Diagnostics & Tools</h2>
+            <h2 data-i18n="options.diagnostics.title">Diagnostics & Tools</h2>
             <div class="diagnostic-buttons">
-                <button type="button" id="runDiagnostics" class="debug-btn">Run Diagnostics</button>
-                <button type="button" id="reloadExtension" class="reload-btn">Reload Extension</button>
+                <button type="button" id="runDiagnostics" class="debug-btn" data-i18n="options.buttons.runDiagnostics">Run Diagnostics</button>
+                <button type="button" id="reloadExtension" class="reload-btn" data-i18n="options.buttons.reloadExtension">Reload Extension</button>
             </div>
         </div>
     </div>

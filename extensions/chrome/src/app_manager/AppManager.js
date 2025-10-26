@@ -4,6 +4,7 @@ const DOMManager = require('./DOMManager.js');
 const NotificationManager = require('./NotificationManager.js');
 const ServiceWorkerManager = require('./ServiceWorkerManager.js');
 const DiagnosticsManager = require('./DiagnosticsManager.js');
+const LocaleManager = require('../locales/LocaleManager.js');
 
 /**
  * Главный менеджер приложения, координирующий работу всех компонентов app.
@@ -36,6 +37,7 @@ class AppManager extends BaseManager {
         const enableLogging = this.enableLogging;
 
         // Инициализация менеджеров с общим настройками логирования
+        this.localeManager = new LocaleManager({ enableLogging });
         this.domManager = new DOMManager({ enableLogging });
         this.notificationManager = new NotificationManager({ enableLogging });
         this.serviceWorkerManager = new ServiceWorkerManager({ enableLogging });
@@ -79,9 +81,20 @@ class AppManager extends BaseManager {
         try {
             this._log('Начало инициализации AppManager');
 
+            // Инициализируем LocaleManager
+            await this.localeManager.init();
+            
+            // Применяем локализацию к DOM
+            this.localeManager.localizeDOM();
+
             await this.loadInitialStatus();
 
             this.setupEventHandlers();
+
+            // Слушаем изменения локали
+            this.localeManager.addLocaleChangeListener(() => {
+                this.onLocaleChange();
+            });
 
             // Периодические обновления отключены - избыточны при автоматической отправке событий
             // this.startPeriodicUpdates();
@@ -90,7 +103,10 @@ class AppManager extends BaseManager {
             this._log('AppManager инициализирован успешно (без периодических обновлений)');
         } catch (error) {
             this._logError('Ошибка инициализации AppManager', error);
-            this.notificationManager.showNotification('Initialization Error', 'error');
+            this.notificationManager.showNotification(
+                this.localeManager?.t('app.notifications.initError') || 'Initialization Error', 
+                'error'
+            );
             throw error;
         }
     }
@@ -138,9 +154,6 @@ class AppManager extends BaseManager {
         }
 
         if (this.domManager.elements.testConnection) {
-            // Store original button text
-            this.originalButtonTexts.set('testConnection', this.domManager.elements.testConnection.textContent);
-            
             const handler = async () => {
                 await this.testConnection();
             };
@@ -159,14 +172,14 @@ class AppManager extends BaseManager {
      */
     async testConnection() {
         const button = this.domManager.elements.testConnection;
-        const originalText = this.originalButtonTexts.get('testConnection') || 'Test Connection';
+        const originalText = this.localeManager.t('app.buttons.testConnection');
         
         try {
             this._log('Тестирование подключения');
 
             this.domManager.setButtonState(
                 button,
-                AppManager.BUTTON_LABELS.TEST_CONNECTION.LOADING,
+                this.localeManager.t('app.buttons.testConnectionLoading'),
                 true
             );
 
@@ -177,12 +190,18 @@ class AppManager extends BaseManager {
             const [isOnline] = await Promise.all([connectionCheck, minDelay]);
 
             if (isOnline) {
-                this.notificationManager.showNotification('Connection Successful!', 'success');
+                this.notificationManager.showNotification(
+                    this.localeManager.t('app.notifications.connectionSuccess'), 
+                    'success'
+                );
                 this.domManager.updateConnectionStatus(true);
                 this.updateState({ isOnline: true });
                 this._log('Тестирование подключения: успешно');
             } else {
-                this.notificationManager.showNotification('Connection Failed', 'error');
+                this.notificationManager.showNotification(
+                    this.localeManager.t('app.notifications.connectionFailed'), 
+                    'error'
+                );
                 this.domManager.updateConnectionStatus(false);
                 this.updateState({ isOnline: false });
                 this._log('Тестирование подключения: неудача');
@@ -191,7 +210,10 @@ class AppManager extends BaseManager {
             return isOnline;
         } catch (error) {
             this._logError('Ошибка тестирования подключения', error);
-            this.notificationManager.showNotification('Connection Test Error', 'error');
+            this.notificationManager.showNotification(
+                this.localeManager.t('app.notifications.connectionError'), 
+                'error'
+            );
             this.domManager.updateConnectionStatus(false);
             this.updateState({ isOnline: false });
             return false;
@@ -201,6 +223,24 @@ class AppManager extends BaseManager {
                 originalText,
                 false
             );
+        }
+    }
+
+    /**
+     * Обработчик изменения локали.
+     * 
+     * @returns {void}
+     */
+    onLocaleChange() {
+        try {
+            // Применяем локализацию к DOM
+            this.localeManager.localizeDOM();
+            
+            this._log('Локаль изменена', {
+                locale: this.localeManager.getCurrentLocale()
+            });
+        } catch (error) {
+            this._logError('Ошибка при изменении локали', error);
         }
     }
 
@@ -315,6 +355,11 @@ class AppManager extends BaseManager {
             if (this.domManager) {
                 this.domManager.destroy();
                 this.domManager = null;
+            }
+
+            if (this.localeManager) {
+                this.localeManager.destroy();
+                this.localeManager = null;
             }
 
             this._log('Все менеджеры уничтожены');

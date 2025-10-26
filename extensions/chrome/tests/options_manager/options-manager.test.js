@@ -6,6 +6,28 @@
  * Тесты для OptionsManager
  */
 
+// Мокируем LocaleManager
+jest.mock('../../src/locales/LocaleManager.js', () => {
+    // Создаем мок переводов для тестов
+    const mockTranslations = {
+        'options.status.reloading': 'Reloading extension...',
+        'options.status.saved': 'Settings saved!',
+        'options.status.reset': 'Settings reset to default'
+    };
+
+    return jest.fn().mockImplementation(() => {
+        return {
+            init: jest.fn().mockResolvedValue(),
+            localizeDOM: jest.fn(),
+            t: jest.fn((key) => mockTranslations[key] || key),
+            getCurrentLocale: jest.fn().mockReturnValue('en'),
+            setLocale: jest.fn().mockResolvedValue(),
+            addLocaleChangeListener: jest.fn(),
+            destroy: jest.fn()
+        };
+    });
+});
+
 const OptionsManager = require('../../src/options_manager/OptionsManager.js');
 
 describe('OptionsManager', () => {
@@ -23,6 +45,12 @@ describe('OptionsManager', () => {
             <button type="button" id="runDiagnostics">Run Diagnostics</button>
             <button type="button" id="reloadExtension">Reload Extension</button>
         `;
+
+        // Мок для navigator.language (для LocaleManager)
+        Object.defineProperty(navigator, 'language', {
+            writable: true,
+            value: 'en-US'
+        });
 
         // Убеждаемся что chrome API существует
         if (!global.chrome) {
@@ -46,10 +74,20 @@ describe('OptionsManager', () => {
         }
 
         // Настраиваем моки
-        global.chrome.storage.local.get.mockImplementation((keys) => {
-            return Promise.resolve({
-                mindful_backend_url: 'http://localhost:8000/api/v1/events/send'
-            });
+        global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+            const result = {
+                mindful_backend_url: 'http://localhost:8000/api/v1/events/send',
+                mindful_locale: 'en'
+            };
+            
+            if (callback) {
+                // Callback стиль
+                callback(result);
+                return undefined;
+            } else {
+                // Promise стиль
+                return Promise.resolve(result);
+            }
         });
 
         global.chrome.storage.local.set.mockImplementation(() => {
@@ -80,7 +118,7 @@ describe('OptionsManager', () => {
         test('должен создаваться и инициализироваться', async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
 
-            // Ждем завершения асинхронной инициализации
+            // Небольшая задержка для завершения async init в конструкторе
             await new Promise(resolve => setTimeout(resolve, 10));
 
             expect(optionsManager).toBeInstanceOf(OptionsManager);
@@ -89,17 +127,20 @@ describe('OptionsManager', () => {
 
         test('должен инициализировать все менеджеры', async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            await new Promise(resolve => setTimeout(resolve, 10));
 
             expect(optionsManager.domManager).toBeDefined();
             expect(optionsManager.storageManager).toBeDefined();
             expect(optionsManager.validationManager).toBeDefined();
             expect(optionsManager.statusManager).toBeDefined();
+            expect(optionsManager.localeManager).toBeDefined();
         });
 
         test('должен загружать настройки при инициализации', async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+
+            await new Promise(resolve => setTimeout(resolve, 10));
 
             expect(global.chrome.storage.local.get).toHaveBeenCalled();
             
@@ -109,6 +150,7 @@ describe('OptionsManager', () => {
 
         test('должен настраивать обработчики событий', async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
+
             await new Promise(resolve => setTimeout(resolve, 10));
 
             expect(optionsManager.eventHandlers.size).toBeGreaterThan(0);
@@ -116,6 +158,8 @@ describe('OptionsManager', () => {
 
         test('должен создаваться даже если начальная загрузка не удалась', async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
+
+            await new Promise(resolve => setTimeout(resolve, 10));
             
             // Мок ошибки после создания (не влияет на конструктор)
             const loadSpy = jest.spyOn(optionsManager, 'loadSettings')
@@ -135,7 +179,7 @@ describe('OptionsManager', () => {
     describe('loadSettings', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
         });
 
         test('должен загружать настройки из хранилища', async () => {
@@ -160,7 +204,7 @@ describe('OptionsManager', () => {
     describe('saveSettings', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
         });
 
         test('должен сохранять валидный URL', async () => {
@@ -235,7 +279,7 @@ describe('OptionsManager', () => {
     describe('resetToDefault', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
         });
 
         test('должен сбрасывать настройки к значениям по умолчанию', async () => {
@@ -280,7 +324,7 @@ describe('OptionsManager', () => {
     describe('Вспомогательные методы', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
         });
 
         test('getCurrentBackendUrl должен возвращать текущее значение', () => {
@@ -313,7 +357,7 @@ describe('OptionsManager', () => {
     describe('Статистика и диагностика', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
         });
 
         test('getStatusStatistics должен возвращать статистику статусов', () => {
@@ -360,7 +404,7 @@ describe('OptionsManager', () => {
     describe('Очистка истории', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
         });
 
         test('clearStatusHistory должен очищать историю статусов', () => {
@@ -379,7 +423,7 @@ describe('OptionsManager', () => {
     describe('Обработчики событий', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
         });
 
         test('должен обрабатывать submit формы', async () => {
@@ -448,7 +492,7 @@ describe('OptionsManager', () => {
     describe('runDiagnostics', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
         });
 
         test('должен запускать диагностику', async () => {
@@ -497,7 +541,7 @@ describe('OptionsManager', () => {
     describe('reloadExtension', () => {
         beforeEach(async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
             jest.useFakeTimers();
         });
 
@@ -527,7 +571,7 @@ describe('OptionsManager', () => {
     describe('destroy', () => {
         test('должен очищать все ресурсы', async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
 
             optionsManager.destroy();
 
@@ -548,7 +592,7 @@ describe('OptionsManager', () => {
     describe('Интеграционные тесты', () => {
         test('полный цикл: load -> edit -> save -> reset', async () => {
             optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => Promise.resolve().then(resolve)); await new Promise(resolve => Promise.resolve().then(resolve));
+            await new Promise(resolve => setTimeout(resolve, 50));
 
             // Load
             const backendUrlInput = document.getElementById('backendUrl');
