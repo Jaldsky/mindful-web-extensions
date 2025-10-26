@@ -3,46 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mindful Web</title>
+    <title data-i18n="app.title">Mindful Web</title>
     <link rel="stylesheet" href="styles/common.css">
     <link rel="stylesheet" href="styles/app.css">
 </head>
 <body>
     <div class="header">
         <div class="logo">🧘 Mindful Web</div>
-        <div class="subtitle">Track your attention</div>
+        <div class="subtitle" data-i18n="app.subtitle">Track your attention</div>
     </div>
     
     <div class="status">
         <div class="status-item">
-            <span class="status-label">Connection:</span>
-            <span class="status-value" id="connectionStatus">Checking...</span>
+            <span class="status-label" data-i18n="app.status.connection">Connection:</span>
+            <span class="status-value" id="connectionStatus" data-i18n="app.status.checking">Checking...</span>
         </div>
         <div class="status-item">
-            <span class="status-label">Tracking:</span>
-            <span class="status-value" id="trackingStatus">Active</span>
+            <span class="status-label" data-i18n="app.status.tracking">Tracking:</span>
+            <span class="status-value" id="trackingStatus" data-i18n="app.status.active">Active</span>
         </div>
     </div>
     
     <div class="stats">
-        <div class="stats-title">Today's Activity</div>
+        <div class="stats-title" data-i18n="app.stats.title">Today's Activity</div>
         <div class="stats-item">
-            <span>Events tracked:</span>
+            <span data-i18n="app.stats.eventsTracked">Events tracked:</span>
             <span id="eventsCount">0</span>
         </div>
         <div class="stats-item">
-            <span>Domains visited:</span>
+            <span data-i18n="app.stats.domainsVisited">Domains visited:</span>
             <span id="domainsCount">0</span>
         </div>
         <div class="stats-item">
-            <span>Queue size:</span>
+            <span data-i18n="app.stats.queueSize">Queue size:</span>
             <span id="queueSize">0</span>
         </div>
     </div>
     
     <div class="actions">
-        <button class="settings-btn" id="openSettings">Settings</button>
-        <button class="test-btn" id="testConnection">Test Connection</button>
+        <button class="settings-btn" id="openSettings" data-i18n="app.buttons.settings">Settings</button>
+        <button class="test-btn" id="testConnection" data-i18n="app.buttons.testConnection">Test Connection</button>
     </div>
     
     <!--suppress HtmlUnresolvedFile -->

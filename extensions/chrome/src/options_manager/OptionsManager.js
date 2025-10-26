@@ -7,6 +7,7 @@ const ValidationManager = require('./ValidationManager.js');
 const ServiceWorkerManager = require('../app_manager/ServiceWorkerManager.js');
 const DiagnosticsManager = require('../app_manager/DiagnosticsManager.js');
 const NotificationManager = require('../app_manager/NotificationManager.js');
+const LocaleManager = require('../locales/LocaleManager.js');
 
 /**
  * Главный менеджер настроек, координирующий работу всех компонентов options page.
@@ -51,6 +52,8 @@ class OptionsManager extends BaseManager {
         });
 
         // Инициализация менеджеров с обработкой ошибок
+        this.localeManager = new LocaleManager({ enableLogging: this.enableLogging });
+        
         try {
             this.domManager = new DOMManager({ enableLogging: this.enableLogging });
         } catch (error) {
@@ -132,12 +135,26 @@ class OptionsManager extends BaseManager {
         try {
             this._log('Начало инициализации OptionsManager');
 
+            // Инициализируем LocaleManager
+            await this.localeManager.init();
+            
+            // Применяем локализацию к DOM
+            this.localeManager.localizeDOM();
+            
+            // Обновляем отображение текущего языка
+            this.updateLanguageDisplay();
+
             // Загружаем сохраненные настройки
             // (валидация Storage API уже произошла в конструкторе StorageManager)
             await this.loadSettings();
 
             // Настраиваем обработчики событий
             this.setupEventHandlers();
+
+            // Слушаем изменения локали
+            this.localeManager.addLocaleChangeListener(() => {
+                this.onLocaleChange();
+            });
 
             this.isInitialized = true;
             
@@ -157,7 +174,7 @@ class OptionsManager extends BaseManager {
             // Показываем специфичное сообщение об ошибке
             const errorMessage = error.message.includes('Chrome Storage API')
                 ? error.message
-                : OptionsManager.STATUS_MESSAGES.LOAD_ERROR;
+                : this.localeManager?.t('options.status.loadError') || OptionsManager.STATUS_MESSAGES.LOAD_ERROR;
             
             const statusShown = this.statusManager.showError(errorMessage);
             
@@ -304,6 +321,17 @@ class OptionsManager extends BaseManager {
             this._log('Предупреждение: кнопка перезагрузки не найдена, обработчик не установлен');
         }
 
+        // Language toggle button
+        const languageToggle = document.getElementById('languageToggle');
+        if (languageToggle) {
+            const handler = async () => {
+                await this.toggleLanguage();
+            };
+            languageToggle.addEventListener('click', handler);
+            this.eventHandlers.set('languageToggle', handler);
+            handlersCount++;
+        }
+
         const setupTime = Math.round(performance.now() - setupStartTime);
         this._log('Обработчики событий настроены', {
             setupTime: `${setupTime}мс`,
@@ -320,7 +348,7 @@ class OptionsManager extends BaseManager {
      */
     async saveSettings() {
         const saveBtn = this.domManager.elements.saveBtn;
-        const originalText = this.originalButtonTexts.get('saveBtn') || OptionsManager.BUTTON_LABELS.SAVE.DEFAULT;
+        const originalText = this.localeManager.t('options.buttons.save');
         const operationStartTime = performance.now();
 
         try {
@@ -329,7 +357,7 @@ class OptionsManager extends BaseManager {
             // Блокируем кнопку и меняем текст с верификацией
             const buttonStateSet = this.domManager.setButtonState(
                 saveBtn,
-                OptionsManager.BUTTON_LABELS.SAVE.LOADING,
+                this.localeManager.t('options.buttons.saving'),
                 true
             );
             
@@ -394,7 +422,7 @@ class OptionsManager extends BaseManager {
 
             // Показываем успешный статус
             const statusShown = this.statusManager.showSuccess(
-                OptionsManager.STATUS_MESSAGES.SETTINGS_SAVED
+                this.localeManager.t('options.status.settingsSaved')
             );
 
             const totalTime = Math.round(performance.now() - operationStartTime);
@@ -417,8 +445,8 @@ class OptionsManager extends BaseManager {
             
             // Показываем специфичное сообщение об ошибке
             const errorMessage = error.message.includes('Верификация')
-                ? 'Settings save verification failed. Please try again.'
-                : OptionsManager.STATUS_MESSAGES.SAVE_ERROR;
+                ? this.localeManager.t('options.status.saveFailed')
+                : this.localeManager.t('options.status.saveError');
             
             const statusShown = this.statusManager.showError(errorMessage);
             
@@ -450,7 +478,7 @@ class OptionsManager extends BaseManager {
      */
     async resetToDefault() {
         const resetBtn = this.domManager.elements.resetBtn;
-        const originalText = this.originalButtonTexts.get('resetBtn') || OptionsManager.BUTTON_LABELS.RESET.DEFAULT;
+        const originalText = this.localeManager.t('options.buttons.reset');
         const operationStartTime = performance.now();
 
         try {
@@ -459,7 +487,7 @@ class OptionsManager extends BaseManager {
             // Блокируем кнопку и меняем текст с верификацией
             const buttonStateSet = this.domManager.setButtonState(
                 resetBtn,
-                OptionsManager.BUTTON_LABELS.RESET.LOADING,
+                this.localeManager.t('options.buttons.resetting'),
                 true
             );
             
@@ -495,7 +523,7 @@ class OptionsManager extends BaseManager {
 
             // Показываем успешный статус
             const statusShown = this.statusManager.showSuccess(
-                OptionsManager.STATUS_MESSAGES.SETTINGS_RESET
+                this.localeManager.t('options.status.settingsReset')
             );
 
             const totalTime = Math.round(performance.now() - operationStartTime);
@@ -518,7 +546,7 @@ class OptionsManager extends BaseManager {
             this._logError(`Ошибка сброса настроек (${totalTime}мс)`, error);
             
             const statusShown = this.statusManager.showError(
-                OptionsManager.STATUS_MESSAGES.RESET_ERROR
+                this.localeManager.t('options.status.resetError')
             );
             
             if (!statusShown) {
@@ -549,7 +577,7 @@ class OptionsManager extends BaseManager {
      */
     async runDiagnostics() {
         const button = this.domManager.elements.runDiagnostics;
-        const originalText = this.originalButtonTexts.get('runDiagnostics') || 'Run Diagnostics';
+        const originalText = this.localeManager.t('options.buttons.runDiagnostics');
         const operationStartTime = performance.now();
         
         try {
@@ -558,7 +586,7 @@ class OptionsManager extends BaseManager {
             // Блокируем кнопку и меняем текст
             const buttonStateSet = this.domManager.setButtonState(
                 button,
-                OptionsManager.BUTTON_LABELS.RUN_DIAGNOSTICS.LOADING,
+                this.localeManager.t('options.buttons.analyzing'),
                 true
             );
             
@@ -586,7 +614,9 @@ class OptionsManager extends BaseManager {
             const totalTime = Math.round(performance.now() - operationStartTime);
             this._logError(`Ошибка диагностики (${totalTime}мс)`, error);
             
-            const statusShown = this.statusManager.showError('Diagnostics Error');
+            const statusShown = this.statusManager.showError(
+                this.localeManager.t('options.status.diagnosticsError')
+            );
             
             if (!statusShown) {
                 this._log('Предупреждение: не удалось отобразить статус ошибки диагностики');
@@ -617,7 +647,9 @@ class OptionsManager extends BaseManager {
             this._log('Перезагрузка расширения');
             
             // Показываем уведомление
-            const statusShown = this.statusManager.showSuccess('Reloading extension...');
+            const statusShown = this.statusManager.showSuccess(
+                this.localeManager.t('options.status.reloading')
+            );
             
             if (!statusShown) {
                 this._log('Предупреждение: не удалось отобразить статус перезагрузки');
@@ -631,11 +663,61 @@ class OptionsManager extends BaseManager {
         } catch (error) {
             this._logError('Ошибка перезагрузки расширения', error);
             
-            const statusShown = this.statusManager.showError('Reload Error');
+            const statusShown = this.statusManager.showError(
+                this.localeManager.t('options.status.reloadError')
+            );
             
             if (!statusShown) {
                 this._log('Предупреждение: не удалось отобразить статус ошибки перезагрузки');
             }
+        }
+    }
+
+    /**
+     * Переключает язык интерфейса.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    async toggleLanguage() {
+        try {
+            await this.localeManager.toggleLocale();
+        } catch (error) {
+            this._logError('Ошибка переключения языка', error);
+        }
+    }
+
+    /**
+     * Обновляет отображение текущего языка.
+     * 
+     * @returns {void}
+     */
+    updateLanguageDisplay() {
+        const languageCodeElement = document.getElementById('currentLanguage');
+        if (languageCodeElement) {
+            const locale = this.localeManager.getCurrentLocale();
+            languageCodeElement.textContent = locale.toUpperCase();
+        }
+    }
+
+    /**
+     * Обработчик изменения локали.
+     * 
+     * @returns {void}
+     */
+    onLocaleChange() {
+        try {
+            // Применяем локализацию к DOM
+            this.localeManager.localizeDOM();
+            
+            // Обновляем отображение языка
+            this.updateLanguageDisplay();
+            
+            this._log('Локаль изменена', {
+                locale: this.localeManager.getCurrentLocale()
+            });
+        } catch (error) {
+            this._logError('Ошибка при изменении локали', error);
         }
     }
 
@@ -924,6 +1006,11 @@ class OptionsManager extends BaseManager {
             if (this.domManager) {
                 this.domManager.destroy();
                 this.domManager = null;
+            }
+
+            if (this.localeManager) {
+                this.localeManager.destroy();
+                this.localeManager = null;
             }
 
             this._log('Все менеджеры уничтожены');

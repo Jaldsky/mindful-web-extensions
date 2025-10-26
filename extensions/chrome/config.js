@@ -48,12 +48,22 @@ const CONFIG = {
         // Общие
         USER_ID: 'mindful_user_id',
         BACKEND_URL: 'mindful_backend_url',
+        LOCALE: 'mindful_locale',
         
         // Tracker
         EVENT_QUEUE: 'mindful_event_queue',
         
         // Settings
         SETTINGS: 'mindful_settings'
+    },
+
+    /**
+     * Настройки локализации
+     */
+    LOCALE: {
+        DEFAULT: 'en',
+        AVAILABLE: ['en', 'ru'],
+        STORAGE_KEY: 'mindful_locale'
     },
 
     /**
