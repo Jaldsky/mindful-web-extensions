@@ -13,7 +13,7 @@ const CONFIG = {
      * Базовые константы для всех менеджеров
      */
     BASE: {
-        UPDATE_INTERVAL: 2000, // Интервал обновления (мс)
+        UPDATE_INTERVAL: 20000, // Интервал обновления (мс)
         NOTIFICATION_DURATION: 3000, // Длительность уведомлений (мс)
         PING_TIMEOUT: 5000, // Таймаут ping запроса (мс)
         THROTTLE_DELAY: 1000, // Задержка throttle (мс)
@@ -25,6 +25,7 @@ const CONFIG = {
      */
     BACKEND: {
         DEFAULT_URL: 'http://localhost:8000/api/v1/events/send',
+        HEALTHCHECK_URL: 'http://localhost:8000/api/v1/healthcheck',
         TIMEOUT: 10000, // Таймаут запроса (мс)
         RETRY_ATTEMPTS: 3, // Количество попыток повтора
         RETRY_DELAY: 5000 // Задержка между попытками (мс)
@@ -34,7 +35,7 @@ const CONFIG = {
      * Настройки трекера событий
      */
     TRACKER: {
-        BATCH_SIZE: 10, // Размер батча событий
+        BATCH_SIZE: 100, // Размер батча событий
         BATCH_TIMEOUT: 30000, // Таймаут батча (мс)
         ONLINE_CHECK_INTERVAL: 30000, // Интервал проверки онлайн (мс)
         MAX_QUEUE_SIZE: 1000 // Максимальный размер очереди

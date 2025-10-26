@@ -171,8 +171,21 @@ describe('MessageHandlerManager', () => {
             );
         });
 
-        test('должен обрабатывать testConnection сообщение', () => {
-            jest.spyOn(backendManager, 'testConnection').mockResolvedValue({ success: true });
+        test('должен обрабатывать checkConnection через healthcheck', () => {
+            jest.spyOn(backendManager, 'checkHealth').mockResolvedValue({ success: true });
+
+            messageHandlerManager._handleMessage(
+                { type: 'checkConnection' },
+                {},
+                sendResponse
+            );
+
+            expect(backendManager.checkHealth).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать testConnection с пустой очередью', () => {
+            jest.spyOn(backendManager, 'checkHealth').mockResolvedValue({ success: true });
+            jest.spyOn(eventQueueManager, 'getQueueSize').mockReturnValue(0);
 
             messageHandlerManager._handleMessage(
                 { type: 'testConnection' },
@@ -180,7 +193,22 @@ describe('MessageHandlerManager', () => {
                 sendResponse
             );
 
-            expect(backendManager.testConnection).toHaveBeenCalled();
+            expect(eventQueueManager.getQueueSize).toHaveBeenCalled();
+            expect(backendManager.checkHealth).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать testConnection с событиями в очереди', () => {
+            jest.spyOn(eventQueueManager, 'getQueueSize').mockReturnValue(5);
+            jest.spyOn(eventQueueManager, 'processQueue').mockResolvedValue();
+
+            messageHandlerManager._handleMessage(
+                { type: 'testConnection' },
+                {},
+                sendResponse
+            );
+
+            expect(eventQueueManager.getQueueSize).toHaveBeenCalled();
+            expect(eventQueueManager.processQueue).toHaveBeenCalled();
         });
 
         test('должен обрабатывать updateBackendUrl сообщение', async () => {

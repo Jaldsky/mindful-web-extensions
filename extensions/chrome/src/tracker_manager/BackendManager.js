@@ -141,51 +141,39 @@ class BackendManager extends BaseManager {
     }
 
     /**
-     * Тестирует соединение с backend.
-     * Отправляет тестовое событие для проверки доступности.
+     * Проверяет доступность backend через healthcheck endpoint.
      * 
      * @async
-     * @returns {Promise<TestConnectionResult>} Результат тестирования
+     * @returns {Promise<TestConnectionResult>} Результат проверки
      */
-    async testConnection() {
-        return await this._executeWithTimingAsync('testConnection', async () => {
+    async checkHealth() {
+        return await this._executeWithTimingAsync('checkHealth', async () => {
             try {
-                if (!this.userId) {
-                    throw new Error('User ID не установлен');
-                }
-
-                const testEvent = {
-                    event: 'active',
-                    domain: 'test.com',
-                    timestamp: new Date().toISOString()
-                };
-
-                this._log('Тестирование соединения с backend', { 
-                    url: this.backendUrl,
-                    userId: this.userId 
+                const healthcheckUrl = CONFIG.BACKEND.HEALTHCHECK_URL;
+                
+                this._log('Проверка доступности backend через healthcheck', { 
+                    url: healthcheckUrl
                 });
 
-                const response = await fetch(this.backendUrl, {
-                    method: 'POST',
+                const response = await fetch(healthcheckUrl, {
+                    method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-ID': this.userId
-                    },
-                    body: JSON.stringify({ data: [testEvent] })
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                this._log('Ответ тестового запроса', { 
+                this._log('Ответ healthcheck', { 
                     status: response.status,
                     statusText: response.statusText 
                 });
 
                 if (response.ok) {
                     const responseText = await response.text();
-                    this._log('Соединение с backend успешно', { response: responseText });
+                    this._log('Backend доступен', { response: responseText });
                     return { success: true };
                 } else {
                     const errorText = await response.text();
-                    this._logError('Тестовое соединение не удалось', { 
+                    this._logError('Backend недоступен', { 
                         status: response.status,
                         errorText 
                     });
@@ -195,7 +183,7 @@ class BackendManager extends BaseManager {
                     };
                 }
             } catch (error) {
-                this._logError('Ошибка тестирования соединения', error);
+                this._logError('Ошибка проверки доступности backend', error);
                 return { 
                     success: false, 
                     error: `${error.name}: ${error.message}` 

@@ -195,14 +195,15 @@ describe('AppManager', () => {
             setupSpy.mockRestore();
         });
 
-        test('should call startPeriodicUpdates', async () => {
+        test('should NOT call startPeriodicUpdates (периодические обновления отключены)', async () => {
             appManager.isInitialized = false;
             const startSpy = jest.spyOn(appManager, 'startPeriodicUpdates');
             jest.spyOn(appManager, 'loadInitialStatus').mockResolvedValue();
             
             await appManager.init();
             
-            expect(startSpy).toHaveBeenCalled();
+            // Периодические обновления отключены для оптимизации
+            expect(startSpy).not.toHaveBeenCalled();
             startSpy.mockRestore();
         });
 
@@ -404,21 +405,26 @@ describe('AppManager', () => {
         });
 
         test('should not start if already running', () => {
-            const existingInterval = appManager.updateInterval;
+            // Сначала запускаем первый раз
+            appManager.startPeriodicUpdates();
+            const firstInterval = appManager.updateInterval;
             
+            // Пытаемся запустить второй раз
             appManager.startPeriodicUpdates();
             
-            expect(appManager.updateInterval).toBe(existingInterval);
+            // Интервал должен остаться тем же
+            expect(appManager.updateInterval).toBe(firstInterval);
         });
 
-        test('should call loadInitialStatus periodically', () => {
+        test('should call loadInitialStatus periodically (20 секунд)', () => {
             jest.useFakeTimers();
             appManager.updateInterval = null;
             const loadSpy = jest.spyOn(appManager, 'loadInitialStatus').mockResolvedValue();
             
             appManager.startPeriodicUpdates();
             
-            jest.advanceTimersByTime(2000);
+            // Теперь интервал 20000 мс
+            jest.advanceTimersByTime(20000);
             
             expect(loadSpy).toHaveBeenCalled();
             loadSpy.mockRestore();

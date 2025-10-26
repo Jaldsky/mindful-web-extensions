@@ -59,7 +59,13 @@ class AppManager extends BaseManager {
 
     /**
      * Инициализирует менеджер приложения.
-     * Загружает начальный статус, настраивает обработчики событий и запускает периодические обновления статуса.
+     * Загружает начальный статус и настраивает обработчики событий.
+     * 
+     * ПЕРИОДИЧЕСКИЕ ОБНОВЛЕНИЯ ОТКЛЮЧЕНЫ:
+     * - Статус онлайн/офлайн определяется по результатам отправки событий
+     * - События отправляются автоматически каждые 30 секунд
+     * - Дополнительные healthcheck запросы не нужны
+     * - Пользователь может проверить вручную кнопкой "Test Connection"
      * 
      * @async
      * @returns {Promise<void>}
@@ -77,10 +83,11 @@ class AppManager extends BaseManager {
 
             this.setupEventHandlers();
 
-            this.startPeriodicUpdates();
+            // Периодические обновления отключены - избыточны при автоматической отправке событий
+            // this.startPeriodicUpdates();
             
             this.isInitialized = true;
-            this._log('AppManager инициализирован успешно');
+            this._log('AppManager инициализирован успешно (без периодических обновлений)');
         } catch (error) {
             this._logError('Ошибка инициализации AppManager', error);
             this.notificationManager.showNotification('Initialization Error', 'error');

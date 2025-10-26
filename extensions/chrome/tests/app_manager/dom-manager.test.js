@@ -269,7 +269,7 @@ describe('DOMManager', () => {
 
         test('should have getConstant method', () => {
             const updateInterval = domManager.getConstant('UPDATE_INTERVAL');
-            expect(updateInterval).toBe(2000);
+            expect(updateInterval).toBe(20000);
         });
     });
 
