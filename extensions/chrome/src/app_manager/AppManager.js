@@ -84,6 +84,9 @@ class AppManager extends BaseManager {
             // Инициализируем LocaleManager
             await this.localeManager.init();
             
+            // Устанавливаем функцию локализации в DOMManager
+            this.domManager.setTranslateFn((key) => this.localeManager.t(key));
+            
             // Применяем локализацию к DOM
             this.localeManager.localizeDOM();
 
@@ -235,6 +238,9 @@ class AppManager extends BaseManager {
         try {
             // Применяем локализацию к DOM
             this.localeManager.localizeDOM();
+            
+            // Обновляем статусы с новой локализацией
+            this.domManager.refreshStatuses();
             
             this._log('Локаль изменена', {
                 locale: this.localeManager.getCurrentLocale()

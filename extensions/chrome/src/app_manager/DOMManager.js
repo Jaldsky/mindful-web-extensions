@@ -64,6 +64,7 @@ class DOMManager extends BaseManager {
      * @param {Object} [options={}] - Опции конфигурации
      * @param {boolean} [options.enableLogging=false] - Включить детальное логирование
      * @param {boolean} [options.strictMode=false] - Строгий режим (выбрасывать ошибки при отсутствии элементов)
+     * @param {Function} [options.translateFn] - Функция для получения переводов
      */
     constructor(options = {}) {
         super(options);
@@ -76,6 +77,9 @@ class DOMManager extends BaseManager {
         
         /** @type {Map<string, number>} */
         this.performanceMetrics = new Map();
+        
+        /** @type {Function|null} Функция для получения переводов */
+        this.translateFn = options.translateFn || null;
         
         this._validateDOMAvailability();
         this._initializeElements();
@@ -215,7 +219,12 @@ class DOMManager extends BaseManager {
             return this._safeUpdateElement(
                 this.elements.connectionStatus,
                 (element) => {
-                    element.textContent = isOnline ? 'Connected' : 'Disconnected';
+                    // Используем локализацию если доступна, иначе английский
+                    const statusText = isOnline 
+                        ? (this.translateFn ? this.translateFn('app.status.online') : 'Connected')
+                        : (this.translateFn ? this.translateFn('app.status.offline') : 'Disconnected');
+                    
+                    element.textContent = statusText;
                     // Очищаем предыдущие классы и применяем новые
                     element.className = '';
                     element.className = isOnline 
@@ -248,7 +257,12 @@ class DOMManager extends BaseManager {
             return this._safeUpdateElement(
                 this.elements.trackingStatus,
                 (element) => {
-                    element.textContent = isTracking ? 'Active' : 'Inactive';
+                    // Используем локализацию если доступна, иначе английский
+                    const statusText = isTracking 
+                        ? (this.translateFn ? this.translateFn('app.status.active') : 'Active')
+                        : (this.translateFn ? this.translateFn('app.status.inactive') : 'Inactive');
+                    
+                    element.textContent = statusText;
                     // Очищаем предыдущие классы и применяем новые
                     element.className = '';
                     element.className = isTracking 
@@ -395,6 +409,36 @@ class DOMManager extends BaseManager {
     }
 
     /**
+     * Устанавливает функцию локализации.
+     * 
+     * @param {Function} translateFn - Функция для получения переводов
+     * @returns {void}
+     */
+    setTranslateFn(translateFn) {
+        if (typeof translateFn !== 'function') {
+            throw new TypeError('translateFn должен быть функцией');
+        }
+        this.translateFn = translateFn;
+        this._log('Функция локализации установлена');
+    }
+
+    /**
+     * Обновляет все статусы с текущей локализацией.
+     * Используется при смене языка.
+     * 
+     * @returns {void}
+     */
+    refreshStatuses() {
+        if (this.state.isOnline !== undefined) {
+            this.updateConnectionStatus(this.state.isOnline);
+        }
+        if (this.state.isTracking !== undefined) {
+            this.updateTrackingStatus(this.state.isTracking);
+        }
+        this._log('Статусы обновлены с текущей локализацией');
+    }
+
+    /**
      * Очищает ресурсы при уничтожении менеджера.
      * 
      * @returns {void}
@@ -403,6 +447,7 @@ class DOMManager extends BaseManager {
         this._log('Очистка ресурсов DOMManager');
         this.elements = {};
         this.performanceMetrics.clear();
+        this.translateFn = null;
         super.destroy();
     }
 }

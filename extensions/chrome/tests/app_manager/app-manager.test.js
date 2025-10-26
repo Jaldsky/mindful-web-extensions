@@ -55,6 +55,8 @@ describe('AppManager', () => {
             updateTrackingStatus: jest.fn(),
             updateCounters: jest.fn(),
             setButtonState: jest.fn(),
+            setTranslateFn: jest.fn(),
+            refreshStatuses: jest.fn(),
             destroy: jest.fn()
         };
 
