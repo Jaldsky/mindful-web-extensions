@@ -7,7 +7,7 @@
  */
 
 // Мокируем LocaleManager
-jest.mock('../../src/locales/LocaleManager.js', () => {
+jest.mock('../../src/locale_manager/LocaleManager.js', () => {
     // Создаем мок переводов для тестов
     const mockTranslations = {
         'options.status.reloading': 'Reloading extension...',

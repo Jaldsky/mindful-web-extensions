@@ -4,7 +4,7 @@ const DOMManager = require('./DOMManager.js');
 const NotificationManager = require('./NotificationManager.js');
 const ServiceWorkerManager = require('./ServiceWorkerManager.js');
 const DiagnosticsManager = require('./DiagnosticsManager.js');
-const LocaleManager = require('../locales/LocaleManager.js');
+const LocaleManager = require('../locale_manager/LocaleManager.js');
 
 /**
  * Главный менеджер приложения, координирующий работу всех компонентов app.
