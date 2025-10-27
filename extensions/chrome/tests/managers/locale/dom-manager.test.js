@@ -338,4 +338,153 @@ describe('DOMManager (locale_manager)', () => {
             expect(typeof metrics.localizeDOM_lastDuration).toBe('number');
         });
     });
+
+    describe('error handling', () => {
+        test('should handle errors in _localizeElement during localizeDOM', () => {
+            document.body.innerHTML = '<div data-i18n="app.title"></div>';
+            
+            // Mock getTranslation to throw an error
+            domManager.getTranslation = jest.fn(() => {
+                throw new Error('Translation error');
+            });
+
+            const count = domManager.localizeDOM();
+            
+            expect(count).toBe(0);
+            const stats = domManager.getStatistics();
+            expect(stats.errors).toBeGreaterThan(0);
+        });
+
+        test('should handle querySelectorAll errors in localizeDOM', () => {
+            const badRoot = {
+                querySelectorAll: jest.fn(() => {
+                    throw new Error('querySelector error');
+                })
+            };
+
+            const count = domManager.localizeDOM(badRoot);
+            
+            expect(count).toBe(0);
+            const stats = domManager.getStatistics();
+            expect(stats.errors).toBeGreaterThan(0);
+        });
+
+        test('should handle errors in localizeElementBySelector', () => {
+            document.querySelector = jest.fn(() => {
+                throw new Error('querySelector error');
+            });
+
+            const result = domManager.localizeElementBySelector('#test', 'app.title');
+            
+            expect(result).toBe(false);
+            const stats = domManager.getStatistics();
+            expect(stats.errors).toBeGreaterThan(0);
+        });
+
+        test('should handle individual element errors in localizeElementsBySelector', () => {
+            document.body.innerHTML = `
+                <div class="test"></div>
+                <div class="test"></div>
+            `;
+
+            const elements = document.querySelectorAll('.test');
+            
+            // Mock setAttribute to throw error on first element
+            const originalSetAttribute = Element.prototype.setAttribute;
+            let callCount = 0;
+            Element.prototype.setAttribute = jest.fn(function(name, value) {
+                if (callCount === 0 && name === 'test-attr') {
+                    callCount++;
+                    throw new Error('setAttribute error');
+                }
+                callCount++;
+                return originalSetAttribute.call(this, name, value);
+            });
+
+            const count = domManager.localizeElementsBySelector('.test', 'app.title', 'test-attr');
+            
+            Element.prototype.setAttribute = originalSetAttribute;
+            
+            expect(count).toBeLessThan(2);
+            const stats = domManager.getStatistics();
+            expect(stats.errors).toBeGreaterThan(0);
+        });
+
+        test('should handle querySelectorAll errors in localizeElementsBySelector', () => {
+            document.querySelectorAll = jest.fn(() => {
+                throw new Error('querySelectorAll error');
+            });
+
+            const count = domManager.localizeElementsBySelector('.test', 'app.title');
+            
+            expect(count).toBe(0);
+            const stats = domManager.getStatistics();
+            expect(stats.errors).toBeGreaterThan(0);
+        });
+
+        test('should handle errors in addLocalizationAttributes', () => {
+            const element = {
+                setAttribute: jest.fn(() => {
+                    throw new Error('setAttribute error');
+                })
+            };
+
+            const result = domManager.addLocalizationAttributes(element, 'app.title');
+            
+            expect(result).toBe(false);
+            const stats = domManager.getStatistics();
+            expect(stats.errors).toBeGreaterThan(0);
+        });
+
+        test('should handle errors in removeLocalizationAttributes', () => {
+            const element = {
+                removeAttribute: jest.fn(() => {
+                    throw new Error('removeAttribute error');
+                })
+            };
+
+            const result = domManager.removeLocalizationAttributes(element);
+            
+            expect(result).toBe(false);
+            const stats = domManager.getStatistics();
+            expect(stats.errors).toBeGreaterThan(0);
+        });
+
+        test('should handle errors in getLocalizableElements', () => {
+            const badRoot = {
+                querySelectorAll: jest.fn(() => {
+                    throw new Error('querySelectorAll error');
+                })
+            };
+
+            const elements = domManager.getLocalizableElements(badRoot);
+            
+            expect(elements).toEqual([]);
+        });
+
+        test('should handle errors in getLocalizableElementsCount', () => {
+            const badRoot = {
+                querySelectorAll: jest.fn(() => {
+                    throw new Error('querySelectorAll error');
+                })
+            };
+
+            const count = domManager.getLocalizableElementsCount(badRoot);
+            
+            expect(count).toBe(0);
+        });
+
+        test('should handle errors in destroy', () => {
+            // Create a scenario where destroy might fail
+            Object.defineProperty(domManager, 'elementKeyCache', {
+                set: jest.fn(() => {
+                    throw new Error('Cannot set elementKeyCache');
+                }),
+                get: jest.fn(() => new WeakMap())
+            });
+
+            // Should not throw
+            expect(() => domManager.destroy()).not.toThrow();
+        });
+    });
 });

@@ -338,4 +338,89 @@ describe('BaseManager', () => {
             custom.destroy();
         });
     });
+
+    describe('Обработка ошибок (Error Handling)', () => {
+        test('updateState - должен обрабатывать ошибки при обновлении', () => {
+            // Делаем state non-extensible чтобы вызвать ошибку при spread
+            Object.defineProperty(manager, 'state', {
+                get() {
+                    throw new Error('Cannot access state');
+                },
+                set() {
+                    throw new Error('Cannot set state');
+                }
+            });
+
+            expect(() => {
+                manager.updateState({ test: 'value' });
+            }).toThrow();
+        });
+
+        test('getState - должен возвращать пустой объект при ошибке', () => {
+            // Ломаем state
+            Object.defineProperty(manager, 'state', {
+                get() {
+                    throw new Error('State error');
+                }
+            });
+
+            const state = manager.getState();
+
+            expect(state).toEqual({});
+        });
+
+        test('resetState - должен обрабатывать ошибки при сбросе', () => {
+            // Делаем state недоступным для записи
+            Object.defineProperty(manager, 'state', {
+                set() {
+                    throw new Error('Cannot reset state');
+                },
+                get() {
+                    return {};
+                }
+            });
+
+            // Не должно выбросить ошибку благодаря обработке
+            expect(() => manager.resetState()).not.toThrow();
+        });
+
+        test('getPerformanceMetrics - должен возвращать пустой объект при ошибке', () => {
+            // Ломаем performanceMetrics
+            Object.defineProperty(manager, 'performanceMetrics', {
+                get() {
+                    throw new Error('Metrics error');
+                }
+            });
+
+            const metrics = manager.getPerformanceMetrics();
+
+            expect(metrics).toEqual({});
+        });
+
+        test('_clearPerformanceMetrics - должен обрабатывать ошибки', () => {
+            // Мокируем clear чтобы выбросить ошибку
+            manager.performanceMetrics.clear = jest.fn(() => {
+                throw new Error('Clear error');
+            });
+
+            // Не должно выбросить ошибку
+            expect(() => manager._clearPerformanceMetrics()).not.toThrow();
+        });
+
+        test('_executeWithTiming - должен пробрасывать ошибки операции', () => {
+            expect(() => {
+                manager._executeWithTiming('testOp', () => {
+                    throw new Error('Operation failed');
+                });
+            }).toThrow('Operation failed');
+        });
+
+        test('_executeWithTimingAsync - должен пробрасывать ошибки операции', async () => {
+            await expect(
+                manager._executeWithTimingAsync('testOp', async () => {
+                    throw new Error('Async operation failed');
+                })
+            ).rejects.toThrow('Async operation failed');
+        });
+    });
 });

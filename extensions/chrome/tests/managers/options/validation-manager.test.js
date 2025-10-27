@@ -118,6 +118,45 @@ describe('ValidationManager', () => {
             expect(result.value).toBe('http://example.com/api');
         });
 
+        test('должен отклонять строку из одних пробелов', () => {
+            const result = validationManager.validateBackendUrl('   ');
+
+            expect(result.isValid).toBe(false);
+            expect(result.error).toBe(ValidationManager.VALIDATION_ERRORS.EMPTY_URL);
+        });
+
+        test('должен отклонять URL без хоста', () => {
+            const result = validationManager.validateBackendUrl('http://');
+
+            expect(result.isValid).toBe(false);
+            // URL с пустым хостом распознается как невалидный URL при парсинге
+            expect(result.error).toBe(ValidationManager.VALIDATION_ERRORS.INVALID_URL);
+        });
+
+        test('должен обрабатывать неожиданные ошибки валидации', () => {
+            // Мокируем URL constructor для вызова ошибки
+            const originalURL = global.URL;
+            global.URL = function() {
+                // Сначала создаем валидный URL, чтобы пройти try-catch
+                // eslint-disable-next-line new-cap
+                const url = new originalURL(...arguments);
+                // Потом ломаем его
+                Object.defineProperty(url, 'protocol', {
+                    get() {
+                        throw new Error('Unexpected error');
+                    }
+                });
+                return url;
+            };
+
+            const result = validationManager.validateBackendUrl('http://example.com');
+            
+            global.URL = originalURL;
+
+            expect(result.isValid).toBe(false);
+            expect(result.error).toBe(ValidationManager.VALIDATION_ERRORS.INVALID_URL);
+        });
+
         test('должен обновлять статистику при валидации', () => {
             validationManager.validateBackendUrl('http://example.com');
             validationManager.validateBackendUrl('invalid');
@@ -234,6 +273,72 @@ describe('ValidationManager', () => {
 
             manager.destroy();
         });
+
+        test('должен обрабатывать ошибки в _addToHistory', () => {
+            const manager = new ValidationManager({ enableHistory: true });
+            
+            // Мокируем history.unshift чтобы вызвать ошибку
+            const originalUnshift = Array.prototype.unshift;
+            // eslint-disable-next-line no-extend-native
+            Array.prototype.unshift = jest.fn(() => {
+                throw new Error('unshift error');
+            });
+
+            // Валидация должна пройти несмотря на ошибку в истории
+            const result = manager.validateBackendUrl('http://example.com');
+            
+            // eslint-disable-next-line no-extend-native
+            Array.prototype.unshift = originalUnshift;
+
+            expect(result.isValid).toBe(true);
+            
+            manager.destroy();
+        });
+
+        test('должен обрабатывать ошибки в getHistory', () => {
+            const manager = new ValidationManager({ enableHistory: true });
+            
+            // Портим history
+            manager.history = null;
+
+            const result = manager.getHistory();
+            
+            expect(result).toEqual([]);
+            
+            manager.destroy();
+        });
+
+        test('должен обрабатывать ошибки в clearHistory', () => {
+            const manager = new ValidationManager({ enableHistory: true });
+            
+            // Создаем ситуацию где clearHistory выбросит ошибку
+            Object.defineProperty(manager, 'history', {
+                get() {
+                    throw new Error('Cannot access history');
+                },
+                set() {
+                    throw new Error('Cannot set history');
+                }
+            });
+
+            const count = manager.clearHistory();
+            
+            expect(count).toBe(0);
+            
+            manager.destroy();
+        });
+
+        test('должен ограничивать длину URL в истории', () => {
+            const manager = new ValidationManager({ enableHistory: true });
+            
+            const longUrl = `http://example.com/${'a'.repeat(200)}`;
+            manager.validateBackendUrl(longUrl);
+            
+            const history = manager.getHistory();
+            expect(history[0].url.length).toBeLessThanOrEqual(100);
+            
+            manager.destroy();
+        });
     });
 
     describe('Статистика валидаций', () => {
@@ -270,6 +375,15 @@ describe('ValidationManager', () => {
             const stats = validationManager.getValidationStatistics();
             expect(stats.successRate).toBe(0);
             expect(stats.failureRate).toBe(0);
+        });
+
+        test('должен обрабатывать ошибки в getValidationStatistics', () => {
+            // Портим validationStats
+            validationManager.validationStats = null;
+
+            const stats = validationManager.getValidationStatistics();
+            
+            expect(stats).toEqual({});
         });
     });
 
@@ -310,6 +424,113 @@ describe('ValidationManager', () => {
             expect(result.isValid).toBe(false);
             expect(result.issues.length).toBeGreaterThan(0);
         });
+
+        test('должен проверять enableHistory как boolean', () => {
+            validationManager.enableHistory = 123;
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('enableHistory должен быть boolean');
+        });
+
+        test('должен проверять maxHistorySize как положительное число', () => {
+            validationManager.maxHistorySize = -1;
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('maxHistorySize должен быть положительным числом');
+        });
+
+        test('должен проверять maxHistorySize как число', () => {
+            validationManager.maxHistorySize = 'not a number';
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('maxHistorySize должен быть положительным числом');
+        });
+
+        test('должен проверять history как массив', () => {
+            validationManager.history = 'not an array';
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('history должен быть массивом');
+        });
+
+        test('должен проверять performanceMetrics как Map', () => {
+            validationManager.performanceMetrics = {};
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('performanceMetrics должен быть Map');
+        });
+
+        test('должен проверять validationStats как Map', () => {
+            validationManager.validationStats = {};
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('validationStats должен быть Map');
+        });
+
+        test('должен проверять lastValidationTime как число или null', () => {
+            validationManager.updateState({ lastValidationTime: -100 });
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('lastValidationTime должен быть положительным числом или null');
+        });
+
+        test('должен проверять lastValidationTime как не строку', () => {
+            validationManager.updateState({ lastValidationTime: 'not a number' });
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('lastValidationTime должен быть положительным числом или null');
+        });
+
+        test('должен проверять lastValidationResult как объект или null', () => {
+            validationManager.updateState({ lastValidationResult: 'not an object' });
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('lastValidationResult должен быть объектом или null');
+        });
+
+        test('должен проверять lastValidationResult.isValid как boolean', () => {
+            validationManager.updateState({ 
+                lastValidationResult: { isValid: 'not a boolean' } 
+            });
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('lastValidationResult.isValid должен быть boolean');
+        });
+
+        test('должен обрабатывать ошибки при валидации состояния', () => {
+            // Создаем ситуацию где validateState выбросит ошибку
+            Object.defineProperty(validationManager, 'strictProtocol', {
+                get() {
+                    throw new Error('Cannot access strictProtocol');
+                }
+            });
+
+            const result = validationManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('Ошибка при выполнении валидации');
+            expect(result.error).toBeDefined();
+        });
     });
 
     describe('destroy', () => {
@@ -322,6 +543,24 @@ describe('ValidationManager', () => {
             expect(manager.history).toEqual([]);
             expect(manager.validationStats.size).toBe(0);
             expect(manager.performanceMetrics.size).toBe(0);
+        });
+
+        test('должен обрабатывать ошибки при destroy', () => {
+            const manager = new ValidationManager({ enableHistory: true });
+            
+            // Создаем ситуацию где destroy выбросит ошибку
+            Object.defineProperty(manager, 'validationStats', {
+                get() {
+                    return {
+                        clear: () => {
+                            throw new Error('Cannot clear');
+                        }
+                    };
+                }
+            });
+
+            // Не должно выбросить ошибку
+            expect(() => manager.destroy()).not.toThrow();
         });
     });
 });

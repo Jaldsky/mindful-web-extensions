@@ -22,6 +22,7 @@ jest.mock('../../../src/managers/locale/LocaleManager.js', () => {
             t: jest.fn((key) => mockTranslations[key] || key),
             getCurrentLocale: jest.fn().mockReturnValue('en'),
             setLocale: jest.fn().mockResolvedValue(),
+            toggleLocale: jest.fn().mockResolvedValue(),
             addLocaleChangeListener: jest.fn(),
             destroy: jest.fn()
         };
@@ -637,6 +638,600 @@ describe('OptionsManager', () => {
             expect(diagnostics.domPerformanceMetrics).toBeDefined();
             expect(diagnostics.validationPerformanceMetrics).toBeDefined();
             expect(diagnostics.statusPerformanceMetrics).toBeDefined();
+        });
+    });
+
+    describe('Обработка ошибок инициализации', () => {
+        test('должен обрабатывать повторную инициализацию', async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Повторная инициализация не должна выбрасывать ошибку
+            await optionsManager.init();
+            expect(optionsManager.isInitialized).toBe(true);
+        });
+    });
+
+    describe('toggleLanguage', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен переключать язык', async () => {
+            const toggleLocaleSpy = jest.spyOn(optionsManager.localeManager, 'toggleLocale')
+                .mockResolvedValue();
+
+            await optionsManager.toggleLanguage();
+
+            expect(toggleLocaleSpy).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать ошибки переключения языка', async () => {
+            jest.spyOn(optionsManager.localeManager, 'toggleLocale')
+                .mockRejectedValue(new Error('Toggle failed'));
+
+            await optionsManager.toggleLanguage();
+            // Не должно выбрасывать ошибку
+        });
+    });
+
+    describe('updateLanguageDisplay', () => {
+        beforeEach(async () => {
+            document.body.innerHTML += '<span id="currentLanguage"></span>';
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен обновлять отображение языка', () => {
+            optionsManager.updateLanguageDisplay();
+
+            const languageElement = document.getElementById('currentLanguage');
+            expect(languageElement.textContent).toBe('EN');
+        });
+
+        test('должен работать если элемент не найден', () => {
+            document.getElementById('currentLanguage').remove();
+            
+            expect(() => optionsManager.updateLanguageDisplay()).not.toThrow();
+        });
+    });
+
+    describe('onLocaleChange', () => {
+        beforeEach(async () => {
+            document.body.innerHTML += '<span id="currentLanguage"></span>';
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен обрабатывать изменение локали', () => {
+            const localizeDOMSpy = jest.spyOn(optionsManager.localeManager, 'localizeDOM');
+            const updateLanguageSpy = jest.spyOn(optionsManager, 'updateLanguageDisplay');
+            
+            optionsManager.onLocaleChange();
+
+            expect(localizeDOMSpy).toHaveBeenCalled();
+            expect(updateLanguageSpy).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать ошибки при изменении локали', () => {
+            jest.spyOn(optionsManager.localeManager, 'localizeDOM')
+                .mockImplementation(() => { throw new Error('Localize error'); });
+
+            expect(() => optionsManager.onLocaleChange()).not.toThrow();
+        });
+    });
+
+    describe('ThemeManager интеграция', () => {
+        beforeEach(async () => {
+            document.body.innerHTML += `
+                <span id="themeIcon"></span>
+                <span id="themeLabel"></span>
+                <button id="themeToggle">Toggle Theme</button>
+            `;
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('setThemeManager должен устанавливать ThemeManager', () => {
+            const mockThemeManager = {
+                getCurrentTheme: jest.fn().mockReturnValue('light'),
+                applyTheme: jest.fn(),
+                saveTheme: jest.fn().mockResolvedValue()
+            };
+
+            optionsManager.setThemeManager(mockThemeManager);
+
+            expect(optionsManager.themeManager).toBe(mockThemeManager);
+        });
+
+        test('toggleTheme должен переключать тему', async () => {
+            const mockThemeManager = {
+                getCurrentTheme: jest.fn().mockReturnValue('light'),
+                applyTheme: jest.fn(),
+                saveTheme: jest.fn().mockResolvedValue()
+            };
+
+            optionsManager.setThemeManager(mockThemeManager);
+            await optionsManager.toggleTheme();
+
+            expect(mockThemeManager.applyTheme).toHaveBeenCalledWith('dark');
+            expect(mockThemeManager.saveTheme).toHaveBeenCalledWith('dark');
+        });
+
+        test('toggleTheme должен обрабатывать отсутствие ThemeManager', async () => {
+            await optionsManager.toggleTheme();
+            // Не должно выбрасывать ошибку
+        });
+
+        test('toggleTheme должен обрабатывать ошибки', async () => {
+            const mockThemeManager = {
+                getCurrentTheme: jest.fn().mockReturnValue('light'),
+                applyTheme: jest.fn(),
+                saveTheme: jest.fn().mockRejectedValue(new Error('Save failed'))
+            };
+
+            optionsManager.setThemeManager(mockThemeManager);
+            await optionsManager.toggleTheme();
+
+            // Не должно выбрасывать ошибку
+        });
+
+        test('updateThemeDisplay должен обновлять иконку темы', () => {
+            const mockThemeManager = {
+                getCurrentTheme: jest.fn().mockReturnValue('dark')
+            };
+
+            optionsManager.setThemeManager(mockThemeManager);
+            optionsManager.updateThemeDisplay();
+
+            const themeIcon = document.getElementById('themeIcon');
+            const themeLabel = document.getElementById('themeLabel');
+            expect(themeIcon.textContent).toBe('🌙');
+        });
+
+        test('updateThemeDisplay должен работать для светлой темы', () => {
+            const mockThemeManager = {
+                getCurrentTheme: jest.fn().mockReturnValue('light')
+            };
+
+            optionsManager.setThemeManager(mockThemeManager);
+            optionsManager.updateThemeDisplay('light');
+
+            const themeIcon = document.getElementById('themeIcon');
+            expect(themeIcon.textContent).toBe('☀️');
+        });
+
+        test('updateThemeDisplay должен работать без элементов', () => {
+            document.getElementById('themeIcon').remove();
+            
+            expect(() => optionsManager.updateThemeDisplay()).not.toThrow();
+        });
+
+        test('updateThemeDisplay должен обрабатывать ошибки', () => {
+            const mockThemeManager = {
+                getCurrentTheme: jest.fn().mockImplementation(() => {
+                    throw new Error('Get theme error');
+                })
+            };
+
+            optionsManager.setThemeManager(mockThemeManager);
+            
+            expect(() => optionsManager.updateThemeDisplay()).not.toThrow();
+        });
+    });
+
+    describe('Обработчики событий - продвинутые сценарии', () => {
+        test('должен обрабатывать отсутствующие элементы при setupEventHandlers', async () => {
+            // Создаем минимальный DOM без некоторых элементов
+            document.body.innerHTML = `
+                <form id="settingsForm">
+                    <input type="text" id="backendUrl" value="" />
+                </form>
+                <div id="status"></div>
+            `;
+
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // Не должно выбрасывать ошибку
+            expect(optionsManager.eventHandlers.size).toBeGreaterThan(0);
+        });
+
+        test('должен обрабатывать клик по languageToggle', async () => {
+            document.body.innerHTML += '<button id="languageToggle">Toggle Language</button>';
+            
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const toggleLanguageSpy = jest.spyOn(optionsManager, 'toggleLanguage')
+                .mockResolvedValue();
+
+            const languageToggle = document.getElementById('languageToggle');
+            const clickEvent = new Event('click', { bubbles: true });
+            languageToggle.dispatchEvent(clickEvent);
+
+            await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(toggleLanguageSpy).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать клик по themeToggle', async () => {
+            document.body.innerHTML += '<button id="themeToggle">Toggle Theme</button>';
+            
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const toggleThemeSpy = jest.spyOn(optionsManager, 'toggleTheme')
+                .mockResolvedValue();
+
+            const themeToggle = document.getElementById('themeToggle');
+            const clickEvent = new Event('click', { bubbles: true });
+            themeToggle.dispatchEvent(clickEvent);
+
+            await new Promise(resolve => Promise.resolve().then(resolve));
+
+            expect(toggleThemeSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Обработка ошибок сохранения', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен обрабатывать ошибку верификации сохранения', async () => {
+            const testUrl = 'http://test.com/api';
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = testUrl;
+
+            jest.spyOn(optionsManager.storageManager, 'saveBackendUrl')
+                .mockResolvedValue(false);
+
+            const result = await optionsManager.saveSettings();
+
+            expect(result).toBe(false);
+        });
+
+        test('должен обрабатывать ошибку уведомления background script', async () => {
+            const testUrl = 'http://test.com/api';
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = testUrl;
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: testUrl
+            });
+
+            jest.spyOn(optionsManager.storageManager, 'notifyBackgroundScript')
+                .mockResolvedValue(false);
+
+            const result = await optionsManager.saveSettings();
+
+            expect(result).toBe(true);
+        });
+
+        test('должен обрабатывать ошибку получения URL из DOM', async () => {
+            jest.spyOn(optionsManager.domManager, 'getBackendUrlValue')
+                .mockReturnValue(null);
+
+            const result = await optionsManager.saveSettings();
+
+            expect(result).toBe(false);
+        });
+
+        test('должен обрабатывать ошибку обновления состояния кнопки', async () => {
+            const testUrl = 'http://test.com/api';
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = testUrl;
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: testUrl
+            });
+
+            jest.spyOn(optionsManager.domManager, 'setButtonState')
+                .mockReturnValue(false);
+
+            const result = await optionsManager.saveSettings();
+
+            expect(result).toBe(true);
+        });
+
+        test('должен обрабатывать ошибку отображения статуса', async () => {
+            const testUrl = 'http://test.com/api';
+            const backendUrlInput = document.getElementById('backendUrl');
+            backendUrlInput.value = testUrl;
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: testUrl
+            });
+
+            jest.spyOn(optionsManager.statusManager, 'showSuccess')
+                .mockReturnValue(false);
+
+            const result = await optionsManager.saveSettings();
+
+            expect(result).toBe(true);
+        });
+    });
+
+    describe('Обработка ошибок сброса', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен обрабатывать ошибку обновления UI после сброса', async () => {
+            const defaultUrl = 'http://localhost:8000/api/v1/events/send';
+            
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: defaultUrl
+            });
+
+            jest.spyOn(optionsManager.domManager, 'setBackendUrlValue')
+                .mockReturnValue(false);
+
+            const result = await optionsManager.resetToDefault();
+
+            expect(result).toBe(true);
+        });
+
+        test('должен обрабатывать ошибку уведомления background script при сбросе', async () => {
+            const defaultUrl = 'http://localhost:8000/api/v1/events/send';
+            
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: defaultUrl
+            });
+
+            jest.spyOn(optionsManager.storageManager, 'notifyBackgroundScript')
+                .mockResolvedValue(false);
+
+            const result = await optionsManager.resetToDefault();
+
+            expect(result).toBe(true);
+        });
+
+        test('должен обрабатывать ошибку в resetToDefault', async () => {
+            jest.spyOn(optionsManager.storageManager, 'resetToDefault')
+                .mockRejectedValue(new Error('Reset failed'));
+
+            const result = await optionsManager.resetToDefault();
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('Обработка ошибок загрузки', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен обрабатывать ошибку обновления UI после загрузки', async () => {
+            jest.spyOn(optionsManager.domManager, 'setBackendUrlValue')
+                .mockReturnValue(false);
+
+            global.chrome.storage.local.get.mockResolvedValueOnce({
+                mindful_backend_url: 'http://test.com'
+            });
+
+            await optionsManager.loadSettings();
+            // Не должно выбрасывать ошибку
+        });
+    });
+
+    describe('Методы получения статистики - обработка ошибок', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('getStatusStatistics должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager.statusManager, 'getStatistics')
+                .mockImplementation(() => { throw new Error('Stats error'); });
+
+            const stats = optionsManager.getStatusStatistics();
+
+            expect(stats).toEqual({});
+        });
+
+        test('getStatusHistory должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager.statusManager, 'getHistory')
+                .mockImplementation(() => { throw new Error('History error'); });
+
+            const history = optionsManager.getStatusHistory();
+
+            expect(history).toEqual([]);
+        });
+
+        test('getStatusPerformanceMetrics должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager.statusManager, 'getPerformanceMetrics')
+                .mockImplementation(() => { throw new Error('Metrics error'); });
+
+            const metrics = optionsManager.getStatusPerformanceMetrics();
+
+            expect(metrics).toEqual({});
+        });
+
+        test('clearStatusHistory должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager.statusManager, 'clearHistory')
+                .mockImplementation(() => { throw new Error('Clear error'); });
+
+            const count = optionsManager.clearStatusHistory();
+
+            expect(count).toBe(0);
+        });
+
+        test('getValidationStatistics должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager.validationManager, 'getValidationStatistics')
+                .mockImplementation(() => { throw new Error('Stats error'); });
+
+            const stats = optionsManager.getValidationStatistics();
+
+            expect(stats).toEqual({});
+        });
+
+        test('getValidationHistory должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager.validationManager, 'getHistory')
+                .mockImplementation(() => { throw new Error('History error'); });
+
+            const history = optionsManager.getValidationHistory();
+
+            expect(history).toEqual([]);
+        });
+
+        test('clearValidationHistory должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager.validationManager, 'clearHistory')
+                .mockImplementation(() => { throw new Error('Clear error'); });
+
+            const count = optionsManager.clearValidationHistory();
+
+            expect(count).toBe(0);
+        });
+
+        test('getValidationPerformanceMetrics должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager.validationManager, 'getPerformanceMetrics')
+                .mockImplementation(() => { throw new Error('Metrics error'); });
+
+            const metrics = optionsManager.getValidationPerformanceMetrics();
+
+            expect(metrics).toEqual({});
+        });
+
+        test('getDiagnostics должен обрабатывать ошибки', () => {
+            jest.spyOn(optionsManager, 'getCurrentBackendUrl')
+                .mockImplementation(() => { throw new Error('Get URL error'); });
+
+            const diagnostics = optionsManager.getDiagnostics();
+
+            expect(diagnostics).toHaveProperty('error');
+        });
+    });
+
+    describe('validateManagersState', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен валидировать состояние менеджеров', () => {
+            const result = optionsManager.validateManagersState();
+
+            expect(result).toHaveProperty('isValid');
+            expect(result).toHaveProperty('managers');
+            expect(result).toHaveProperty('timestamp');
+        });
+
+        test('должен обрабатывать ошибки валидации', () => {
+            jest.spyOn(optionsManager.statusManager, 'validateState')
+                .mockImplementation(() => { throw new Error('Validation error'); });
+
+            const result = optionsManager.validateManagersState();
+
+            expect(result).toHaveProperty('error');
+            expect(result.isValid).toBe(false);
+        });
+
+        test('должен помечать результат как невалидный если менеджер невалиден', () => {
+            jest.spyOn(optionsManager.statusManager, 'validateState')
+                .mockReturnValue({ isValid: false });
+
+            const result = optionsManager.validateManagersState();
+
+            expect(result.isValid).toBe(false);
+        });
+    });
+
+    describe('_removeEventHandlers', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен удалять обработчики событий', () => {
+            const initialSize = optionsManager.eventHandlers.size;
+            
+            optionsManager._removeEventHandlers();
+
+            expect(optionsManager.eventHandlers.size).toBe(0);
+        });
+
+        test('должен обрабатывать ошибки при удалении обработчиков', () => {
+            // Добавляем невалидный обработчик
+            optionsManager.eventHandlers.set('invalid', null);
+
+            expect(() => optionsManager._removeEventHandlers()).not.toThrow();
+        });
+    });
+
+    describe('_destroyManagers', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен уничтожать все менеджеры', () => {
+            optionsManager._destroyManagers();
+
+            expect(optionsManager.diagnosticsManager).toBeNull();
+            expect(optionsManager.serviceWorkerManager).toBeNull();
+            expect(optionsManager.notificationManager).toBeNull();
+            expect(optionsManager.validationManager).toBeNull();
+            expect(optionsManager.statusManager).toBeNull();
+            expect(optionsManager.storageManager).toBeNull();
+            expect(optionsManager.domManager).toBeNull();
+            expect(optionsManager.localeManager).toBeNull();
+        });
+
+        test('должен обрабатывать ошибки при уничтожении менеджеров', () => {
+            jest.spyOn(optionsManager.diagnosticsManager, 'destroy')
+                .mockImplementation(() => { throw new Error('Destroy error'); });
+
+            expect(() => optionsManager._destroyManagers()).not.toThrow();
+        });
+    });
+
+    describe('Обработка ошибок диагностики', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+        });
+
+        test('должен обрабатывать ошибку восстановления кнопки диагностики', async () => {
+            const button = document.getElementById('runDiagnostics');
+            jest.spyOn(optionsManager.diagnosticsManager, 'runDiagnostics')
+                .mockResolvedValue({ overall: 'ok', checks: {} });
+            jest.spyOn(optionsManager.diagnosticsManager, 'displayDiagnosticResults')
+                .mockImplementation(() => {});
+
+            const setButtonStateSpy = jest.spyOn(optionsManager.domManager, 'setButtonState');
+            // Первый вызов успешен, второй - нет
+            setButtonStateSpy.mockReturnValueOnce(true).mockReturnValueOnce(false);
+
+            await optionsManager.runDiagnostics();
+
+            expect(setButtonStateSpy).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    describe('reloadExtension - обработка ошибок', () => {
+        beforeEach(async () => {
+            optionsManager = new OptionsManager({ enableLogging: false });
+            await new Promise(resolve => setTimeout(resolve, 50));
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        test('должен обрабатывать ошибку отображения статуса при перезагрузке', () => {
+            jest.spyOn(optionsManager.statusManager, 'showSuccess')
+                .mockReturnValue(false);
+
+            optionsManager.reloadExtension();
+            
+            expect(optionsManager.statusManager.showSuccess).toHaveBeenCalled();
         });
     });
 });

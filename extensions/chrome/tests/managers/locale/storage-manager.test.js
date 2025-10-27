@@ -217,4 +217,98 @@ describe('StorageManager', () => {
             expect(typeof metrics.loadLocale_lastDuration).toBe('number');
         });
     });
+
+    describe('Branch Coverage - Error Handling', () => {
+        test('loadLocale - должен обрабатывать исключения при загрузке', async () => {
+            // Ломаем Promise для вызова catch блока
+            jest.spyOn(global, 'Promise').mockImplementationOnce(() => {
+                throw new Error('Promise error');
+            });
+
+            const result = await storageManager.loadLocale();
+
+            expect(result).toBeNull();
+            expect(storageManager.statistics.errors).toBeGreaterThan(0);
+            
+            // Восстанавливаем Promise
+            global.Promise.mockRestore();
+        });
+
+        test('loadLocale - должен обрабатывать недоступность storage', async () => {
+            // Удаляем chrome.storage
+            const originalStorage = global.chrome.storage;
+            global.chrome.storage = null;
+
+            const result = await storageManager.loadLocale();
+
+            expect(result).toBeNull();
+            expect(storageManager.statistics.errors).toBeGreaterThan(0);
+
+            // Восстанавливаем storage
+            global.chrome.storage = originalStorage;
+        });
+
+        test('saveLocale - должен обрабатывать недоступность storage', async () => {
+            // Удаляем chrome.storage
+            const originalStorage = global.chrome.storage;
+            global.chrome.storage = null;
+
+            const result = await storageManager.saveLocale('en');
+
+            expect(result).toBe(false);
+            expect(storageManager.statistics.errors).toBeGreaterThan(0);
+
+            // Восстанавливаем storage
+            global.chrome.storage = originalStorage;
+        });
+
+        test('saveLocale - должен обрабатывать исключения при сохранении', async () => {
+            // Мокируем set чтобы выбросить исключение
+            mockStorage.set = jest.fn(() => {
+                throw new Error('Storage set error');
+            });
+
+            const result = await storageManager.saveLocale('en');
+
+            expect(result).toBe(false);
+            expect(storageManager.statistics.errors).toBeGreaterThan(0);
+        });
+
+        test('destroy - должен обрабатывать ошибки при уничтожении', () => {
+            // Делаем statistics недоступным для записи
+            Object.defineProperty(storageManager, 'statistics', {
+                get() {
+                    throw new Error('Cannot access statistics');
+                },
+                set() {
+                    throw new Error('Cannot set statistics');
+                }
+            });
+
+            // Не должно выбросить ошибку
+            expect(() => storageManager.destroy()).not.toThrow();
+        });
+
+        test('_isStorageAvailable - должен возвращать false когда storage.local отсутствует', () => {
+            const originalLocal = global.chrome.storage.local;
+            global.chrome.storage.local = null;
+
+            const result = storageManager._isStorageAvailable();
+
+            expect(result).toBe(false);
+
+            global.chrome.storage.local = originalLocal;
+        });
+
+        test('loadLocale - когда результат null но нет ошибок', async () => {
+            // Пустой storage (локаль не сохранена)
+            mockStorage.data = {};
+
+            const result = await storageManager.loadLocale();
+
+            expect(result).toBeNull();
+            expect(storageManager.statistics.loads).toBe(1);
+            expect(storageManager.statistics.errors).toBe(0);
+        });
+    });
 });

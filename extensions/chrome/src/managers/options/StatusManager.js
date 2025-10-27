@@ -515,6 +515,28 @@ class StatusManager extends BaseManager {
     }
 
     /**
+     * Показывает предупреждение.
+     * 
+     * @param {string} message - Текст сообщения
+     * @param {number} [duration] - Длительность отображения в мс
+     * @returns {boolean} true если сообщение отображено
+     */
+    showWarning(message, duration) {
+        return this.showStatus(message, StatusManager.STATUS_TYPES.WARNING, duration);
+    }
+
+    /**
+     * Показывает информационное сообщение.
+     * 
+     * @param {string} message - Текст сообщения
+     * @param {number} [duration] - Длительность отображения в мс
+     * @returns {boolean} true если сообщение отображено
+     */
+    showInfo(message, duration) {
+        return this.showStatus(message, StatusManager.STATUS_TYPES.INFO, duration);
+    }
+
+    /**
      * Получает историю статусов.
      * 
      * @param {Object} [options={}] - Опции фильтрации

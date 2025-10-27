@@ -303,4 +303,145 @@ describe('MessageHandlerManager', () => {
             expect(MessageHandlerManager.MESSAGE_TYPES.GET_STATUS).toBe('getStatus');
         });
     });
+
+    describe('Branch Coverage - Дополнительные ветки', () => {
+        test('init - должен удалять существующий слушатель перед добавлением нового', () => {
+            // Инициализируем первый раз
+            messageHandlerManager.init();
+            const firstListener = messageHandlerManager.messageListener;
+            
+            // Инициализируем второй раз
+            messageHandlerManager.init();
+            
+            expect(global.chrome.runtime.onMessage.removeListener).toHaveBeenCalledWith(firstListener);
+            expect(messageHandlerManager.messageListener).toBeDefined();
+            expect(messageHandlerManager.messageListener).not.toBe(firstListener);
+        });
+
+        test('messageListener - должен вызывать _handleMessage и возвращать true', () => {
+            messageHandlerManager.init();
+            
+            jest.spyOn(messageHandlerManager, '_handleMessage');
+            const sendResponse = jest.fn();
+            
+            const result = messageHandlerManager.messageListener(
+                { type: 'ping' },
+                {},
+                sendResponse
+            );
+            
+            expect(messageHandlerManager._handleMessage).toHaveBeenCalled();
+            expect(result).toBe(true);
+        });
+
+        test('_handleTestConnection - CHECK_CONNECTION с ошибкой healthcheck', async () => {
+            const healthCheckError = new Error('Healthcheck failed');
+            jest.spyOn(backendManager, 'checkHealth').mockRejectedValue(healthCheckError);
+            
+            const sendResponse = jest.fn();
+            
+            messageHandlerManager._handleTestConnection(sendResponse, 'checkConnection');
+            
+            // Сразу проверяем после вызова без ожидания
+            await Promise.resolve();
+            
+            expect(backendManager.checkHealth).toHaveBeenCalled();
+        });
+
+        test('_handleTestConnection - TEST_CONNECTION с пустой очередью', () => {
+            jest.spyOn(eventQueueManager, 'getQueueSize').mockReturnValue(0);
+            jest.spyOn(backendManager, 'checkHealth').mockResolvedValue({ success: true });
+            
+            const sendResponse = jest.fn();
+            
+            messageHandlerManager._handleTestConnection(sendResponse, 'testConnection');
+            
+            expect(eventQueueManager.getQueueSize).toHaveBeenCalled();
+        });
+
+        test('_handleTestConnection - TEST_CONNECTION с событиями в очереди', () => {
+            jest.spyOn(eventQueueManager, 'getQueueSize').mockReturnValue(5);
+            jest.spyOn(eventQueueManager, 'processQueue').mockResolvedValue();
+            
+            const sendResponse = jest.fn();
+            
+            messageHandlerManager._handleTestConnection(sendResponse, 'testConnection');
+            
+            expect(eventQueueManager.getQueueSize).toHaveBeenCalled();
+        });
+
+        test('_handleUpdateBackendUrl - без URL в запросе', () => {
+            const sendResponse = jest.fn();
+            
+            messageHandlerManager._handleUpdateBackendUrl({}, sendResponse);
+            
+            expect(sendResponse).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: false,
+                    error: 'URL is required'
+                })
+            );
+        });
+
+        test('_handleUpdateBackendUrl - с URL в request.url', () => {
+            jest.spyOn(storageManager, 'saveBackendUrl').mockResolvedValue(true);
+            jest.spyOn(backendManager, 'setBackendUrl');
+            
+            const sendResponse = jest.fn();
+            
+            messageHandlerManager._handleUpdateBackendUrl(
+                { url: 'http://new-backend.com' },
+                sendResponse
+            );
+            
+            expect(backendManager.setBackendUrl).toHaveBeenCalledWith('http://new-backend.com');
+        });
+
+        test('_handleUpdateBackendUrl - с URL в request.data.url', () => {
+            jest.spyOn(storageManager, 'saveBackendUrl').mockResolvedValue(true);
+            
+            const sendResponse = jest.fn();
+            
+            messageHandlerManager._handleUpdateBackendUrl(
+                { data: { url: 'http://new-backend.com' } },
+                sendResponse
+            );
+            
+            expect(storageManager.saveBackendUrl).toHaveBeenCalledWith('http://new-backend.com');
+        });
+
+        test('_handleMessage - должен обрабатывать неизвестный тип сообщения', () => {
+            const sendResponse = jest.fn();
+            
+            messageHandlerManager._handleMessage(
+                { type: 'unknownType' },
+                {},
+                sendResponse
+            );
+            
+            expect(sendResponse).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: false,
+                    error: 'Unknown message type: unknownType'
+                })
+            );
+        });
+
+        test('_handleMessage - должен использовать action если type отсутствует', () => {
+            const sendResponse = jest.fn();
+            
+            messageHandlerManager._handleMessage(
+                { action: 'ping' },
+                {},
+                sendResponse
+            );
+            
+            expect(sendResponse).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: true,
+                    message: 'pong'
+                })
+            );
+        });
+    });
 });

@@ -434,5 +434,100 @@ describe('theme_manager/ThemeManager', () => {
 
             expect(() => themeManager.destroy()).not.toThrow();
         });
+
+        test('должен обрабатывать ошибки при уничтожении', () => {
+            // Мокируем ошибку в syncManager.destroy
+            jest.spyOn(themeManager.syncManager, 'destroy').mockImplementation(() => {
+                throw new Error('Destroy error');
+            });
+
+            // Не должно выбросить ошибку
+            expect(() => themeManager.destroy()).not.toThrow();
+        });
+    });
+
+    describe('Обработка ошибок', () => {
+        test('должен обрабатывать ошибки при загрузке темы', async () => {
+            // Мокируем ошибку в storage
+            global.chrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+
+            const theme = await themeManager.loadAndApplyTheme();
+
+            // Должна применить fallback тему (default или из кеша)
+            expect(['light', 'dark']).toContain(theme);
+            expect(themeManager.isInitialized).toBe(true);
+        });
+
+        test('должен применять default тему при ошибке если кеш пустой', async () => {
+            // Создаем новый manager чтобы гарантировать пустой кеш
+            const newManager = new ThemeManager({ 
+                enableLogging: false,
+                enableCache: false
+            });
+            
+            // Мокируем ошибку в storage
+            global.chrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+
+            const theme = await newManager.loadAndApplyTheme();
+
+            // Должна применить default тему
+            expect(theme).toBe('light');
+            
+            newManager.destroy();
+        });
+
+        test('должен обрабатывать ошибки при применении темы', () => {
+            // Мокируем ошибку в applicationManager
+            jest.spyOn(themeManager.applicationManager, 'applyTheme').mockImplementation(() => {
+                throw new Error('Apply error');
+            });
+
+            const result = themeManager.applyTheme('dark');
+
+            expect(result).toBe(false);
+        });
+
+        test('должен отклонять невалидную тему при сохранении', async () => {
+            const result = await themeManager.saveTheme('invalid-theme');
+
+            expect(result).toBe(false);
+        });
+
+        test('должен обрабатывать ошибки при сохранении темы', async () => {
+            // Мокируем ошибку в storage
+            jest.spyOn(themeManager.storageManager, 'saveTheme').mockRejectedValue(new Error('Save error'));
+
+            const result = await themeManager.saveTheme('dark');
+
+            expect(result).toBe(false);
+        });
+
+        test('должен обрабатывать ошибки в пользовательском callback', () => {
+            const errorCallback = jest.fn(() => {
+                throw new Error('Callback error');
+            });
+
+            themeManager.listenForThemeChanges(errorCallback);
+
+            // Получаем callback для onChanged
+            const onChangedCallback = mockOnChanged.addListener.mock.calls[0][0];
+
+            // Симулируем изменение темы
+            onChangedCallback({ mindful_theme: { newValue: 'dark' } }, 'local');
+
+            // Callback должен быть вызван несмотря на ошибку
+            expect(errorCallback).toHaveBeenCalledWith('dark');
+        });
+
+        test('должен обрабатывать ошибки при установке слушателя', () => {
+            // Мокируем ошибку в syncManager
+            jest.spyOn(themeManager.syncManager, 'startListening').mockImplementation(() => {
+                throw new Error('Listener error');
+            });
+
+            const result = themeManager.listenForThemeChanges();
+
+            expect(result).toBe(false);
+        });
     });
 });

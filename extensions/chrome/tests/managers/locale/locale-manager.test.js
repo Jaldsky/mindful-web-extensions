@@ -413,4 +413,121 @@ describe('LocaleManager', () => {
             expect(metrics.setLocale_lastDuration).toBeDefined();
         });
     });
+
+    describe('Branch Coverage - Additional Branches', () => {
+        test('constructor - DOMManager использует callback от translationManager', () => {
+            // Проверяем, что domManager вызывает translate через callback
+            jest.spyOn(localeManager.translationManager, 'translate').mockReturnValue('translated');
+            
+            // Используем внутренний метод domManager который использует callback
+            const result = localeManager.t('test.key', { param: 'value' });
+            
+            expect(localeManager.translationManager.translate).toHaveBeenCalledWith('test.key', { param: 'value' });
+        });
+
+        test('_detectBrowserLocale - должен обрабатывать ошибки', () => {
+            // Ломаем navigator.language
+            Object.defineProperty(global.navigator, 'language', {
+                get() {
+                    throw new Error('Navigator error');
+                },
+                configurable: true
+            });
+
+            const result = localeManager._detectBrowserLocale();
+
+            expect(result).toBeNull();
+            
+            // Восстанавливаем
+            Object.defineProperty(global.navigator, 'language', {
+                value: 'en-US',
+                configurable: true
+            });
+        });
+
+        test('setLocale - должен возвращать true если локаль уже установлена', async () => {
+            jest.spyOn(localeManager.translationManager, 'isLocaleSupported').mockReturnValue(true);
+            jest.spyOn(localeManager.translationManager, 'getCurrentLocale').mockReturnValue('en');
+
+            const result = await localeManager.setLocale('en');
+
+            expect(result).toBe(true);
+        });
+
+        test('setLocale - должен возвращать false если setLocale неуспешен', async () => {
+            jest.spyOn(localeManager.translationManager, 'isLocaleSupported').mockReturnValue(true);
+            jest.spyOn(localeManager.translationManager, 'getCurrentLocale').mockReturnValue('en');
+            jest.spyOn(localeManager.translationManager, 'setLocale').mockReturnValue(false);
+
+            const result = await localeManager.setLocale('ru');
+
+            expect(result).toBe(false);
+        });
+
+        test('_notifyListeners - должен обрабатывать ошибки в слушателях', () => {
+            const errorListener = jest.fn(() => {
+                throw new Error('Listener error');
+            });
+            const normalListener = jest.fn();
+
+            localeManager.addLocaleChangeListener(errorListener);
+            localeManager.addLocaleChangeListener(normalListener);
+
+            // Не должно выбросить ошибку
+            expect(() => {
+                localeManager._notifyListeners('ru', 'en');
+            }).not.toThrow();
+
+            // Оба должны быть вызваны несмотря на ошибку в первом
+            expect(errorListener).toHaveBeenCalled();
+            expect(normalListener).toHaveBeenCalled();
+        });
+
+        test('removeLocaleChangeListener - должен обрабатывать ошибки', () => {
+            const listener = jest.fn();
+            
+            // Мокируем findIndex чтобы выбросить ошибку
+            jest.spyOn(Array.prototype, 'findIndex').mockImplementation(() => {
+                throw new Error('FindIndex error');
+            });
+
+            // Не должно выбросить ошибку благодаря try-catch
+            expect(() => {
+                localeManager.removeLocaleChangeListener(listener);
+            }).not.toThrow();
+            
+            // Восстанавливаем
+            Array.prototype.findIndex.mockRestore();
+        });
+
+        test('_destroyManagers - должен обрабатывать ошибки при уничтожении', () => {
+            // Ломаем domManager.destroy
+            jest.spyOn(localeManager.domManager, 'destroy').mockImplementation(() => {
+                throw new Error('Destroy error');
+            });
+
+            // Не должно выбросить ошибку благодаря try-catch
+            expect(() => localeManager._destroyManagers()).not.toThrow();
+        });
+
+        test('toggleLocale - должен обрабатывать ошибки', async () => {
+            jest.spyOn(localeManager.translationManager, 'toggleLocale').mockImplementation(() => {
+                throw new Error('Toggle error');
+            });
+
+            await expect(localeManager.toggleLocale()).rejects.toThrow();
+        });
+
+        test('getStatistics - должен собирать статистику со всех менеджеров', () => {
+            jest.spyOn(localeManager.domManager, 'getStatistics').mockReturnValue({ dom: 'stats' });
+            jest.spyOn(localeManager.translationManager, 'getStatistics').mockReturnValue({ trans: 'stats' });
+            jest.spyOn(localeManager.storageManager, 'getStatistics').mockReturnValue({ storage: 'stats' });
+
+            const stats = localeManager.getStatistics();
+
+            expect(stats).toHaveProperty('dom');
+            expect(stats).toHaveProperty('translation');
+            expect(stats).toHaveProperty('storage');
+        });
+    });
 });
