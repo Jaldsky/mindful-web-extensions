@@ -409,4 +409,647 @@ describe('StatusManager', () => {
             expect(manager.isProcessingQueue).toBe(false);
         });
     });
+
+    describe('showWarning', () => {
+        test('должен отображать предупреждение', async () => {
+            const result = await statusManager.showWarning('Warning message');
+
+            expect(result).toBe(true);
+            expect(statusElement.textContent).toBe('Warning message');
+            expect(statusElement.className).toBe('status-message warning visible');
+        });
+    });
+
+    describe('showInfo', () => {
+        test('должен отображать информационное сообщение', async () => {
+            const result = await statusManager.showInfo('Info message');
+
+            expect(result).toBe(true);
+            expect(statusElement.textContent).toBe('Info message');
+            expect(statusElement.className).toBe('status-message info visible');
+        });
+    });
+
+    describe('Обработка ошибок', () => {
+        test('должен обрабатывать ошибки при отображении статуса', async () => {
+            // Создаем элемент, который будет выбрасывать ошибку при установке textContent
+            const brokenElement = document.createElement('div');
+            Object.defineProperty(brokenElement, 'textContent', {
+                get: function() {
+                    return '';
+                },
+                set: function() {
+                    throw new Error('Cannot set textContent');
+                }
+            });
+            
+            const manager = new StatusManager({
+                enableLogging: false,
+                statusElement: brokenElement
+            });
+
+            const result = await manager.showSuccess('Test');
+
+            expect(result).toBe(false);
+            manager.destroy();
+        });
+
+        test('должен обрабатывать ошибки при скрытии статуса', async () => {
+            await statusManager.showSuccess('Test');
+            
+            // Создаем ситуацию, которая вызовет ошибку
+            statusManager.statusElement = null;
+            
+            const result = statusManager.hideStatus();
+
+            expect(result).toBe(false);
+        });
+
+        test('должен обрабатывать ошибки в getHistory', () => {
+            // Ломаем историю
+            statusManager.history = null;
+
+            const history = statusManager.getHistory();
+
+            expect(history).toEqual([]);
+        });
+
+        test('должен обрабатывать ошибки в clearHistory', () => {
+            statusManager.history = null;
+
+            const count = statusManager.clearHistory();
+
+            expect(count).toBe(0);
+        });
+
+        test('должен обрабатывать ошибки в getStatistics', () => {
+            statusManager.history = null;
+
+            const stats = statusManager.getStatistics();
+
+            expect(stats).toEqual({});
+        });
+
+        test('должен обрабатывать ошибки в validateState', () => {
+            // Создаем ситуацию, которая вызовет ошибку
+            Object.defineProperty(statusManager, 'statusElement', {
+                get: function() {
+                    throw new Error('Cannot access statusElement');
+                }
+            });
+
+            const result = statusManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues).toContain('Ошибка при выполнении валидации');
+        });
+    });
+
+    describe('validateState - расширенные проверки', () => {
+        test('должен выявлять некорректный statusElement', () => {
+            statusManager.statusElement = 'not-an-element';
+
+            const result = statusManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues.some(issue => issue.includes('statusElement'))).toBe(true);
+        });
+
+        test('должен выявлять отрицательный defaultDuration', () => {
+            statusManager.defaultDuration = -100;
+
+            const result = statusManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues.some(issue => issue.includes('defaultDuration'))).toBe(true);
+        });
+
+        test('должен выявлять превышение размера истории', () => {
+            statusManager.maxHistorySize = 2;
+            
+            // Принудительно добавляем больше элементов, чем максимальный размер
+            statusManager.history = new Array(5).fill({ type: 'success', message: 'test', timestamp: new Date().toISOString(), duration: 1000 });
+
+            const result = statusManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues.some(issue => issue.includes('История превышает'))).toBe(true);
+        });
+
+        test('должен выявлять превышение размера очереди', async () => {
+            const manager = new StatusManager({
+                enableLogging: false,
+                statusElement: statusElement,
+                enableQueue: true,
+                maxQueueSize: 2
+            });
+
+            manager.queue = new Array(5).fill({ message: 'test' });
+
+            const result = manager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues.some(issue => issue.includes('Очередь превышает'))).toBe(true);
+
+            manager.destroy();
+        });
+
+        test('должен выявлять видимый статус без типа', async () => {
+            await statusManager.showSuccess('Test');
+            
+            statusManager.state.currentType = null;
+
+            const result = statusManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues.some(issue => issue.includes('тип не установлен'))).toBe(true);
+        });
+
+        test('должен выявлять видимый статус без сообщения', async () => {
+            await statusManager.showSuccess('Test');
+            
+            statusManager.state.currentMessage = null;
+
+            const result = statusManager.validateState();
+
+            expect(result.isValid).toBe(false);
+            expect(result.issues.some(issue => issue.includes('сообщение не установлено'))).toBe(true);
+        });
+    });
+
+    describe('Очередь - обработка ошибок', () => {
+        test('должен обрабатывать ошибки _addToQueue', async () => {
+            const manager = new StatusManager({
+                enableLogging: false,
+                statusElement: statusElement,
+                enableQueue: true
+            });
+
+            // Ломаем queue
+            manager.queue = null;
+
+            await manager.showSuccess('Message 1');
+            await manager.showSuccess('Message 2');
+
+            // Не должно выбрасывать ошибку
+            manager.destroy();
+        });
+
+        test('должен обрабатывать ошибки _processQueue', async () => {
+            const manager = new StatusManager({
+                enableLogging: false,
+                statusElement: statusElement,
+                enableQueue: true
+            });
+
+            await manager.showSuccess('Message 1');
+            
+            // Ломаем queue перед обработкой
+            manager.queue = null;
+
+            // Пытаемся обработать очередь
+            jest.advanceTimersByTime(100);
+
+            // Не должно выбрасывать ошибку
+            manager.destroy();
+        });
+
+        test('должен обрабатывать ошибки _clearQueue', () => {
+            const manager = new StatusManager({
+                enableLogging: false,
+                statusElement: statusElement,
+                enableQueue: true
+            });
+
+            manager.queue = null;
+
+            const count = manager._clearQueue();
+
+            expect(count).toBe(0);
+            manager.destroy();
+        });
+    });
+
+    describe('showStatus - расширенные сценарии', () => {
+        test('должен использовать INFO для null типа', async () => {
+            const result = await statusManager.showStatus('Test message', null);
+
+            expect(result).toBe(true);
+            expect(statusElement.className).toBe('status-message info visible');
+        });
+
+        test('должен использовать INFO для undefined типа', async () => {
+            const result = await statusManager.showStatus('Test message', undefined);
+
+            expect(result).toBe(true);
+            expect(statusElement.className).toBe('status-message info visible');
+        });
+
+        test('должен обрабатывать пользовательскую длительность', async () => {
+            await statusManager.showSuccess('Test', 5000);
+
+            expect(statusManager.hideTimeout).not.toBeNull();
+        });
+
+        test('должен очищать предыдущий таймер при новом статусе', async () => {
+            await statusManager.showSuccess('Message 1');
+            const firstTimeout = statusManager.hideTimeout;
+            
+            await statusManager.showSuccess('Message 2');
+            const secondTimeout = statusManager.hideTimeout;
+
+            expect(secondTimeout).not.toBe(firstTimeout);
+        });
+    });
+
+    describe('hideStatus - расширенные сценарии', () => {
+        test('должен работать если статус уже скрыт', () => {
+            const result = statusManager.hideStatus();
+
+            expect(result).toBe(true);
+        });
+
+        test('должен обрабатывать множественные вызовы hideStatus', async () => {
+            await statusManager.showSuccess('Test');
+            
+            statusManager.hideStatus();
+            const result = statusManager.hideStatus();
+
+            expect(result).toBe(true);
+        });
+    });
+
+    describe('getHistory - расширенные сценарии', () => {
+        test('должен игнорировать невалидный типфильтра', async () => {
+            await statusManager.showSuccess('Test');
+
+            const history = statusManager.getHistory({ type: 'invalid-type' });
+
+            // Невалидный тип фильтра игнорируется, возвращается вся история
+            expect(history.length).toBeGreaterThan(0);
+        });
+
+        test('должен игнорировать невалидный limit', async () => {
+            await statusManager.showSuccess('Message 1');
+            await statusManager.showSuccess('Message 2');
+
+            const history1 = statusManager.getHistory({ limit: -1 });
+            expect(history1).toHaveLength(2);
+
+            const history2 = statusManager.getHistory({ limit: 'not-a-number' });
+            expect(history2).toHaveLength(2);
+
+            const history3 = statusManager.getHistory({ limit: 0 });
+            expect(history3).toHaveLength(2);
+        });
+    });
+
+    describe('setStatusElement - расширенные сценарии', () => {
+        test('должен выбрасывать ошибку для null', () => {
+            expect(() => {
+                statusManager.setStatusElement(null);
+            }).toThrow(TypeError);
+        });
+
+        test('должен обновлять элемент при смене', () => {
+            const newElement = document.createElement('div');
+            document.body.appendChild(newElement);
+
+            statusManager.setStatusElement(newElement);
+
+            expect(statusManager.statusElement).toBe(newElement);
+
+            newElement.parentNode.removeChild(newElement);
+        });
+    });
+
+    describe('Интеграция с очередью', () => {
+        test('должен правильно обрабатывать последовательность сообщений', async () => {
+            const manager = new StatusManager({
+                enableLogging: false,
+                statusElement: statusElement,
+                enableQueue: true,
+                defaultDuration: 100
+            });
+
+            await manager.showSuccess('Message 1');
+            await manager.showSuccess('Message 2');
+            await manager.showSuccess('Message 3');
+
+            expect(manager.queue.length).toBeGreaterThan(0);
+
+            // Обрабатываем очередь
+            jest.advanceTimersByTime(200);
+
+            manager.destroy();
+        });
+
+        test('должен пропускать пустые элементы очереди', async () => {
+            const manager = new StatusManager({
+                enableLogging: false,
+                statusElement: statusElement,
+                enableQueue: true
+            });
+
+            await manager.showSuccess('Message 1');
+            
+            // Добавляем невалидный элемент в очередь
+            manager.queue.push(null);
+            manager.queue.push({ message: 'Valid message', type: 'success' });
+
+            jest.advanceTimersByTime(100);
+
+            manager.destroy();
+        });
+    });
+
+    describe('Покрытие веток (Branch Coverage)', () => {
+        test('_validateStatusElement - должен корректно обрабатывать отсутствие элемента', () => {
+            const manager = new StatusManager({ enableLogging: false });
+            
+            // Вызываем _validateStatusElement без statusElement
+            expect(() => manager._validateStatusElement()).not.toThrow();
+        });
+
+        test('_validateStatusElement - должен предупреждать если элемент не в DOM', () => {
+            const detachedElement = document.createElement('div');
+            
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                statusElement: detachedElement
+            });
+            
+            expect(manager.statusElement).toBe(detachedElement);
+        });
+
+        test('_addToHistory - должен обрабатывать ошибки', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableHistory: true
+            });
+            
+            // Ломаем history чтобы вызвать ошибку
+            Object.defineProperty(manager, 'history', {
+                get() {
+                    throw new Error('History error');
+                }
+            });
+            
+            // Не должно выбросить ошибку
+            expect(() => manager._addToHistory('test', 'success', 1000)).not.toThrow();
+        });
+
+        test('_addToQueue - должен возвращать false если очередь отключена', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: false,
+                statusElement: statusElement
+            });
+            
+            const result = manager._addToQueue('Test message', 'success', 1000);
+            
+            expect(result).toBe(false);
+            expect(manager.queue.length).toBe(0);
+            
+            manager.destroy();
+        });
+
+        test('_addToQueue - должен отклонять сообщения при переполнении очереди', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: true,
+                maxQueueSize: 2,
+                statusElement: statusElement
+            });
+            
+            // Заполняем очередь вручную чтобы избежать обработки
+            manager.queue.push({ message: 'Message 1', type: 'success', duration: 1000 });
+            manager.queue.push({ message: 'Message 2', type: 'success', duration: 1000 });
+            
+            const result3 = manager._addToQueue('Message 3', 'success', 1000);
+            
+            expect(result3).toBe(false);
+            expect(manager.queue.length).toBe(2);
+            
+            manager.destroy();
+        });
+
+        test('_addToQueue - должен запускать обработку очереди', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: true,
+                statusElement: statusElement
+            });
+            
+            jest.spyOn(manager, '_processQueue');
+            
+            manager._addToQueue('Test message', 'success', 1000);
+            
+            expect(manager._processQueue).toHaveBeenCalled();
+            
+            manager.destroy();
+        });
+
+        test('_addToQueue - не должен запускать обработку если статус уже видим', async () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: true,
+                statusElement: statusElement
+            });
+            
+            // Показываем статус сначала
+            manager.updateState({ isVisible: true });
+            
+            jest.spyOn(manager, '_processQueue');
+            
+            manager._addToQueue('Test message', 'success', 1000);
+            
+            expect(manager._processQueue).not.toHaveBeenCalled();
+            
+            manager.destroy();
+        });
+
+        test('_addToQueue - должен обрабатывать ошибки', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: true,
+                statusElement: statusElement
+            });
+            
+            // Ломаем queue чтобы вызвать ошибку
+            Object.defineProperty(manager, 'queue', {
+                get() {
+                    throw new Error('Queue error');
+                }
+            });
+            
+            const result = manager._addToQueue('Test message', 'success', 1000);
+            
+            expect(result).toBe(false);
+            
+            manager.destroy();
+        });
+
+        test('_processQueue - должен выходить если очередь пуста', async () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: true,
+                statusElement: statusElement
+            });
+            
+            await manager._processQueue();
+            
+            expect(manager.isProcessingQueue).toBe(false);
+            
+            manager.destroy();
+        });
+
+        test('_processQueue - должен выходить если уже обрабатывается', async () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: true,
+                statusElement: statusElement
+            });
+            
+            manager.isProcessingQueue = true;
+            
+            await manager._processQueue();
+            
+            // Должен выйти без обработки
+            expect(manager.isProcessingQueue).toBe(true);
+            
+            manager.destroy();
+        });
+
+        test('_processQueue - должен обрабатывать неудачные отображения', async () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: true,
+                statusElement: statusElement
+            });
+            
+            // Мокируем _displayStatusInternal чтобы вернуть false
+            jest.spyOn(manager, '_displayStatusInternal').mockResolvedValue(false);
+            
+            manager._addToQueue('Test message', 'success', 0);
+            
+            await manager._processQueue();
+            
+            expect(manager._displayStatusInternal).toHaveBeenCalled();
+            
+            manager.destroy();
+        });
+
+        test('_processQueue - должен обрабатывать ошибки в цикле', async () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: true,
+                statusElement: statusElement
+            });
+            
+            // Добавляем сообщение в очередь вручную
+            manager.queue.push({ message: 'Test message', type: 'success', duration: 0 });
+            
+            // Мокируем _displayStatusInternal чтобы выбросить ошибку
+            jest.spyOn(manager, '_displayStatusInternal').mockRejectedValue(new Error('Display error'));
+            
+            await manager._processQueue();
+            
+            expect(manager.isProcessingQueue).toBe(false);
+            
+            manager.destroy();
+        });
+
+        test('_displayStatusInternal - должен возвращать false без statusElement', async () => {
+            const manager = new StatusManager({ 
+                enableLogging: false
+            });
+            
+            const result = await manager._displayStatusInternal('Test', 'success', 1000);
+            
+            expect(result).toBe(false);
+            
+            manager.destroy();
+        });
+
+        test('showStatus - различные комбинации параметров', async () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                statusElement: statusElement,
+                enableHistory: true
+            });
+            
+            // Без duration (использует default)
+            await manager.showStatus('Test 1', 'success');
+            
+            // С duration = 0 (не скрывается автоматически)
+            await manager.showStatus('Test 2', 'info', 0);
+            
+            // С большой duration
+            await manager.showStatus('Test 3', 'error', 5000);
+            
+            expect(manager.history.length).toBeGreaterThan(0);
+            
+            manager.destroy();
+        });
+
+        test('clearHistory - с пустой историей', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableHistory: true
+            });
+            
+            const count = manager.clearHistory();
+            
+            expect(count).toBe(0);
+            
+            manager.destroy();
+        });
+
+        test('queue - когда очередь отключена должна быть пустой', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                enableQueue: false
+            });
+            
+            // Проверяем что очередь существует и пустая
+            expect(manager.queue).toBeDefined();
+            expect(Array.isArray(manager.queue)).toBe(true);
+            expect(manager.queue.length).toBe(0);
+            expect(manager.enableQueue).toBe(false);
+            
+            manager.destroy();
+        });
+
+        test('destroy - должен корректно очищать таймеры', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                statusElement: statusElement
+            });
+            
+            // Устанавливаем таймер
+            manager.hideTimeout = setTimeout(() => {}, 10000);
+            
+            manager.destroy();
+            
+            expect(manager.hideTimeout).toBeNull();
+        });
+
+        test('hideStatus - должен скрывать статус', () => {
+            const manager = new StatusManager({ 
+                enableLogging: false,
+                statusElement: statusElement
+            });
+            
+            // Показываем статус сначала
+            manager.showStatus('Test', 'success', 0);
+            
+            const hidden = manager.hideStatus();
+            
+            expect(hidden).toBe(true);
+            expect(manager.state.isVisible).toBe(false);
+            
+            manager.destroy();
+        });
+    });
 });

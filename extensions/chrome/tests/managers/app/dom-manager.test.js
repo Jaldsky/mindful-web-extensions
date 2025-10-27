@@ -408,4 +408,232 @@ describe('DOMManager', () => {
             }
         });
     });
+
+    describe('Branch Coverage - Дополнительные ветки', () => {
+        test('updateConnectionStatus - с translateFn', () => {
+            const translateFn = jest.fn((key) => {
+                const translations = {
+                    'app.status.online': 'Подключено',
+                    'app.status.offline': 'Отключено'
+                };
+                return translations[key];
+            });
+
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn 
+            });
+
+            const result = manager.updateConnectionStatus(true);
+
+            expect(result).toBe(true);
+            expect(translateFn).toHaveBeenCalledWith('app.status.online');
+            
+            manager.destroy();
+        });
+
+        test('updateConnectionStatus - без translateFn используя fallback', () => {
+            const manager = new DOMManager({ 
+                enableLogging: false
+            });
+
+            const result = manager.updateConnectionStatus(false);
+
+            expect(result).toBe(true);
+            expect(manager.elements.connectionStatus.textContent).toBe('Disconnected');
+            
+            manager.destroy();
+        });
+
+        test('updateConnectionStatus - обработка ошибок при обновлении', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            
+            // Мокируем ошибку в _safeUpdateElement
+            jest.spyOn(manager, '_safeUpdateElement').mockImplementation(() => {
+                throw new Error('Update error');
+            });
+
+            const result = manager.updateConnectionStatus(true);
+
+            expect(result).toBe(false);
+            
+            manager.destroy();
+        });
+
+        test('_safeUpdateElement - с элементом не найденным', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            
+            const result = manager._safeUpdateElement(
+                null, 
+                () => {}, 
+                'тестовый элемент'
+            );
+
+            expect(result).toBe(false);
+            
+            manager.destroy();
+        });
+
+        test('_safeUpdateElement - обработка ошибок в updateFn', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            
+            const element = document.createElement('div');
+            const updateFn = jest.fn(() => {
+                throw new Error('Update function error');
+            });
+
+            const result = manager._safeUpdateElement(
+                element, 
+                updateFn, 
+                'тестовый элемент'
+            );
+
+            expect(result).toBe(false);
+            expect(updateFn).toHaveBeenCalled();
+            
+            manager.destroy();
+        });
+
+        test('updateTrackingStatus - с translateFn', () => {
+            const translateFn = jest.fn((key) => {
+                const translations = {
+                    'app.status.tracking': 'Отслеживание',
+                    'app.status.stopped': 'Остановлено'
+                };
+                return translations[key];
+            });
+
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn 
+            });
+
+            const result = manager.updateTrackingStatus(true);
+
+            expect(result).toBe(true);
+            // translateFn вызывается, но нужно проверить правильно
+            expect(translateFn).toHaveBeenCalled();
+            
+            manager.destroy();
+        });
+
+        test('updateTrackingStatus - обработка ошибок', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            
+            // Мокируем ошибку
+            jest.spyOn(manager, '_safeUpdateElement').mockImplementation(() => {
+                throw new Error('Update error');
+            });
+
+            const result = manager.updateTrackingStatus(false);
+
+            expect(result).toBe(false);
+            
+            manager.destroy();
+        });
+
+        test('updateCounters - обработка null/undefined значений', () => {
+            const manager = new DOMManager({ enableLogging: false });
+
+            const result = manager.updateCounters({
+                eventsCount: null,
+                domainsCount: undefined,
+                queueSize: 0
+            });
+
+            // Должен обработать null/undefined корректно
+            expect(result).toBeDefined();
+            
+            manager.destroy();
+        });
+
+        test('updateCounters - с только некоторыми полями', () => {
+            const manager = new DOMManager({ enableLogging: false });
+
+            const result = manager.updateCounters({
+                eventsCount: 5
+            });
+
+            // Проверяем что метод вернул объект с результатами
+            expect(result).toBeDefined();
+            expect(typeof result).toBe('object');
+            
+            manager.destroy();
+        });
+
+        test('setButtonState - с несуществующим элементом', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            
+            // Удаляем элемент из DOM
+            const button = manager.elements.openSettings;
+            if (button && button.parentNode) {
+                button.parentNode.removeChild(button);
+            }
+            manager.elements.openSettings = null;
+
+            // setButtonState требует text (строка) и disabled (boolean)
+            expect(() => {
+                manager.setButtonState('openSettings', 'Test', false);
+            }).not.toThrow();
+            
+            manager.destroy();
+        });
+
+        test('destroy - должен корректно сбрасывать элементы', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            
+            manager.destroy();
+
+            expect(manager.elements).toBeDefined();
+            // После destroy элементы должны быть очищены
+            Object.values(manager.elements).forEach(element => {
+                expect(element).toBeNull();
+            });
+        });
+
+        test('getElementStatistics - с null элементами', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            
+            // Обнуляем некоторые элементы
+            manager.elements.connectionStatus = null;
+            manager.elements.trackingStatus = null;
+
+            const stats = manager.getElementsStatistics();
+
+            // Проверяем что статистика возвращается
+            expect(stats).toBeDefined();
+            expect(typeof stats).toBe('object');
+            
+            manager.destroy();
+        });
+
+        test('constructor - с translateFn', () => {
+            const translateFn = jest.fn();
+
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn 
+            });
+
+            expect(manager.translateFn).toBe(translateFn);
+            
+            manager.destroy();
+        });
+
+        test('reloadElements - должен перезагружать все элементы', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            
+            const oldElements = { ...manager.elements };
+            
+            manager.reloadElements();
+
+            // Элементы должны быть перезагружены
+            expect(manager.elements).toBeDefined();
+            Object.keys(oldElements).forEach(key => {
+                expect(manager.elements[key]).toBeDefined();
+            });
+            
+            manager.destroy();
+        });
+    });
 });

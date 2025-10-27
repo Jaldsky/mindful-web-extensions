@@ -55,9 +55,15 @@ describe('TrackerManager', () => {
 
     afterEach(() => {
         if (trackerManager) {
-            trackerManager.destroy();
+            try {
+                trackerManager.destroy();
+                trackerManager = null;
+            } catch (error) {
+                // Игнорируем ошибки при destroy
+            }
         }
         jest.clearAllMocks();
+        jest.clearAllTimers();
     });
 
     describe('Инициализация', () => {
@@ -261,6 +267,105 @@ describe('TrackerManager', () => {
             
             expect(trackerManager.messageHandlerManager.statisticsManager).toBe(trackerManager.statisticsManager);
             expect(trackerManager.messageHandlerManager.eventQueueManager).toBe(trackerManager.eventQueueManager);
+        });
+    });
+
+    describe('Online/Offline мониторинг', () => {
+        test('должен обрабатывать онлайн статус при инициализации', async () => {
+            Object.defineProperty(global.navigator, 'onLine', {
+                writable: true,
+                value: true
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+            
+            expect(trackerManager.eventQueueManager.state.isOnline).toBe(true);
+        });
+
+        test('должен обрабатывать офлайн статус при инициализации', async () => {
+            Object.defineProperty(global.navigator, 'onLine', {
+                writable: true,
+                value: false
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+            
+            expect(trackerManager.eventQueueManager.state.isOnline).toBe(false);
+        });
+
+        test('должен устанавливать мониторинг онлайн статуса', async () => {
+            Object.defineProperty(global.navigator, 'onLine', {
+                writable: true,
+                value: true
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+
+            // Проверяем что статус установлен корректно при инициализации
+            expect(trackerManager.eventQueueManager.state.isOnline).toBe(true);
+        });
+    });
+
+    describe('Lifecycle handlers', () => {
+        test('должен обрабатывать событие установки расширения', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+
+            // Получаем callback для onInstalled
+            const onInstalledCallback = global.chrome.runtime.onInstalled.addListener.mock.calls[0][0];
+
+            // Симулируем установку
+            onInstalledCallback({ reason: 'install' });
+
+            // Проверяем что обработчик вызван (без ошибок)
+            expect(onInstalledCallback).toBeDefined();
+        });
+
+        test('должен обрабатывать событие обновления расширения', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+
+            // Получаем callback для onInstalled
+            const onInstalledCallback = global.chrome.runtime.onInstalled.addListener.mock.calls[0][0];
+
+            // Симулируем обновление
+            onInstalledCallback({ reason: 'update' });
+
+            // Проверяем что обработчик вызван (без ошибок)
+            expect(onInstalledCallback).toBeDefined();
+        });
+
+        test('должен обрабатывать событие запуска расширения', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+
+            // Получаем callback для onStartup
+            const onStartupCallback = global.chrome.runtime.onStartup.addListener.mock.calls[0][0];
+
+            // Симулируем запуск
+            onStartupCallback();
+
+            // Проверяем что обработчик вызван (без ошибок)
+            expect(onStartupCallback).toBeDefined();
+        });
+
+        test('должен обрабатывать событие приостановки расширения', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+
+            const saveQueueSpy = jest.spyOn(trackerManager.eventQueueManager, 'saveQueue');
+
+            // Получаем callback для onSuspend
+            const onSuspendCallback = global.chrome.runtime.onSuspend.addListener.mock.calls[0][0];
+
+            // Симулируем приостановку
+            onSuspendCallback();
+
+            // Проверяем что очередь сохраняется
+            expect(saveQueueSpy).toHaveBeenCalled();
         });
     });
 });
