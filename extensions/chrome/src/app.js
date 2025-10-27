@@ -3,6 +3,7 @@
  * Initializes the AppManager when the DOM is ready
  */
 import AppManager from './app_manager/AppManager.js';
+import ThemeManager from './ThemeManager.js';
 
 /**
  * Global instance of AppManager.
@@ -13,11 +14,18 @@ let appManagerInstance = null;
 /**
  * Инициализирует страницу приложения.
  * 
- * @returns {void}
+ * @async
+ * @returns {Promise<void>}
  */
-function initializeAppPage() {
+async function initializeAppPage() {
     try {
         console.log('[App] Инициализация страницы приложения');
+        
+        // Загружаем и применяем тему
+        await ThemeManager.loadAndApplyTheme();
+        
+        // Слушаем изменения темы
+        ThemeManager.listenForThemeChanges();
         
         appManagerInstance = new AppManager({
             enableLogging: true // Можно отключить в продакшене

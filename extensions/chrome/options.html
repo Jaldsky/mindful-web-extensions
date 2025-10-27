@@ -11,10 +11,16 @@
     <div class="container">
         <div class="header-with-language">
             <h1 data-i18n="options.heading">Mindful Web Settings</h1>
-            <button class="language-toggle" id="languageToggle" title="Switch language">
-                <span class="language-icon">🌐</span>
-                <span class="language-code" id="currentLanguage">EN</span>
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="theme-toggle" id="themeToggle" data-i18n-attr="title" data-i18n="options.theme.toggleButton" title="Toggle Theme">
+                    <span class="theme-icon" id="themeIcon">☀️</span>
+                    <span class="theme-label" id="themeLabel" data-i18n="options.theme.light">Light</span>
+                </button>
+                <button class="language-toggle" id="languageToggle" title="Switch language">
+                    <span class="language-icon">🌐</span>
+                    <span class="language-code" id="currentLanguage">EN</span>
+                </button>
+            </div>
         </div>
         
         <form id="settingsForm">

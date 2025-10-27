@@ -6,6 +6,8 @@ body {
     width: 300px;
     padding: var(--spacing-xl);
     background-color: var(--color-bg-secondary);
+    /* No transition for instant theme application */
+    transition: none !important;
 }
 
 /* Header section */

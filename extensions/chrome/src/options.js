@@ -4,6 +4,7 @@
  */
 
 import OptionsManager from './options_manager/OptionsManager.js';
+import ThemeManager from './ThemeManager.js';
 
 /**
  * Global instance of OptionsManager.
@@ -21,6 +22,9 @@ let optionsManagerInstance = null;
 async function initializeOptionsPage() {
     try {
         console.log('[Options] Инициализация страницы настроек');
+
+        // Слушаем изменения темы из других страниц
+        ThemeManager.listenForThemeChanges();
 
         optionsManagerInstance = new OptionsManager({
             enableLogging: true

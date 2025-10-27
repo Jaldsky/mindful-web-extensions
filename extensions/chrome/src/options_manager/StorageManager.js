@@ -36,7 +36,8 @@ class StorageManager extends BaseManager {
      * @enum {string}
      */
     static DEFAULT_VALUES = {
-        BACKEND_URL: CONFIG.BACKEND.DEFAULT_URL
+        BACKEND_URL: CONFIG.BACKEND.DEFAULT_URL,
+        THEME: 'light'
     };
 
     /**
@@ -228,6 +229,81 @@ class StorageManager extends BaseManager {
      */
     getDefaultBackendUrl() {
         return StorageManager.DEFAULT_VALUES.BACKEND_URL;
+    }
+
+    /**
+     * Загружает тему из хранилища.
+     * 
+     * @async
+     * @returns {Promise<string>} Тема ('light' или 'dark')
+     * @throws {Error} Если произошла ошибка при загрузке
+     */
+    async loadTheme() {
+        return this._executeWithTimingAsync('loadTheme', async () => {
+            this._log('Загрузка темы из хранилища');
+            
+            const result = await chrome.storage.local.get(['mindful_theme']);
+            const loadedTheme = result.mindful_theme;
+            const theme = this._validateLoadedValue(
+                loadedTheme,
+                StorageManager.DEFAULT_VALUES.THEME
+            );
+            
+            this._log('Тема загружена', { 
+                theme,
+                wasDefault: !loadedTheme
+            });
+            
+            return theme;
+        });
+    }
+
+    /**
+     * Сохраняет тему в хранилище.
+     * 
+     * @async
+     * @param {string} theme - Тема для сохранения ('light' или 'dark')
+     * @throws {TypeError} Если theme не является строкой или пустой
+     * @throws {Error} Если произошла ошибка при сохранении
+     * @returns {Promise<boolean>} true если сохранение успешно
+     */
+    async saveTheme(theme) {
+        if (typeof theme !== 'string' || theme.trim() === '') {
+            throw new TypeError('theme должна быть непустой строкой');
+        }
+
+        if (theme !== 'light' && theme !== 'dark') {
+            throw new TypeError('theme должна быть "light" или "dark"');
+        }
+
+        return this._executeWithTimingAsync('saveTheme', async () => {
+            this._log('Сохранение темы в хранилище', { theme });
+            
+            await chrome.storage.local.set({
+                'mindful_theme': theme
+            });
+            
+            // Верификация сохранения
+            const verification = await chrome.storage.local.get(['mindful_theme']);
+            const saved = verification.mindful_theme === theme;
+            
+            if (saved) {
+                this._log('Тема успешно сохранена и верифицирована');
+            } else {
+                throw new Error('Верификация сохранения темы не удалась');
+            }
+            
+            return true;
+        });
+    }
+
+    /**
+     * Получает текущую тему по умолчанию.
+     * 
+     * @returns {string} Тема по умолчанию
+     */
+    getDefaultTheme() {
+        return StorageManager.DEFAULT_VALUES.THEME;
     }
 
     /**
