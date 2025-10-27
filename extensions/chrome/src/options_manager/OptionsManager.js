@@ -144,6 +144,9 @@ class OptionsManager extends BaseManager {
             // Обновляем отображение текущего языка
             this.updateLanguageDisplay();
 
+            // Загружаем и применяем тему
+            await this.loadTheme();
+
             // Загружаем сохраненные настройки
             // (валидация Storage API уже произошла в конструкторе StorageManager)
             await this.loadSettings();
@@ -329,6 +332,17 @@ class OptionsManager extends BaseManager {
             };
             languageToggle.addEventListener('click', handler);
             this.eventHandlers.set('languageToggle', handler);
+            handlersCount++;
+        }
+
+        // Theme toggle button
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            const handler = async () => {
+                await this.toggleTheme();
+            };
+            themeToggle.addEventListener('click', handler);
+            this.eventHandlers.set('themeToggle', handler);
             handlersCount++;
         }
 
@@ -713,11 +727,117 @@ class OptionsManager extends BaseManager {
             // Обновляем отображение языка
             this.updateLanguageDisplay();
             
+            // Обновляем отображение темы (для перевода)
+            this.updateThemeDisplay();
+            
             this._log('Локаль изменена', {
                 locale: this.localeManager.getCurrentLocale()
             });
         } catch (error) {
             this._logError('Ошибка при изменении локали', error);
+        }
+    }
+
+    /**
+     * Загружает и применяет тему из хранилища.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    async loadTheme() {
+        try {
+            this._log('Загрузка темы');
+            const theme = await this.storageManager.loadTheme();
+            this.applyTheme(theme);
+            this._log('Тема загружена и применена', { theme });
+        } catch (error) {
+            this._logError('Ошибка загрузки темы', error);
+            // Применяем тему по умолчанию
+            this.applyTheme('light');
+        }
+    }
+
+    /**
+     * Применяет тему к документу.
+     * 
+     * @param {string} theme - Тема для применения ('light' или 'dark')
+     * @returns {void}
+     */
+    applyTheme(theme) {
+        try {
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            this.updateThemeDisplay(theme);
+            this._log('Тема применена', { theme });
+        } catch (error) {
+            this._logError('Ошибка применения темы', error);
+        }
+    }
+
+    /**
+     * Переключает тему.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    async toggleTheme() {
+        try {
+            this._log('Переключение темы');
+            
+            // Получаем текущую тему
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // Применяем новую тему
+            this.applyTheme(newTheme);
+            
+            // Сохраняем в хранилище
+            await this.storageManager.saveTheme(newTheme);
+            
+            // Уведомление не показываем - визуальное изменение и так очевидно
+            
+            this._log('Тема переключена', { 
+                from: currentTheme, 
+                to: newTheme 
+            });
+        } catch (error) {
+            this._logError('Ошибка переключения темы', error);
+            // Показываем ошибку только если что-то пошло не так
+            this.statusManager.showError(
+                this.localeManager.t('options.status.saveError')
+            );
+        }
+    }
+
+    /**
+     * Обновляет отображение текущей темы.
+     * 
+     * @param {string} [theme] - Тема для отображения (если не указана, определяется автоматически)
+     * @returns {void}
+     */
+    updateThemeDisplay(theme) {
+        try {
+            const themeIconElement = document.getElementById('themeIcon');
+            const themeLabelElement = document.getElementById('themeLabel');
+            
+            if (!themeIconElement || !themeLabelElement) {
+                return;
+            }
+            
+            const currentTheme = theme || document.documentElement.getAttribute('data-theme') || 'light';
+            
+            if (currentTheme === 'dark') {
+                themeIconElement.textContent = '🌙';
+                themeLabelElement.textContent = this.localeManager.t('options.theme.dark');
+            } else {
+                themeIconElement.textContent = '☀️';
+                themeLabelElement.textContent = this.localeManager.t('options.theme.light');
+            }
+        } catch (error) {
+            this._logError('Ошибка обновления отображения темы', error);
         }
     }
 

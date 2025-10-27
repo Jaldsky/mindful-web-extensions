@@ -69,6 +69,14 @@ const EN = {
             backendUrlHelp: 'Enter the URL of your Mindful Web backend API endpoint'
         },
         
+        // Theme
+        theme: {
+            label: 'Theme:',
+            light: 'Light',
+            dark: 'Dark',
+            toggleButton: 'Toggle Theme'
+        },
+        
         // Buttons
         buttons: {
             save: 'Save Settings',
@@ -97,7 +105,8 @@ const EN = {
             reloadError: 'Reload Error',
             reloading: 'Reloading extension...',
             storageUnavailable: 'Storage API unavailable. Please reload the extension.',
-            saveFailed: 'Settings save verification failed. Please try again.'
+            saveFailed: 'Settings save verification failed. Please try again.',
+            themeChanged: 'Theme changed successfully!'
         }
     },
 
