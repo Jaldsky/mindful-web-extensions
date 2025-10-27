@@ -2,8 +2,8 @@
  * Entry point for the app page
  * Initializes the AppManager when the DOM is ready
  */
-import AppManager from './app_manager/AppManager.js';
-import ThemeManager from './theme_manager/ThemeManager.js';
+import AppManager from './managers/app/AppManager.js';
+import ThemeManager from './managers/theme/ThemeManager.js';
 
 /**
  * Global instance of AppManager.

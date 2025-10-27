@@ -3,8 +3,8 @@
  * Uses the OptionsManager architecture for modular and maintainable code.
  */
 
-import OptionsManager from './options_manager/OptionsManager.js';
-import ThemeManager from './theme_manager/ThemeManager.js';
+import OptionsManager from './managers/options/OptionsManager.js';
+import ThemeManager from './managers/theme/ThemeManager.js';
 
 /**
  * Global instance of OptionsManager.
