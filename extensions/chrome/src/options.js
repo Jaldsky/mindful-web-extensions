@@ -4,13 +4,19 @@
  */
 
 import OptionsManager from './options_manager/OptionsManager.js';
-import ThemeManager from './ThemeManager.js';
+import ThemeManager from './theme_manager/ThemeManager.js';
 
 /**
  * Global instance of OptionsManager.
  * @type {OptionsManager|null}
  */
 let optionsManagerInstance = null;
+
+/**
+ * Global instance of ThemeManager for syncing themes.
+ * @type {ThemeManager|null}
+ */
+let themeManagerInstance = null;
 
 /**
  * Инициализирует страницу настроек.
@@ -23,12 +29,35 @@ async function initializeOptionsPage() {
     try {
         console.log('[Options] Инициализация страницы настроек');
 
+        // Создаем ThemeManager
+        themeManagerInstance = new ThemeManager({
+            enableLogging: true,
+            enableCache: true
+        });
+        
+        // Загружаем и применяем тему
+        await themeManagerInstance.loadAndApplyTheme();
+        
         // Слушаем изменения темы из других страниц
-        ThemeManager.listenForThemeChanges();
+        themeManagerInstance.listenForThemeChanges((newTheme) => {
+            // При изменении темы из другой страницы обновляем UI
+            if (optionsManagerInstance) {
+                optionsManagerInstance.updateThemeDisplay(newTheme);
+            }
+        });
 
         optionsManagerInstance = new OptionsManager({
             enableLogging: true
         });
+        
+        // Связываем OptionsManager с ThemeManager
+        optionsManagerInstance.setThemeManager(themeManagerInstance);
+        
+        // Обновляем отображение текущей темы в UI
+        optionsManagerInstance.updateThemeDisplay();
+        
+        // Экспортируем в window для отладки
+        window.themeManager = themeManagerInstance;
         
         console.log('[Options] Страница настроек успешно инициализирована');
     } catch (error) {
@@ -48,6 +77,13 @@ async function initializeOptionsPage() {
  * @returns {void}
  */
 function cleanupOptionsPage() {
+    if (themeManagerInstance) {
+        console.log('[Options] Очистка ресурсов ThemeManager');
+        themeManagerInstance.destroy();
+        themeManagerInstance = null;
+        window.themeManager = null;
+    }
+    
     if (optionsManagerInstance) {
         console.log('[Options] Очистка ресурсов страницы настроек');
         optionsManagerInstance.destroy();

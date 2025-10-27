@@ -3,13 +3,19 @@
  * Initializes the AppManager when the DOM is ready
  */
 import AppManager from './app_manager/AppManager.js';
-import ThemeManager from './ThemeManager.js';
+import ThemeManager from './theme_manager/ThemeManager.js';
 
 /**
  * Global instance of AppManager.
  * @type {AppManager|null}
  */
 let appManagerInstance = null;
+
+/**
+ * Global instance of ThemeManager.
+ * @type {ThemeManager|null}
+ */
+let themeManagerInstance = null;
 
 /**
  * Инициализирует страницу приложения.
@@ -21,11 +27,17 @@ async function initializeAppPage() {
     try {
         console.log('[App] Инициализация страницы приложения');
         
+        // Создаем и инициализируем ThemeManager
+        themeManagerInstance = new ThemeManager({
+            enableLogging: true,
+            enableCache: true
+        });
+        
         // Загружаем и применяем тему
-        await ThemeManager.loadAndApplyTheme();
+        await themeManagerInstance.loadAndApplyTheme();
         
         // Слушаем изменения темы
-        ThemeManager.listenForThemeChanges();
+        themeManagerInstance.listenForThemeChanges();
         
         appManagerInstance = new AppManager({
             enableLogging: true // Можно отключить в продакшене
@@ -33,6 +45,7 @@ async function initializeAppPage() {
         
         // Экспортируем в window для отладки
         window.appManager = appManagerInstance;
+        window.themeManager = themeManagerInstance;
         
         console.log('[App] Страница приложения успешно инициализирована');
     } catch (error) {
@@ -46,6 +59,13 @@ async function initializeAppPage() {
  * @returns {void}
  */
 function cleanupAppPage() {
+    if (themeManagerInstance) {
+        console.log('[App] Очистка ресурсов ThemeManager');
+        themeManagerInstance.destroy();
+        themeManagerInstance = null;
+        window.themeManager = null;
+    }
+    
     if (appManagerInstance) {
         console.log('[App] Очистка ресурсов страницы приложения');
         appManagerInstance.destroy();

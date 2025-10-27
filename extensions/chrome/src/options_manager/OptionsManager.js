@@ -67,6 +67,8 @@ class OptionsManager extends BaseManager {
             this._logError('Критическая ошибка инициализации StorageManager', error);
             throw new Error(`Storage Manager initialization failed: ${error.message}`);
         }
+
+        // ThemeManager уже создан в options.js, получаем ссылку позже через setThemeManager
         
         this.validationManager = new ValidationManager({ 
             enableLogging: this.enableLogging,
@@ -143,9 +145,6 @@ class OptionsManager extends BaseManager {
             
             // Обновляем отображение текущего языка
             this.updateLanguageDisplay();
-
-            // Загружаем и применяем тему
-            await this.loadTheme();
 
             // Загружаем сохраненные настройки
             // (валидация Storage API уже произошла в конструкторе StorageManager)
@@ -739,63 +738,45 @@ class OptionsManager extends BaseManager {
     }
 
     /**
-     * Загружает и применяет тему из хранилища.
+     * Устанавливает ссылку на ThemeManager.
+     * Вызывается из options.js после создания ThemeManager.
      * 
-     * @async
-     * @returns {Promise<void>}
-     */
-    async loadTheme() {
-        try {
-            this._log('Загрузка темы');
-            const theme = await this.storageManager.loadTheme();
-            this.applyTheme(theme);
-            this._log('Тема загружена и применена', { theme });
-        } catch (error) {
-            this._logError('Ошибка загрузки темы', error);
-            // Применяем тему по умолчанию
-            this.applyTheme('light');
-        }
-    }
-
-    /**
-     * Применяет тему к документу.
-     * 
-     * @param {string} theme - Тема для применения ('light' или 'dark')
+     * @param {Object} themeManager - Экземпляр ThemeManager
      * @returns {void}
      */
-    applyTheme(theme) {
-        try {
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-            }
-            this.updateThemeDisplay(theme);
-            this._log('Тема применена', { theme });
-        } catch (error) {
-            this._logError('Ошибка применения темы', error);
-        }
+    setThemeManager(themeManager) {
+        this.themeManager = themeManager;
+        this._log('ThemeManager установлен');
     }
 
     /**
      * Переключает тему.
+     * Использует ThemeManager для координации всех операций с темой.
      * 
      * @async
      * @returns {Promise<void>}
      */
     async toggleTheme() {
         try {
+            if (!this.themeManager) {
+                this._logError('ThemeManager не установлен');
+                return;
+            }
+
             this._log('Переключение темы');
             
             // Получаем текущую тему
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const currentTheme = this.themeManager.getCurrentTheme();
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
             // Применяем новую тему
-            this.applyTheme(newTheme);
+            this.themeManager.applyTheme(newTheme);
             
             // Сохраняем в хранилище
-            await this.storageManager.saveTheme(newTheme);
+            await this.themeManager.saveTheme(newTheme);
+            
+            // Обновляем отображение кнопки
+            this.updateThemeDisplay(newTheme);
             
             // Уведомление не показываем - визуальное изменение и так очевидно
             
@@ -813,9 +794,9 @@ class OptionsManager extends BaseManager {
     }
 
     /**
-     * Обновляет отображение текущей темы.
+     * Обновляет отображение текущей темы в UI.
      * 
-     * @param {string} [theme] - Тема для отображения (если не указана, определяется автоматически)
+     * @param {string} [theme] - Тема для отображения (если не указана, получается из ThemeManager)
      * @returns {void}
      */
     updateThemeDisplay(theme) {
@@ -827,7 +808,7 @@ class OptionsManager extends BaseManager {
                 return;
             }
             
-            const currentTheme = theme || document.documentElement.getAttribute('data-theme') || 'light';
+            const currentTheme = theme || (this.themeManager ? this.themeManager.getCurrentTheme() : 'light');
             
             if (currentTheme === 'dark') {
                 themeIconElement.textContent = '🌙';
