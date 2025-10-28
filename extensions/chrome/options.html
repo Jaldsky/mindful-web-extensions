@@ -11,7 +11,7 @@
     <div class="container">
         <div class="header-with-language">
             <h1 data-i18n="options.heading">Mindful Web Settings</h1>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
                 <button class="theme-toggle" id="themeToggle" data-i18n-attr="title" data-i18n="options.theme.toggleButton" title="Toggle Theme">
                     <span class="theme-icon" id="themeIcon">☀️</span>
                     <span class="theme-label" id="themeLabel" data-i18n="options.theme.light">Light</span>
@@ -46,14 +46,58 @@
         </form>
         
         <div id="status" class="status-message"></div>
-        
-        <div class="diagnostic-section">
-            <h2 data-i18n="options.diagnostics.title">Diagnostics & Tools</h2>
-            <div class="diagnostic-buttons">
-                <button type="button" id="runDiagnostics" class="debug-btn" data-i18n="options.buttons.runDiagnostics">Run Diagnostics</button>
-                <button type="button" id="reloadExtension" class="reload-btn" data-i18n="options.buttons.reloadExtension">Reload Extension</button>
+    </div>
+    
+    <!-- Developer Tools Panels Container -->
+    <div class="developer-panels-container">
+        <!-- Tabbed Panel -->
+        <div id="devToolsPanel" class="dev-tools-panel" style="display: none;">
+            <div class="dev-tools-panel-header">
+                <div class="dev-tools-tabs">
+                    <button type="button" id="logsTab" class="dev-tab active" data-tab="logs">
+                        <span data-i18n="options.tabs.logs">Logs</span>
+                    </button>
+                    <button type="button" id="diagnosticsTab" class="dev-tab" data-tab="diagnostics">
+                        <span data-i18n="options.tabs.diagnostics">Diagnostics</span>
+                    </button>
+                </div>
+                <div class="dev-tools-actions">
+                    <button type="button" id="closeDevToolsPanel" class="close-panel-btn">✕</button>
+                </div>
+            </div>
+            
+            <div class="dev-tools-panel-body">
+                <!-- Logs Tab Content -->
+                <div id="logsTabContent" class="tab-content active">
+                    <div class="logs-actions">
+                        <button type="button" id="refreshLogs" class="logs-action-btn" data-i18n="options.buttons.refreshLogs">Refresh</button>
+                        <button type="button" id="clearLogs" class="logs-action-btn" data-i18n="options.buttons.clearLogs">Clear</button>
+                        <button type="button" id="copyLogs" class="logs-action-btn" data-i18n="options.buttons.copyLogs">Copy</button>
+                    </div>
+                    <pre id="logsContent" class="logs-content"></pre>
+                </div>
+                
+                <!-- Diagnostics Tab Content -->
+                <div id="diagnosticsTabContent" class="tab-content">
+                    <div class="diagnostics-actions">
+                        <button type="button" id="runDiagnostics" class="run-diagnostics-btn" data-i18n="options.buttons.runDiagnostics">
+                            Run Diagnostics
+                        </button>
+                    </div>
+                    <div id="diagnosticsResults" style="display: none;">
+                        <div class="diagnostics-summary" id="diagnosticsSummary"></div>
+                    <div class="diagnostics-checks" id="diagnosticsChecks"></div>
+                </div>
             </div>
         </div>
+    </div>
+    </div>
+    
+    <!-- Developer Tools (fixed position) -->
+    <div class="developer-tools-section">
+        <button type="button" id="toggleDeveloperTools" class="toggle-developer-btn" title="Developer Tools">
+            <span class="toggle-icon">⚙️</span>
+        </button>
     </div>
 
     <!--suppress HtmlUnresolvedFile -->

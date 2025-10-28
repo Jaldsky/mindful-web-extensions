@@ -44,7 +44,7 @@ describe('OptionsManager', () => {
             </form>
             <div id="status"></div>
             <button type="button" id="runDiagnostics">Run Diagnostics</button>
-            <button type="button" id="reloadExtension">Reload Extension</button>
+            <button type="button" id="toggleDeveloperTools">⚙️</button>
         `;
 
         // Мок для navigator.language (для LocaleManager)
@@ -476,18 +476,6 @@ describe('OptionsManager', () => {
 
             expect(diagnosticsSpy).toHaveBeenCalled();
         });
-
-        test('должен обрабатывать клик по кнопке перезагрузки', async () => {
-            const reloadBtn = document.getElementById('reloadExtension');
-            const reloadSpy = jest.spyOn(optionsManager, 'reloadExtension');
-
-            const clickEvent = new Event('click', { bubbles: true });
-            reloadBtn.dispatchEvent(clickEvent);
-
-            await new Promise(resolve => Promise.resolve().then(resolve));
-
-            expect(reloadSpy).toHaveBeenCalled();
-        });
     });
 
     describe('runDiagnostics', () => {
@@ -499,13 +487,13 @@ describe('OptionsManager', () => {
         test('должен запускать диагностику', async () => {
             const runDiagnosticsSpy = jest.spyOn(optionsManager.diagnosticsManager, 'runDiagnostics')
                 .mockResolvedValue({ overall: 'ok', checks: {} });
-            const displaySpy = jest.spyOn(optionsManager.diagnosticsManager, 'displayDiagnosticResults')
+            const renderSpy = jest.spyOn(optionsManager, '_renderDiagnostics')
                 .mockImplementation(() => {});
 
             const result = await optionsManager.runDiagnostics();
 
             expect(runDiagnosticsSpy).toHaveBeenCalled();
-            expect(displaySpy).toHaveBeenCalled();
+            expect(renderSpy).toHaveBeenCalled();
             expect(result).toBeDefined();
             expect(result.overall).toBe('ok');
         });
@@ -520,52 +508,18 @@ describe('OptionsManager', () => {
         test('должен блокировать кнопку во время диагностики', async () => {
             const button = document.getElementById('runDiagnostics');
             jest.spyOn(optionsManager.diagnosticsManager, 'runDiagnostics')
-                .mockResolvedValue({ overall: 'ok', checks: {} });
-            jest.spyOn(optionsManager.diagnosticsManager, 'displayDiagnosticResults')
+                .mockImplementation(async () => {
+                    // Проверяем что кнопка заблокирована во время выполнения
+                    expect(button.disabled).toBe(true);
+                    return { overall: 'ok', checks: {} };
+                });
+            jest.spyOn(optionsManager, '_renderDiagnostics')
                 .mockImplementation(() => {});
-
-            let buttonWasDisabled = false;
-            const originalSetButtonState = optionsManager.domManager.setButtonState.bind(optionsManager.domManager);
-            jest.spyOn(optionsManager.domManager, 'setButtonState').mockImplementation((btn, text, disabled) => {
-                if (btn === button && disabled) {
-                    buttonWasDisabled = true;
-                }
-                return originalSetButtonState(btn, text, disabled);
-            });
 
             await optionsManager.runDiagnostics();
 
-            expect(buttonWasDisabled).toBe(true);
-        });
-    });
-
-    describe('reloadExtension', () => {
-        beforeEach(async () => {
-            optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => setTimeout(resolve, 50));
-            jest.useFakeTimers();
-        });
-
-        afterEach(() => {
-            jest.useRealTimers();
-        });
-
-        test('должен вызывать chrome.runtime.reload', () => {
-            optionsManager.reloadExtension();
-            
-            // Прокручиваем таймер для setTimeout
-            jest.advanceTimersByTime(500);
-
-            expect(global.chrome.runtime.reload).toHaveBeenCalled();
-        });
-
-        test('должен показывать статус успеха перед перезагрузкой', () => {
-            const showSuccessSpy = jest.spyOn(optionsManager.statusManager, 'showSuccess');
-
-            optionsManager.reloadExtension();
-            
-            // Проверяем что статус был показан до перезагрузки
-            expect(showSuccessSpy).toHaveBeenCalledWith('Reloading extension...');
+            // После завершения кнопка должна быть разблокирована
+            expect(button.disabled).toBe(false);
         });
     });
 
@@ -1188,50 +1142,6 @@ describe('OptionsManager', () => {
                 .mockImplementation(() => { throw new Error('Destroy error'); });
 
             expect(() => optionsManager._destroyManagers()).not.toThrow();
-        });
-    });
-
-    describe('Обработка ошибок диагностики', () => {
-        beforeEach(async () => {
-            optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => setTimeout(resolve, 50));
-        });
-
-        test('должен обрабатывать ошибку восстановления кнопки диагностики', async () => {
-            const button = document.getElementById('runDiagnostics');
-            jest.spyOn(optionsManager.diagnosticsManager, 'runDiagnostics')
-                .mockResolvedValue({ overall: 'ok', checks: {} });
-            jest.spyOn(optionsManager.diagnosticsManager, 'displayDiagnosticResults')
-                .mockImplementation(() => {});
-
-            const setButtonStateSpy = jest.spyOn(optionsManager.domManager, 'setButtonState');
-            // Первый вызов успешен, второй - нет
-            setButtonStateSpy.mockReturnValueOnce(true).mockReturnValueOnce(false);
-
-            await optionsManager.runDiagnostics();
-
-            expect(setButtonStateSpy).toHaveBeenCalledTimes(2);
-        });
-    });
-
-    describe('reloadExtension - обработка ошибок', () => {
-        beforeEach(async () => {
-            optionsManager = new OptionsManager({ enableLogging: false });
-            await new Promise(resolve => setTimeout(resolve, 50));
-            jest.useFakeTimers();
-        });
-
-        afterEach(() => {
-            jest.useRealTimers();
-        });
-
-        test('должен обрабатывать ошибку отображения статуса при перезагрузке', () => {
-            jest.spyOn(optionsManager.statusManager, 'showSuccess')
-                .mockReturnValue(false);
-
-            optionsManager.reloadExtension();
-            
-            expect(optionsManager.statusManager.showSuccess).toHaveBeenCalled();
         });
     });
 });

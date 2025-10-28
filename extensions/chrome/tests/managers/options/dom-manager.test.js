@@ -20,7 +20,7 @@ describe('DOMManager', () => {
             </form>
             <div id="status"></div>
             <button type="button" id="runDiagnostics">Run Diagnostics</button>
-            <button type="button" id="reloadExtension">Reload Extension</button>
+            <button type="button" id="toggleDeveloperTools">⚙️</button>
         `;
 
         domManager = new DOMManager({ enableLogging: false });
@@ -48,7 +48,7 @@ describe('DOMManager', () => {
             expect(domManager.elements.resetBtn).toBeInstanceOf(HTMLButtonElement);
             expect(domManager.elements.status).toBeInstanceOf(HTMLDivElement);
             expect(domManager.elements.runDiagnostics).toBeInstanceOf(HTMLButtonElement);
-            expect(domManager.elements.reloadExtension).toBeInstanceOf(HTMLButtonElement);
+            expect(domManager.elements.toggleDeveloperTools).toBeInstanceOf(HTMLButtonElement);
         });
 
         test('должен создаваться с пользовательскими настройками', () => {
@@ -71,7 +71,7 @@ describe('DOMManager', () => {
             expect(DOMManager.ELEMENT_IDS.RESET_BTN).toBe('resetBtn');
             expect(DOMManager.ELEMENT_IDS.STATUS).toBe('status');
             expect(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS).toBe('runDiagnostics');
-            expect(DOMManager.ELEMENT_IDS.RELOAD_EXTENSION).toBe('reloadExtension');
+            expect(DOMManager.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS).toBe('toggleDeveloperTools');
         });
     });
 
