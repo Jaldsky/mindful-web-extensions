@@ -85,12 +85,18 @@ const EN = {
             resetting: 'Resetting...',
             runDiagnostics: 'Run Diagnostics',
             analyzing: 'Analyzing...',
-            reloadExtension: 'Reload Extension'
+            developerTools: 'Developer Tools',
+            showDeveloperTools: 'Show Developer Tools',
+            hideDeveloperTools: 'Hide Developer Tools',
+            refreshLogs: 'Refresh',
+            clearLogs: 'Clear',
+            copyLogs: 'Copy'
         },
         
-        // Diagnostics section
-        diagnostics: {
-            title: 'Diagnostics & Tools'
+        // Tabs
+        tabs: {
+            logs: 'Logs',
+            diagnostics: 'Diagnostics'
         },
         
         // Status messages
@@ -102,11 +108,30 @@ const EN = {
             resetError: 'Error resetting settings',
             uiUpdateError: 'Warning: UI update issue detected',
             diagnosticsError: 'Diagnostics Error',
-            reloadError: 'Reload Error',
-            reloading: 'Reloading extension...',
             storageUnavailable: 'Storage API unavailable. Please reload the extension.',
             saveFailed: 'Settings save verification failed. Please try again.',
             themeChanged: 'Theme changed successfully!'
+        },
+        
+        // Notifications
+        notifications: {
+            logsCleared: 'Logs cleared successfully',
+            logsClearError: 'Error clearing logs',
+            logsCopied: 'Logs copied to clipboard',
+            logsCopyError: 'Error copying logs'
+        },
+        
+        // Diagnostics
+        diagnostics: {
+            statusOk: 'All checks passed',
+            statusWarning: 'Warnings detected',
+            statusError: 'Errors detected',
+            statusUnknown: 'Unknown status',
+            labelTotal: 'Total',
+            labelSuccess: 'Success',
+            labelWarnings: 'Warnings',
+            labelErrors: 'Errors',
+            labelTime: 'Time'
         }
     },
 

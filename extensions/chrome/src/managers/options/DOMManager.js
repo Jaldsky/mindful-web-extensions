@@ -8,7 +8,7 @@ const BaseManager = require('../../base/BaseManager.js');
  * @property {HTMLButtonElement|null} resetBtn - Кнопка сброса
  * @property {HTMLElement|null} status - Элемент статуса
  * @property {HTMLButtonElement|null} runDiagnostics - Кнопка диагностики
- * @property {HTMLButtonElement|null} reloadExtension - Кнопка перезагрузки
+ * @property {HTMLButtonElement|null} toggleDeveloperTools - Кнопка переключения developer tools
  */
 
 /**
@@ -32,7 +32,7 @@ class DOMManager extends BaseManager {
         RESET_BTN: 'resetBtn',
         STATUS: 'status',
         RUN_DIAGNOSTICS: 'runDiagnostics',
-        RELOAD_EXTENSION: 'reloadExtension'
+        TOGGLE_DEVELOPER_TOOLS: 'toggleDeveloperTools'
     };
 
     /**
@@ -132,7 +132,7 @@ class DOMManager extends BaseManager {
             resetBtn: getElement(DOMManager.ELEMENT_IDS.RESET_BTN),
             status: getElement(DOMManager.ELEMENT_IDS.STATUS),
             runDiagnostics: getElement(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS),
-            reloadExtension: getElement(DOMManager.ELEMENT_IDS.RELOAD_EXTENSION)
+            toggleDeveloperTools: getElement(DOMManager.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS)
         };
     }
 

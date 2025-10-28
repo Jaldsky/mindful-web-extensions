@@ -310,17 +310,55 @@ class OptionsManager extends BaseManager {
             this._log('Предупреждение: кнопка диагностики не найдена, обработчик не установлен');
         }
 
-        // Обработчик кнопки перезагрузки
-        if (this.domManager.elements.reloadExtension) {
-            const reloadClickHandler = () => {
-                this.reloadExtension();
-            };
-            
-            this.domManager.elements.reloadExtension.addEventListener('click', reloadClickHandler);
-            this.eventHandlers.set('reloadExtension', reloadClickHandler);
+        // Обработчик закрытия панели разработчика
+        const closeDevToolsPanel = document.getElementById('closeDevToolsPanel');
+        if (closeDevToolsPanel) {
+            const handler = () => this.closeDevToolsPanel();
+            closeDevToolsPanel.addEventListener('click', handler);
+            this.eventHandlers.set('closeDevToolsPanel', handler);
             handlersCount++;
-        } else {
-            this._log('Предупреждение: кнопка перезагрузки не найдена, обработчик не установлен');
+        }
+
+        // Обработчики переключения вкладок
+        const logsTab = document.getElementById('logsTab');
+        const diagnosticsTab = document.getElementById('diagnosticsTab');
+        
+        if (logsTab) {
+            const handler = () => this.switchTab('logs');
+            logsTab.addEventListener('click', handler);
+            this.eventHandlers.set('logsTab', handler);
+            handlersCount++;
+        }
+        
+        if (diagnosticsTab) {
+            const handler = () => this.switchTab('diagnostics');
+            diagnosticsTab.addEventListener('click', handler);
+            this.eventHandlers.set('diagnosticsTab', handler);
+            handlersCount++;
+        }
+
+        const refreshLogs = document.getElementById('refreshLogs');
+        if (refreshLogs) {
+            const handler = () => this.refreshLogs();
+            refreshLogs.addEventListener('click', handler);
+            this.eventHandlers.set('refreshLogs', handler);
+            handlersCount++;
+        }
+
+        const clearLogs = document.getElementById('clearLogs');
+        if (clearLogs) {
+            const handler = () => this.clearLogs();
+            clearLogs.addEventListener('click', handler);
+            this.eventHandlers.set('clearLogs', handler);
+            handlersCount++;
+        }
+
+        const copyLogs = document.getElementById('copyLogs');
+        if (copyLogs) {
+            const handler = () => this.copyLogs();
+            copyLogs.addEventListener('click', handler);
+            this.eventHandlers.set('copyLogs', handler);
+            handlersCount++;
         }
 
         // Language toggle button
@@ -344,6 +382,26 @@ class OptionsManager extends BaseManager {
             this.eventHandlers.set('themeToggle', handler);
             handlersCount++;
         }
+
+        // Developer tools toggle button - opens panel
+        if (this.domManager.elements.toggleDeveloperTools) {
+            const handler = () => {
+                const panel = document.getElementById('devToolsPanel');
+                if (panel && panel.style.display === 'block') {
+                    this.closeDevToolsPanel();
+                } else {
+                    this.openDevToolsPanel('logs');
+                }
+            };
+            this.domManager.elements.toggleDeveloperTools.addEventListener('click', handler);
+            this.eventHandlers.set('toggleDeveloperTools', handler);
+            handlersCount++;
+        } else {
+            this._log('Предупреждение: кнопка developer tools не найдена, обработчик не установлен');
+        }
+
+        // Restore developer tools state from localStorage
+        this.restoreDeveloperToolsState();
 
         const setupTime = Math.round(performance.now() - setupStartTime);
         this._log('Обработчики событий настроены', {
@@ -590,21 +648,16 @@ class OptionsManager extends BaseManager {
      */
     async runDiagnostics() {
         const button = this.domManager.elements.runDiagnostics;
-        const originalText = this.localeManager.t('options.buttons.runDiagnostics');
+        const originalText = button ? button.textContent : '';
         const operationStartTime = performance.now();
         
         try {
             this._log('Запуск диагностики');
 
             // Блокируем кнопку и меняем текст
-            const buttonStateSet = this.domManager.setButtonState(
-                button,
-                this.localeManager.t('options.buttons.analyzing'),
-                true
-            );
-            
-            if (!buttonStateSet) {
-                this._log('Предупреждение: не удалось обновить состояние кнопки диагностики');
+            if (button) {
+                button.disabled = true;
+                button.textContent = this.localeManager.t('options.buttons.analyzing') || 'Analyzing...';
             }
 
             // Минимальная задержка для визуальной обратной связи (500ms)
@@ -613,8 +666,8 @@ class OptionsManager extends BaseManager {
             
             const [results] = await Promise.all([diagnosticsRun, minDelay]);
             
-            // Отображаем результаты
-            this.diagnosticsManager.displayDiagnosticResults(results);
+            // Отрисовываем результаты
+            this._renderDiagnostics(results);
 
             const totalTime = Math.round(performance.now() - operationStartTime);
             this._log('Диагностика завершена', { 
@@ -638,50 +691,9 @@ class OptionsManager extends BaseManager {
             throw error;
         } finally {
             // Восстанавливаем кнопку
-            const buttonRestored = this.domManager.setButtonState(
-                button,
-                originalText,
-                false
-            );
-            
-            if (!buttonRestored) {
-                this._log('Предупреждение: не удалось восстановить состояние кнопки диагностики');
-            }
-        }
-    }
-
-    /**
-     * Перезагружает расширение.
-     * 
-     * @returns {void}
-     */
-    reloadExtension() {
-        try {
-            this._log('Перезагрузка расширения');
-            
-            // Показываем уведомление
-            const statusShown = this.statusManager.showSuccess(
-                this.localeManager.t('options.status.reloading')
-            );
-            
-            if (!statusShown) {
-                this._log('Предупреждение: не удалось отобразить статус перезагрузки');
-            }
-            
-            // Небольшая задержка чтобы пользователь увидел сообщение
-            setTimeout(() => {
-                chrome.runtime.reload();
-            }, 500);
-            
-        } catch (error) {
-            this._logError('Ошибка перезагрузки расширения', error);
-            
-            const statusShown = this.statusManager.showError(
-                this.localeManager.t('options.status.reloadError')
-            );
-            
-            if (!statusShown) {
-                this._log('Предупреждение: не удалось отобразить статус ошибки перезагрузки');
+            if (button) {
+                button.disabled = false;
+                button.textContent = originalText;
             }
         }
     }
@@ -819,6 +831,84 @@ class OptionsManager extends BaseManager {
             }
         } catch (error) {
             this._logError('Ошибка обновления отображения темы', error);
+        }
+    }
+
+    /**
+     * Переключает видимость секции developer tools.
+     * 
+     * @returns {void}
+     */
+    toggleDeveloperTools() {
+        try {
+            const content = document.getElementById('developerToolsContent');
+            const icon = document.getElementById('developerToolsIcon');
+            const button = document.getElementById('toggleDeveloperTools');
+            
+            if (!content || !icon || !button) {
+                this._logError('Не найдены элементы developer tools');
+                return;
+            }
+            
+            const isVisible = content.style.display !== 'none';
+            
+            if (isVisible) {
+                // Скрыть с анимацией
+                content.classList.add('hiding');
+                icon.classList.remove('expanded');
+                button.classList.remove('active');
+                
+                // Ждём окончания анимации (0.5s)
+                setTimeout(() => {
+                    content.style.display = 'none';
+                    content.classList.remove('hiding');
+                }, 500);
+                
+                localStorage.setItem('mindful_developer_tools_expanded', 'false');
+            } else {
+                // Показать с анимацией
+                content.style.display = 'flex';
+                icon.classList.add('expanded');
+                button.classList.add('active');
+                localStorage.setItem('mindful_developer_tools_expanded', 'true');
+            }
+            
+            this._log('Developer tools переключены', { isVisible: !isVisible });
+        } catch (error) {
+            this._logError('Ошибка переключения developer tools', error);
+        }
+    }
+
+    /**
+     * Восстанавливает состояние developer tools из localStorage.
+     * 
+     * @returns {void}
+     */
+    restoreDeveloperToolsState() {
+        try {
+            const content = document.getElementById('developerToolsContent');
+            const icon = document.getElementById('developerToolsIcon');
+            const button = document.getElementById('toggleDeveloperTools');
+            
+            if (!content || !icon || !button) {
+                return;
+            }
+            
+            const isExpanded = localStorage.getItem('mindful_developer_tools_expanded') === 'true';
+            
+            if (isExpanded) {
+                content.style.display = 'flex';
+                icon.classList.add('expanded');
+                button.classList.add('active');
+            } else {
+                content.style.display = 'none';
+                icon.classList.remove('expanded');
+                button.classList.remove('active');
+            }
+            
+            this._log('Developer tools состояние восстановлено', { isExpanded });
+        } catch (error) {
+            this._logError('Ошибка восстановления состояния developer tools', error);
         }
     }
 
@@ -1052,7 +1142,13 @@ class OptionsManager extends BaseManager {
     _removeEventHandlers() {
         try {
             this.eventHandlers.forEach((handler, key) => {
-                const element = this.domManager.elements[key];
+                let element = this.domManager.elements[key];
+                
+                // Для обработчиков, которые не в DOMManager, получаем элементы напрямую
+                if (!element && (key === 'languageToggle' || key === 'themeToggle')) {
+                    element = document.getElementById(key);
+                }
+                
                 if (element && handler) {
                     const eventType = key === 'settingsForm' ? 'submit' : 'click';
                     element.removeEventListener(eventType, handler);
@@ -1117,6 +1213,320 @@ class OptionsManager extends BaseManager {
             this._log('Все менеджеры уничтожены');
         } catch (error) {
             this._logError('Ошибка уничтожения менеджеров', error);
+        }
+    }
+
+    /**
+     * Открывает панель разработчика с указанной вкладкой.
+     * 
+     * @param {string} tab - Название вкладки ('logs' или 'diagnostics')
+     * @returns {void}
+     */
+    openDevToolsPanel(tab = 'logs') {
+        try {
+            const panel = document.getElementById('devToolsPanel');
+            if (!panel) {
+                this._logError('Панель разработчика не найдена');
+                return;
+            }
+            
+            // Показываем панель с анимацией
+            panel.style.display = 'block';
+            panel.classList.remove('closing');
+            
+            // Переключаемся на нужную вкладку
+            this.switchTab(tab);
+            
+            // Плавная прокрутка к панели
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+            
+            this._log(`Панель разработчика открыта, вкладка: ${tab}`);
+        } catch (error) {
+            this._logError('Ошибка открытия панели разработчика', error);
+        }
+    }
+
+    /**
+     * Закрывает панель разработчика.
+     * 
+     * @returns {void}
+     */
+    closeDevToolsPanel() {
+        try {
+            const panel = document.getElementById('devToolsPanel');
+            if (!panel) {
+                this._logError('Панель разработчика не найдена');
+                return;
+            }
+            
+            // Добавляем класс для анимации закрытия
+            panel.classList.add('closing');
+            
+            // Скрываем после окончания анимации
+            setTimeout(() => {
+                panel.style.display = 'none';
+                panel.classList.remove('closing');
+            }, 300);
+            
+            this._log('Панель разработчика закрыта');
+        } catch (error) {
+            this._logError('Ошибка закрытия панели разработчика', error);
+        }
+    }
+
+    /**
+     * Переключает вкладки в панели разработчика.
+     * 
+     * @param {string} tabName - Название вкладки ('logs' или 'diagnostics')
+     * @returns {void}
+     */
+    switchTab(tabName) {
+        try {
+            // Получаем все вкладки и контент
+            const tabs = document.querySelectorAll('.dev-tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            // Убираем активный класс со всех вкладок и контента
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // Активируем нужную вкладку
+            const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+            const activeContent = document.getElementById(`${tabName}TabContent`);
+            
+            if (activeTab && activeContent) {
+                activeTab.classList.add('active');
+                activeContent.classList.add('active');
+                this._log(`Переключено на вкладку: ${tabName}`);
+            } else {
+                this._logError(`Вкладка ${tabName} не найдена`);
+            }
+        } catch (error) {
+            this._logError('Ошибка переключения вкладок', error);
+        }
+    }
+
+    /**
+     * Загружает и отображает логи.
+     * 
+     * @returns {Promise<void>}
+     */
+    async loadLogs() {
+        try {
+            const logsContent = document.getElementById('logsContent');
+            if (!logsContent) {
+                this._logError('Контейнер для логов не найден');
+                return;
+            }
+            
+            // Получаем логи из chrome.storage.local
+            const result = await chrome.storage.local.get(['mindful_logs']);
+            const logs = result.mindful_logs || [];
+            
+            if (logs.length === 0) {
+                logsContent.textContent = 'No logs available';
+            } else {
+                // Форматируем логи
+                const formattedLogs = logs.map(log => {
+                    const timestamp = new Date(log.timestamp).toLocaleString();
+                    const level = log.level || 'INFO';
+                    const message = log.message || '';
+                    const data = log.data ? JSON.stringify(log.data, null, 2) : '';
+                    
+                    return `[${timestamp}] [${level}] ${message}${data ? `\n${data}` : ''}`;
+                }).join('\n\n');
+                
+                logsContent.textContent = formattedLogs;
+            }
+            
+            this._log('Логи загружены', { count: logs.length });
+        } catch (error) {
+            this._logError('Ошибка загрузки логов', error);
+            const logsContent = document.getElementById('logsContent');
+            if (logsContent) {
+                logsContent.textContent = `Error loading logs: ${error.message}`;
+            }
+        }
+    }
+
+    /**
+     * Обновляет логи.
+     * 
+     * @returns {Promise<void>}
+     */
+    async refreshLogs() {
+        try {
+            this._log('Обновление логов...');
+            await this.loadLogs();
+        } catch (error) {
+            this._logError('Ошибка обновления логов', error);
+        }
+    }
+
+    /**
+     * Очищает логи.
+     * 
+     * @returns {Promise<void>}
+     */
+    async clearLogs() {
+        try {
+            this._log('Очистка логов...');
+            
+            // Очищаем логи в storage
+            await chrome.storage.local.set({ mindful_logs: [] });
+            
+            // Обновляем отображение
+            const logsContent = document.getElementById('logsContent');
+            if (logsContent) {
+                logsContent.textContent = '';
+            }
+            
+            this._log('Логи очищены');
+            
+            // Показываем уведомление
+            if (this.statusManager) {
+                this.statusManager.showSuccess(
+                    this.localeManager.t('options.notifications.logsCleared') || 'Logs cleared successfully'
+                );
+            }
+        } catch (error) {
+            this._logError('Ошибка очистки логов', error);
+            if (this.statusManager) {
+                this.statusManager.showError(
+                    this.localeManager.t('options.notifications.logsClearError') || 'Error clearing logs'
+                );
+            }
+        }
+    }
+
+    /**
+     * Копирует логи в буфер обмена.
+     * 
+     * @returns {Promise<void>}
+     */
+    async copyLogs() {
+        try {
+            const logsContent = document.getElementById('logsContent');
+            if (!logsContent || !logsContent.textContent) {
+                this._log('Нет логов для копирования');
+                return;
+            }
+            
+            await navigator.clipboard.writeText(logsContent.textContent);
+            this._log('Логи скопированы в буфер обмена');
+            
+            // Показываем уведомление
+            if (this.statusManager) {
+                this.statusManager.showSuccess(
+                    this.localeManager.t('options.notifications.logsCopied') || 'Logs copied to clipboard'
+                );
+            }
+        } catch (error) {
+            this._logError('Ошибка копирования логов', error);
+            if (this.statusManager) {
+                this.statusManager.showError(
+                    this.localeManager.t('options.notifications.logsCopyError') || 'Error copying logs'
+                );
+            }
+        }
+    }
+
+    /**
+     * Отрисовывает результаты диагностики в модальном окне.
+     * 
+     * @private
+     * @param {Object} results - Результаты диагностики
+     * @returns {void}
+     */
+    _renderDiagnostics(results) {
+        try {
+            const resultsContainer = document.getElementById('diagnosticsResults');
+            const summary = document.getElementById('diagnosticsSummary');
+            const checks = document.getElementById('diagnosticsChecks');
+            
+            if (!summary || !checks) {
+                this._logError('Элементы диагностики не найдены');
+                return;
+            }
+            
+            // Показываем контейнер с результатами
+            if (resultsContainer) {
+                resultsContainer.style.display = 'block';
+            }
+            
+            const statusEmoji = { 'ok': '✅', 'warning': '⚠️', 'error': '❌' };
+            const statusText = {
+                'ok': this.localeManager.t('options.diagnostics.statusOk'),
+                'warning': this.localeManager.t('options.diagnostics.statusWarning'),
+                'error': this.localeManager.t('options.diagnostics.statusError')
+            };
+            
+            // Подсчитываем статистику
+            const checksArray = Object.values(results.checks);
+            const stats = {
+                total: checksArray.length,
+                ok: checksArray.filter(c => c.status === 'ok').length,
+                warning: checksArray.filter(c => c.status === 'warning').length,
+                error: checksArray.filter(c => c.status === 'error').length
+            };
+            
+            // Формируем сводку
+            summary.className = `diagnostics-summary status-${results.overall}`;
+            summary.innerHTML = `
+                <div class="diagnostics-summary-header">
+                    <span class="summary-icon">${statusEmoji[results.overall] || '❓'}</span>
+                    <span class="summary-title">${statusText[results.overall] || this.localeManager.t('options.diagnostics.statusUnknown')}</span>
+                </div>
+                <div class="diagnostics-summary-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">${this.localeManager.t('options.diagnostics.labelTotal')}</div>
+                        <div class="stat-value">${stats.total}</div>
+                    </div>
+                    <div class="stat-card stat-success">
+                        <div class="stat-label">✅ ${this.localeManager.t('options.diagnostics.labelSuccess')}</div>
+                        <div class="stat-value">${stats.ok}</div>
+                    </div>
+                    ${stats.warning > 0
+? `
+                    <div class="stat-card stat-warning">
+                        <div class="stat-label">⚠️ ${this.localeManager.t('options.diagnostics.labelWarnings')}</div>
+                        <div class="stat-value">${stats.warning}</div>
+                    </div>
+                    `
+: ''}
+                    ${stats.error > 0
+? `
+                    <div class="stat-card stat-error">
+                        <div class="stat-label">❌ ${this.localeManager.t('options.diagnostics.labelErrors')}</div>
+                        <div class="stat-value">${stats.error}</div>
+                    </div>
+                    `
+: ''}
+                    <div class="stat-card stat-time">
+                        <div class="stat-label">⏱️ ${this.localeManager.t('options.diagnostics.labelTime')}</div>
+                        <div class="stat-value">${results.totalDuration}<span class="stat-unit">мс</span></div>
+                    </div>
+                </div>
+            `;
+            
+            // Формируем список проверок
+            checks.innerHTML = Object.entries(results.checks)
+                .map(([name, check]) => `
+                    <div class="diagnostic-check check-${check.status}">
+                        <div class="diagnostic-check-header">
+                            <div class="diagnostic-check-name">
+                                <span>${statusEmoji[check.status] || '❓'}</span>
+                                <span>${name}</span>
+                            </div>
+                            <div class="diagnostic-check-duration">${check.duration}мс</div>
+                        </div>
+                        <div class="diagnostic-check-message">${check.message}</div>
+                    </div>
+                `).join('');
+        } catch (error) {
+            this._logError('Ошибка отрисовки диагностики', error);
         }
     }
 

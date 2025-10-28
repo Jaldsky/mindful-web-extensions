@@ -85,12 +85,18 @@ const RU = {
             resetting: 'Сброс...',
             runDiagnostics: 'Запустить диагностику',
             analyzing: 'Анализ...',
-            reloadExtension: 'Перезагрузить расширение'
+            developerTools: 'Инструменты разработчика',
+            showDeveloperTools: 'Показать инструменты разработчика',
+            hideDeveloperTools: 'Скрыть инструменты разработчика',
+            refreshLogs: 'Обновить',
+            clearLogs: 'Очистить',
+            copyLogs: 'Копировать'
         },
         
-        // Секция диагностики
-        diagnostics: {
-            title: 'Диагностика и инструменты'
+        // Вкладки
+        tabs: {
+            logs: 'Логи',
+            diagnostics: 'Диагностика'
         },
         
         // Статусные сообщения
@@ -102,11 +108,30 @@ const RU = {
             resetError: 'Ошибка сброса настроек',
             uiUpdateError: 'Внимание: Обнаружена проблема обновления интерфейса',
             diagnosticsError: 'Ошибка диагностики',
-            reloadError: 'Ошибка перезагрузки',
-            reloading: 'Перезагрузка расширения...',
             storageUnavailable: 'Storage API недоступен. Пожалуйста, перезагрузите расширение.',
             saveFailed: 'Не удалось проверить сохранение настроек. Попробуйте снова.',
             themeChanged: 'Тема успешно изменена!'
+        },
+        
+        // Уведомления
+        notifications: {
+            logsCleared: 'Логи успешно очищены',
+            logsClearError: 'Ошибка очистки логов',
+            logsCopied: 'Логи скопированы в буфер обмена',
+            logsCopyError: 'Ошибка копирования логов'
+        },
+        
+        // Диагностика
+        diagnostics: {
+            statusOk: 'Все проверки пройдены',
+            statusWarning: 'Обнаружены предупреждения',
+            statusError: 'Обнаружены ошибки',
+            statusUnknown: 'Неизвестный статус',
+            labelTotal: 'Всего',
+            labelSuccess: 'Успешно',
+            labelWarnings: 'Предупреждения',
+            labelErrors: 'Ошибки',
+            labelTime: 'Время'
         }
     },
 
