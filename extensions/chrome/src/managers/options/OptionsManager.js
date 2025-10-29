@@ -158,6 +158,15 @@ class OptionsManager extends BaseManager {
             
             // Обновляем отображение текущего языка
             this.updateLanguageDisplay();
+            
+            // Инициализируем статус диагностики
+            const diagnosticsLabel = document.querySelector('.diagnostics-status-label');
+            if (diagnosticsLabel) {
+                const statusText = this.localeManager.t('options.diagnostics.status');
+                // Если локализация не найдена, используем дефолтное значение
+                diagnosticsLabel.textContent = (statusText && !statusText.startsWith('options.')) ? statusText : 'Status:';
+            }
+            this._updateDiagnosticsStatus('notRun');
 
             // Загружаем сохраненные настройки
             // (валидация Storage API уже произошла в конструкторе StorageManager)
@@ -321,6 +330,15 @@ class OptionsManager extends BaseManager {
             handlersCount++;
         } else {
             this._log('Предупреждение: кнопка диагностики не найдена, обработчик не установлен');
+        }
+
+        // Обработчик кнопки очистки диагностики
+        const clearDiagnostics = document.getElementById('clearDiagnostics');
+        if (clearDiagnostics) {
+            const handler = () => this.clearDiagnostics();
+            clearDiagnostics.addEventListener('click', handler);
+            this.eventHandlers.set('clearDiagnostics', handler);
+            handlersCount++;
         }
 
         // Обработчик закрытия панели разработчика
@@ -691,6 +709,9 @@ class OptionsManager extends BaseManager {
         
         try {
             this._log('Запуск диагностики');
+            
+            // Обновляем статус на "Running..."
+            this._updateDiagnosticsStatus('running');
 
             // Блокируем кнопку и меняем текст
             if (button) {
@@ -712,11 +733,23 @@ class OptionsManager extends BaseManager {
                 overall: results.overall,
                 totalTime: `${totalTime}мс`
             });
+            
+            // Обновляем статус на основе результатов
+            // results.overall может быть: 'ok', 'warning', 'error'
+            const statusMap = {
+                'ok': 'success',
+                'warning': 'success', // предупреждения - это тоже успех
+                'error': 'failed'
+            };
+            this._updateDiagnosticsStatus(statusMap[results.overall] || 'failed');
 
             return results;
         } catch (error) {
             const totalTime = Math.round(performance.now() - operationStartTime);
             this._logError(`Ошибка диагностики (${totalTime}мс)`, error);
+            
+            // Обновляем статус на ошибку
+            this._updateDiagnosticsStatus('failed');
             
             const statusShown = this.statusManager.showError(
                 this.localeManager.t('options.status.diagnosticsError')
@@ -734,6 +767,83 @@ class OptionsManager extends BaseManager {
                 button.textContent = originalText;
             }
         }
+    }
+
+    /**
+     * Очищает результаты диагностики.
+     * 
+     * @returns {void}
+     */
+    clearDiagnostics() {
+        try {
+            const diagnosticsResults = document.getElementById('diagnosticsResults');
+            const diagnosticsSummary = document.getElementById('diagnosticsSummary');
+            const diagnosticsChecks = document.getElementById('diagnosticsChecks');
+            
+            if (diagnosticsResults) {
+                diagnosticsResults.style.display = 'none';
+            }
+            
+            if (diagnosticsSummary) {
+                diagnosticsSummary.innerHTML = '';
+            }
+            
+            if (diagnosticsChecks) {
+                diagnosticsChecks.innerHTML = '';
+            }
+            
+            // Сбрасываем статус
+            this._updateDiagnosticsStatus('notRun');
+            
+            this._log('Результаты диагностики очищены');
+        } catch (error) {
+            this._logError('Ошибка очистки диагностики', error);
+        }
+    }
+
+    /**
+     * Обновляет статус диагностики в UI.
+     * 
+     * @private
+     * @param {string} status - Статус: 'notRun', 'running', 'success', 'failed'
+     * @returns {void}
+     */
+    _updateDiagnosticsStatus(status) {
+        const statusValue = document.getElementById('diagnosticsStatusValue');
+        if (!statusValue) {
+            return;
+        }
+        
+        // Удаляем все классы статуса
+        statusValue.classList.remove('success', 'error', 'running');
+        
+        // Вспомогательная функция для безопасного получения перевода
+        const safeTranslate = (key, fallback) => {
+            const translated = this.localeManager.t(key);
+            return (translated && !translated.startsWith('options.')) ? translated : fallback;
+        };
+        
+        // Получаем текст и добавляем класс
+        let statusText = '';
+        switch (status) {
+            case 'notRun':
+                statusText = safeTranslate('options.diagnostics.notRun', 'Not run');
+                break;
+            case 'running':
+                statusText = safeTranslate('options.diagnostics.running', 'Running...');
+                statusValue.classList.add('running');
+                break;
+            case 'success':
+                statusText = safeTranslate('options.diagnostics.success', 'Passed');
+                statusValue.classList.add('success');
+                break;
+            case 'failed':
+                statusText = safeTranslate('options.diagnostics.failed', 'Failed');
+                statusValue.classList.add('error');
+                break;
+        }
+        
+        statusValue.textContent = statusText;
     }
 
     /**
@@ -778,6 +888,29 @@ class OptionsManager extends BaseManager {
             
             // Обновляем отображение темы (для перевода)
             this.updateThemeDisplay();
+            
+            // Обновляем метку статуса диагностики
+            const diagnosticsLabel = document.querySelector('.diagnostics-status-label');
+            if (diagnosticsLabel) {
+                const statusText = this.localeManager.t('options.diagnostics.status');
+                diagnosticsLabel.textContent = (statusText && !statusText.startsWith('options.')) ? statusText : 'Status:';
+            }
+            
+            // Обновляем текущее значение статуса диагностики
+            const statusValue = document.getElementById('diagnosticsStatusValue');
+            if (statusValue) {
+                // Определяем текущий статус по классам
+                let currentStatus = 'notRun';
+                if (statusValue.classList.contains('running')) {
+                    currentStatus = 'running';
+                } else if (statusValue.classList.contains('success')) {
+                    currentStatus = 'success';
+                } else if (statusValue.classList.contains('error')) {
+                    currentStatus = 'failed';
+                }
+                // Обновляем с правильной локализацией
+                this._updateDiagnosticsStatus(currentStatus);
+            }
             
             this._log('Локаль изменена', {
                 locale: this.localeManager.getCurrentLocale()
@@ -1842,14 +1975,6 @@ class OptionsManager extends BaseManager {
                     <div class="stat-card stat-warning">
                         <div class="stat-label">⚠️ ${this.localeManager.t('options.diagnostics.labelWarnings')}</div>
                         <div class="stat-value">${stats.warning}</div>
-                    </div>
-                    `
-: ''}
-                    ${stats.error > 0
-? `
-                    <div class="stat-card stat-error">
-                        <div class="stat-label">❌ ${this.localeManager.t('options.diagnostics.labelErrors')}</div>
-                        <div class="stat-value">${stats.error}</div>
                     </div>
                     `
 : ''}
