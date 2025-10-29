@@ -282,6 +282,203 @@ function getStoragePerformanceMetrics() {
 }
 
 /**
+ * Получает все логи из storage для отладки.
+ * Доступно в консоли браузера через window.debugGetAllLogs()
+ * 
+ * @async
+ * @returns {Promise<Array>} Массив всех логов
+ */
+async function debugGetAllLogs() {
+    try {
+        const result = await chrome.storage.local.get(['mindful_logs']);
+        const logs = result.mindful_logs || [];
+        console.log(`Total logs in storage: ${logs.length}`);
+        return logs;
+    } catch (error) {
+        console.error('Error getting logs:', error);
+        return [];
+    }
+}
+
+/**
+ * Очищает все логи из storage.
+ * Доступно в консоли браузера через window.debugClearAllLogs()
+ * 
+ * @async
+ * @returns {Promise<boolean>} true если успешно
+ */
+async function debugClearAllLogs() {
+    try {
+        await chrome.storage.local.set({ mindful_logs: [] });
+        console.log('All logs cleared from storage');
+        return true;
+    } catch (error) {
+        console.error('Error clearing logs:', error);
+        return false;
+    }
+}
+
+/**
+ * Добавляет тестовый лог для проверки.
+ * Доступно в консоли браузера через window.debugAddTestLog()
+ * 
+ * @async
+ * @returns {Promise<boolean>} true если успешно
+ */
+async function debugAddTestLog() {
+    try {
+        const result = await chrome.storage.local.get(['mindful_logs']);
+        const logs = result.mindful_logs || [];
+        
+        logs.push({
+            timestamp: new Date().toISOString(),
+            level: 'INFO',
+            className: 'TestDebug',
+            message: 'Test log entry - if you see this, logging is working!',
+            data: { test: true, timestamp: Date.now() }
+        });
+        
+        await chrome.storage.local.set({ mindful_logs: logs });
+        console.log('Test log added to storage');
+        return true;
+    } catch (error) {
+        console.error('Error adding test log:', error);
+        return false;
+    }
+}
+
+/**
+ * Добавляет много тестовых логов для проверки лимита 1000.
+ * Доступно в консоли браузера через window.debugFillLogs(count)
+ * 
+ * @async
+ * @param {number} [count=1100] - Количество логов для создания
+ * @returns {Promise<boolean>} true если успешно
+ */
+async function debugFillLogs(count = 1100) {
+    try {
+        console.log(`Creating ${count} test logs...`);
+        const result = await chrome.storage.local.get(['mindful_logs']);
+        const logs = result.mindful_logs || [];
+        
+        const initialCount = logs.length;
+        console.log(`Initial logs count: ${initialCount}`);
+        
+        // Добавляем тестовые логи
+        for (let i = 0; i < count; i++) {
+            logs.push({
+                timestamp: new Date(Date.now() + i).toISOString(),
+                level: i % 10 === 0 ? 'ERROR' : 'INFO',
+                className: 'TestDebug',
+                message: `Test log #${i + 1} of ${count}`,
+                data: { index: i, timestamp: Date.now() + i }
+            });
+        }
+        
+        console.log(`Total logs before limit: ${logs.length}`);
+        
+        // Применяем лимит 1000 (как в BaseManager)
+        const maxLogs = 1000;
+        if (logs.length > maxLogs) {
+            const toRemove = logs.length - maxLogs;
+            logs.splice(0, toRemove);
+            console.log(`Removed ${toRemove} old logs to maintain limit of ${maxLogs}`);
+        }
+        
+        await chrome.storage.local.set({ mindful_logs: logs });
+        
+        console.log(`Final logs count in storage: ${logs.length}`);
+        console.log(`First log timestamp: ${logs[0].timestamp}`);
+        console.log(`Last log timestamp: ${logs[logs.length - 1].timestamp}`);
+        
+        return true;
+    } catch (error) {
+        console.error('Error filling logs:', error);
+        return false;
+    }
+}
+
+/**
+ * Добавляет тестовый лог от BackendManager для проверки фильтра SERVER.
+ * Доступно в консоли браузера через window.debugAddServerLog()
+ * 
+ * @returns {Promise<void>}
+ */
+async function debugAddServerLog() {
+    try {
+        const result = await chrome.storage.local.get(['mindful_logs']);
+        const logs = result.mindful_logs || [];
+        
+        // Добавляем несколько логов для имитации реального запроса
+        // Формат согласно SendEventsRequestSchema на сервере
+        const mockEvents = [
+            { 
+                event: 'active', 
+                domain: 'instagram.com', 
+                timestamp: new Date(Date.now() - 5000).toISOString() 
+            },
+            { 
+                event: 'inactive', 
+                domain: 'instagram.com', 
+                timestamp: new Date(Date.now() - 3000).toISOString() 
+            },
+            { 
+                event: 'active', 
+                domain: 'youtube.com', 
+                timestamp: new Date(Date.now() - 1000).toISOString() 
+            }
+        ];
+        
+        const serverLogs = [
+            {
+                timestamp: new Date(Date.now()).toISOString(),
+                level: 'INFO',
+                className: 'BackendManager',
+                message: 'Отправка событий на backend',
+                data: { 
+                    method: 'POST',
+                    url: 'http://localhost:3000/api/events',
+                    eventsCount: mockEvents.length,
+                    userId: 'test-user-123',
+                    payload: { data: mockEvents }
+                }
+            },
+            {
+                timestamp: new Date(Date.now() + 100).toISOString(),
+                level: 'INFO',
+                className: 'BackendManager',
+                message: 'Ответ от backend',
+                data: { 
+                    method: 'POST',
+                    status: 204
+                }
+            },
+            {
+                timestamp: new Date(Date.now() + 200).toISOString(),
+                level: 'INFO',
+                className: 'BackendManager',
+                message: 'События успешно отправлены',
+                data: { 
+                    eventsCount: 3
+                }
+            }
+        ];
+        
+        logs.push(...serverLogs);
+        
+        await chrome.storage.local.set({ mindful_logs: logs });
+        console.log('[Debug] Server logs added:', serverLogs.length);
+        
+        // Обновляем отображение логов если OptionsManager доступен
+        if (optionsManagerInstance) {
+            await optionsManagerInstance.loadLogs();
+        }
+    } catch (error) {
+        console.error('[Debug] Error adding server log:', error);
+    }
+}
+
+/**
  * Получает текущий backend URL.
  * Доступно в консоли браузера через window.getCurrentBackendUrl()
  * 
@@ -396,6 +593,13 @@ if (typeof window !== 'undefined') {
     window.getDefaultBackendUrl = getDefaultBackendUrl;
     window.isCurrentUrlValid = isCurrentUrlValid;
     
+    // Debug
+    window.debugGetAllLogs = debugGetAllLogs;
+    window.debugClearAllLogs = debugClearAllLogs;
+    window.debugAddTestLog = debugAddTestLog;
+    window.debugFillLogs = debugFillLogs;
+    window.debugAddServerLog = debugAddServerLog;
+    
     // Вывод информации в консоль при инициализации
     console.log('%c[Options] Доступные команды для отладки:', 'color: #4CAF50; font-weight: bold');
     console.log('%cОсновные:', 'color: #2196F3; font-weight: bold');
@@ -414,6 +618,12 @@ if (typeof window !== 'undefined') {
     console.log('  • getValidationStatistics() - Статистика валидаций');
     console.log('  • getValidationHistory() - История валидаций');
     console.log('  • getValidationPerformanceMetrics() - Метрики производительности');
+    console.log('%cОтладка логов:', 'color: #FF9800; font-weight: bold');
+    console.log('  • debugGetAllLogs() - Получить все логи из storage');
+    console.log('  • debugClearAllLogs() - Очистить все логи');
+    console.log('  • debugAddTestLog() - Добавить тестовый лог');
+    console.log('  • debugFillLogs(count) - Создать много логов для проверки лимита (по умолчанию 1100)');
+    console.log('  • debugAddServerLog() - Добавить тестовый лог от BackendManager');
 }
 
 if (typeof module !== 'undefined' && module.exports) {

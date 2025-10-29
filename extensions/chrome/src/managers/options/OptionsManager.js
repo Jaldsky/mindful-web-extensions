@@ -115,6 +115,19 @@ class OptionsManager extends BaseManager {
         // Флаг инициализации
         this.isInitialized = false;
 
+        // ID интервала автоматического обновления логов
+        this.logsRefreshIntervalId = null;
+
+        // Время последнего изменения выделения текста
+        this.lastSelectionChangeTime = 0;
+
+        // Фильтры логов
+        this.logsFilter = {
+            level: 'all', // all, info, error
+            className: 'all', // all или конкретный класс
+            serverOnly: false // показывать только логи от BackendManager
+        };
+
         this.init();
     }
 
@@ -337,14 +350,6 @@ class OptionsManager extends BaseManager {
             handlersCount++;
         }
 
-        const refreshLogs = document.getElementById('refreshLogs');
-        if (refreshLogs) {
-            const handler = () => this.refreshLogs();
-            refreshLogs.addEventListener('click', handler);
-            this.eventHandlers.set('refreshLogs', handler);
-            handlersCount++;
-        }
-
         const clearLogs = document.getElementById('clearLogs');
         if (clearLogs) {
             const handler = () => this.clearLogs();
@@ -358,6 +363,39 @@ class OptionsManager extends BaseManager {
             const handler = () => this.copyLogs();
             copyLogs.addEventListener('click', handler);
             this.eventHandlers.set('copyLogs', handler);
+            handlersCount++;
+        }
+
+        // Обработчики фильтров логов
+        const filterButtons = document.querySelectorAll('.logs-filter-btn');
+        filterButtons.forEach((btn, index) => {
+            const handler = (e) => {
+                const level = e.target.getAttribute('data-filter-level');
+                this.setLogLevelFilter(level);
+            };
+            btn.addEventListener('click', handler);
+            this.eventHandlers.set(`logFilterBtn${index}`, handler);
+            handlersCount++;
+        });
+
+        const classFilter = document.getElementById('logsClassFilter');
+        if (classFilter) {
+            const handler = (e) => {
+                this.setLogClassFilter(e.target.value);
+            };
+            classFilter.addEventListener('change', handler);
+            this.eventHandlers.set('logsClassFilter', handler);
+            handlersCount++;
+        }
+
+        // Обработчик чекбокса "Show only server requests"
+        const serverOnlyFilter = document.getElementById('logsServerOnlyFilter');
+        if (serverOnlyFilter) {
+            const handler = (e) => {
+                this.setServerOnlyFilter(e.target.checked);
+            };
+            serverOnlyFilter.addEventListener('change', handler);
+            this.eventHandlers.set('logsServerOnlyFilter', handler);
             handlersCount++;
         }
 
@@ -1237,6 +1275,12 @@ class OptionsManager extends BaseManager {
             // Переключаемся на нужную вкладку
             this.switchTab(tab);
             
+            // Загружаем логи и запускаем автообновление, если открыта вкладка логов
+            if (tab === 'logs') {
+                this.loadLogs();
+                this._startLogsAutoRefresh();
+            }
+            
             // Плавная прокрутка к панели
             setTimeout(() => {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1260,6 +1304,9 @@ class OptionsManager extends BaseManager {
                 this._logError('Панель разработчика не найдена');
                 return;
             }
+            
+            // Останавливаем автообновление логов
+            this._stopLogsAutoRefresh();
             
             // Добавляем класс для анимации закрытия
             panel.classList.add('closing');
@@ -1299,6 +1346,17 @@ class OptionsManager extends BaseManager {
             if (activeTab && activeContent) {
                 activeTab.classList.add('active');
                 activeContent.classList.add('active');
+                
+                // Управляем автообновлением в зависимости от вкладки
+                if (tabName === 'logs') {
+                    // Загружаем логи и запускаем автообновление
+                    this.loadLogs();
+                    this._startLogsAutoRefresh();
+                } else {
+                    // Останавливаем автообновление на других вкладках
+                    this._stopLogsAutoRefresh();
+                }
+                
                 this._log(`Переключено на вкладку: ${tabName}`);
             } else {
                 this._logError(`Вкладка ${tabName} не найдена`);
@@ -1306,6 +1364,147 @@ class OptionsManager extends BaseManager {
         } catch (error) {
             this._logError('Ошибка переключения вкладок', error);
         }
+    }
+
+    /**
+     * Устанавливает фильтр по уровню логов.
+     * 
+     * @param {string} level - Уровень логов (all, info, error)
+     * @returns {void}
+     */
+    setLogLevelFilter(level) {
+        this.logsFilter.level = level;
+        
+        // Обновляем активную кнопку
+        const filterButtons = document.querySelectorAll('.logs-filter-btn');
+        filterButtons.forEach(btn => {
+            if (btn.getAttribute('data-filter-level') === level) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        // Перезагружаем логи с новым фильтром
+        this.loadLogs();
+    }
+
+    /**
+     * Устанавливает фильтр по классу.
+     * 
+     * @param {string} className - Название класса или 'all'
+     * @returns {void}
+     */
+    setLogClassFilter(className) {
+        this.logsFilter.className = className;
+        
+        // Убираем фокус с select, чтобы обновление сразу применилось
+        const classFilter = document.getElementById('logsClassFilter');
+        if (classFilter) {
+            classFilter.blur();
+        }
+        
+        // Перезагружаем логи с новым фильтром
+        this.loadLogs();
+    }
+
+    /**
+     * Устанавливает фильтр "только серверные запросы".
+     * 
+     * @param {boolean} serverOnly - true для показа только BackendManager логов
+     * @returns {void}
+     */
+    setServerOnlyFilter(serverOnly) {
+        this.logsFilter.serverOnly = serverOnly;
+        
+        // Блокируем/разблокируем select с классами
+        const classFilter = document.getElementById('logsClassFilter');
+        if (classFilter) {
+            classFilter.disabled = serverOnly;
+            
+            // Если включен фильтр сервера, сбрасываем выбор класса на "all"
+            if (serverOnly) {
+                classFilter.value = 'all';
+                this.logsFilter.className = 'all';
+            }
+        }
+        
+        // Перезагружаем логи с новым фильтром
+        this.loadLogs();
+    }
+
+    /**
+     * Обновляет список классов в фильтре.
+     * 
+     * @param {Array} logs - Массив логов
+     * @returns {void}
+     */
+    _updateClassFilter(logs) {
+        const classFilter = document.getElementById('logsClassFilter');
+        if (!classFilter) return;
+        
+        // Получаем уникальные классы из логов
+        const classes = new Set();
+        logs.forEach(log => {
+            if (log.className) {
+                classes.add(log.className);
+            }
+        });
+        
+        // Сохраняем текущее выбранное значение
+        const currentValue = classFilter.value;
+        
+        // Очищаем и заполняем select с локализацией
+        const allClassesText = this.localeManager?.t('options.logsFilters.classAll') || 'All Classes';
+        classFilter.innerHTML = `<option value="all" data-i18n="options.logsFilters.classAll">${allClassesText}</option>`;
+        
+        const sortedClasses = Array.from(classes).sort();
+        sortedClasses.forEach(className => {
+            const option = document.createElement('option');
+            option.value = className;
+            option.textContent = className;
+            option.title = className; // Показываем полное имя при наведении
+            classFilter.appendChild(option);
+        });
+        
+        // Восстанавливаем выбранное значение, если оно существует
+        if (currentValue && Array.from(classFilter.options).some(opt => opt.value === currentValue)) {
+            classFilter.value = currentValue;
+        }
+    }
+
+    /**
+     * Фильтрует логи согласно установленным фильтрам.
+     * 
+     * @param {Array} logs - Массив логов
+     * @returns {Array} - Отфильтрованный массив логов
+     */
+    _filterLogs(logs) {
+        return logs.filter(log => {
+            // Фильтр "только серверные запросы"
+            if (this.logsFilter.serverOnly) {
+                if (log.className !== 'BackendManager') {
+                    return false;
+                }
+            }
+            
+            // Фильтр по уровню
+            if (this.logsFilter.level !== 'all') {
+                const currentLogLevel = (log.level || 'INFO').toLowerCase();
+                if (currentLogLevel !== this.logsFilter.level.toLowerCase()) {
+                    return false;
+                }
+            }
+            
+            // Фильтр по классу
+            if (this.logsFilter.className !== 'all') {
+                if (log.className !== this.logsFilter.className) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
     }
 
     /**
@@ -1321,47 +1520,196 @@ class OptionsManager extends BaseManager {
                 return;
             }
             
+            // Проверяем, есть ли выделенный текст внутри контейнера логов
+            const selection = window.getSelection();
+            if (selection && selection.toString().length > 0) {
+                // Проверяем, что выделение внутри контейнера логов
+                const anchorNode = selection.anchorNode;
+                if (anchorNode && logsContent.contains(anchorNode)) {
+                    // Проверяем таймаут - если выделение держится слишком долго, все равно обновляем
+                    const timeSinceSelection = Date.now() - this.lastSelectionChangeTime;
+                    const selectionTimeout = CONFIG.LOGS?.SELECTION_TIMEOUT || 5000;
+                    if (timeSinceSelection < selectionTimeout) {
+                        // Пользователь недавно что-то выделил в логах, пропускаем обновление
+                        return;
+                    }
+                }
+            }
+            
+            // Проверяем, открыт ли фильтр классов (пользователь взаимодействует с ним)
+            const classFilter = document.getElementById('logsClassFilter');
+            if (classFilter && (document.activeElement === classFilter || classFilter.matches(':focus-within'))) {
+                // Пользователь работает с фильтром классов, пропускаем обновление
+                return;
+            }
+            
+            // Сохраняем текущую позицию скролла и высоту контента
+            const oldScrollTop = logsContent.scrollTop;
+            const oldScrollHeight = logsContent.scrollHeight;
+            const wasAtTop = oldScrollTop < 50; // Если в пределах 50px от начала
+            
             // Получаем логи из chrome.storage.local
             const result = await chrome.storage.local.get(['mindful_logs']);
             const logs = result.mindful_logs || [];
             
-            if (logs.length === 0) {
-                logsContent.textContent = 'No logs available';
+            // Обновляем список классов в фильтре (всегда показываем все доступные классы)
+            this._updateClassFilter(logs);
+            
+            // Применяем фильтры
+            const filteredLogs = this._filterLogs(logs);
+            
+            // Обновляем счетчик логов (показываем количество отфильтрованных / всего)
+            this._updateLogsCounter(filteredLogs.length, logs.length);
+            
+            if (filteredLogs.length === 0) {
+                if (logs.length === 0) {
+                    logsContent.innerHTML = '<div class="log-empty">No logs available. Logs will appear here when you interact with the extension.</div>';
+                } else {
+                    logsContent.innerHTML = '<div class="log-empty">No logs match the current filters.</div>';
+                }
             } else {
-                // Форматируем логи
-                const formattedLogs = logs.map(log => {
+                // Форматируем логи (показываем последние 100 логов в обратном порядке)
+                const recentLogs = filteredLogs.slice(-100).reverse();
+                const formattedLogs = recentLogs.map(log => {
                     const timestamp = new Date(log.timestamp).toLocaleString();
                     const level = log.level || 'INFO';
+                    const className = log.className || 'Unknown';
                     const message = log.message || '';
                     const data = log.data ? JSON.stringify(log.data, null, 2) : '';
                     
-                    return `[${timestamp}] [${level}] ${message}${data ? `\n${data}` : ''}`;
-                }).join('\n\n');
+                    // Создаем HTML с цветовым кодированием
+                    const levelClass = level.toLowerCase();
+                    return `<div class="log-entry log-${levelClass}"><div class="log-header"><span class="log-timestamp">${timestamp}</span><span class="log-level log-level-${levelClass}">${level}</span><span class="log-class">${className}</span></div><div class="log-message">${this._escapeHtml(message)}</div>${data ? `<pre class="log-data">${this._escapeHtml(data)}</pre>` : ''}</div>`;
+                }).join('');
                 
-                logsContent.textContent = formattedLogs;
+                logsContent.innerHTML = formattedLogs;
+                
+                // Управляем прокруткой
+                if (wasAtTop) {
+                    // Если был наверху - прокручиваем к началу
+                    logsContent.scrollTop = 0;
+                } else {
+                    // Если был внизу - компенсируем изменение высоты
+                    const newScrollHeight = logsContent.scrollHeight;
+                    const heightDifference = newScrollHeight - oldScrollHeight;
+                    logsContent.scrollTop = oldScrollTop + heightDifference;
+                }
             }
-            
-            this._log('Логи загружены', { count: logs.length });
         } catch (error) {
             this._logError('Ошибка загрузки логов', error);
             const logsContent = document.getElementById('logsContent');
             if (logsContent) {
-                logsContent.textContent = `Error loading logs: ${error.message}`;
+                logsContent.innerHTML = `<div class="log-error">Error loading logs: ${this._escapeHtml(error.message)}</div>`;
             }
         }
     }
 
     /**
-     * Обновляет логи.
+     * Экранирует HTML для безопасного отображения.
      * 
-     * @returns {Promise<void>}
+     * @private
+     * @param {string} text - Текст для экранирования
+     * @returns {string} Экранированный текст
      */
-    async refreshLogs() {
-        try {
-            this._log('Обновление логов...');
-            await this.loadLogs();
-        } catch (error) {
-            this._logError('Ошибка обновления логов', error);
+    _escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Обновляет счетчик логов в интерфейсе.
+     * 
+     * @private
+     * @param {number} count - Количество отфильтрованных логов
+     * @param {number} [total] - Общее количество логов (если не указано, используется count)
+     * @returns {void}
+     */
+    _updateLogsCounter(count, total) {
+        const counterElement = document.getElementById('logsCounter');
+        if (counterElement) {
+            if (total !== undefined && total !== count) {
+                // Показываем "отфильтровано / всего"
+                counterElement.textContent = `${count} / ${total}`;
+            } else {
+                // Показываем "всего / лимит"
+                const maxLogs = CONFIG.LOGS?.MAX_LOGS || 1000;
+                counterElement.textContent = `${count} / ${maxLogs}`;
+            }
+        }
+    }
+
+    /**
+     * Запускает автоматическое обновление логов каждую секунду.
+     * 
+     * @private
+     * @returns {void}
+     */
+    _startLogsAutoRefresh() {
+        // Останавливаем предыдущий интервал, если он существует
+        this._stopLogsAutoRefresh();
+        
+        // Устанавливаем обработчик изменения выделения
+        this._setupSelectionChangeHandler();
+        
+        // Запускаем новый интервал (обновление каждую секунду)
+        const refreshInterval = CONFIG.LOGS?.AUTO_REFRESH_INTERVAL || 1000;
+        this.logsRefreshIntervalId = setInterval(async () => {
+            try {
+                // Обновляем логи без уведомления (чтобы не спамить)
+                await this.loadLogs();
+            } catch (error) {
+                // Игнорируем ошибки при автоматическом обновлении
+            }
+        }, refreshInterval);
+        
+        this._log(`Автоматическое обновление логов запущено (каждые ${refreshInterval}мс)`);
+    }
+
+    /**
+     * Устанавливает обработчик изменения выделения текста.
+     * 
+     * @private
+     * @returns {void}
+     */
+    _setupSelectionChangeHandler() {
+        if (!this.selectionChangeHandler) {
+            this.selectionChangeHandler = () => {
+                const selection = window.getSelection();
+                if (selection && selection.toString().length > 0) {
+                    // Обновляем время последнего изменения выделения
+                    this.lastSelectionChangeTime = Date.now();
+                }
+            };
+            document.addEventListener('selectionchange', this.selectionChangeHandler);
+        }
+    }
+
+    /**
+     * Удаляет обработчик изменения выделения текста.
+     * 
+     * @private
+     * @returns {void}
+     */
+    _removeSelectionChangeHandler() {
+        if (this.selectionChangeHandler) {
+            document.removeEventListener('selectionchange', this.selectionChangeHandler);
+            this.selectionChangeHandler = null;
+        }
+    }
+
+    /**
+     * Останавливает автоматическое обновление логов.
+     * 
+     * @private
+     * @returns {void}
+     */
+    _stopLogsAutoRefresh() {
+        if (this.logsRefreshIntervalId !== null) {
+            clearInterval(this.logsRefreshIntervalId);
+            this.logsRefreshIntervalId = null;
+            this._removeSelectionChangeHandler();
+            this._log('Автоматическое обновление логов остановлено');
         }
     }
 
@@ -1372,20 +1720,19 @@ class OptionsManager extends BaseManager {
      */
     async clearLogs() {
         try {
-            this._log('Очистка логов...');
-            
             // Очищаем логи в storage
             await chrome.storage.local.set({ mindful_logs: [] });
             
             // Обновляем отображение
             const logsContent = document.getElementById('logsContent');
             if (logsContent) {
-                logsContent.textContent = '';
+                logsContent.textContent = 'No logs available. Logs will appear here when you interact with the extension.';
             }
             
-            this._log('Логи очищены');
+            // Обновляем счетчик
+            this._updateLogsCounter(0);
             
-            // Показываем уведомление
+            // Показываем уведомление (не логируем, чтобы не добавлять лог в только что очищенное хранилище)
             if (this.statusManager) {
                 this.statusManager.showSuccess(
                     this.localeManager.t('options.notifications.logsCleared') || 'Logs cleared successfully'
@@ -1414,7 +1761,9 @@ class OptionsManager extends BaseManager {
                 return;
             }
             
-            await navigator.clipboard.writeText(logsContent.textContent);
+            // Получаем текстовое содержимое из HTML
+            const textContent = logsContent.innerText || logsContent.textContent;
+            await navigator.clipboard.writeText(textContent);
             this._log('Логи скопированы в буфер обмена');
             
             // Показываем уведомление
@@ -1544,6 +1893,9 @@ class OptionsManager extends BaseManager {
         this._log('Очистка ресурсов OptionsManager');
 
         try {
+            // Останавливаем автообновление логов
+            this._stopLogsAutoRefresh();
+            
             this._removeEventHandlers();
             this._destroyManagers();
 

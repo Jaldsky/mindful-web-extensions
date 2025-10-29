@@ -88,7 +88,6 @@ const EN = {
             developerTools: 'Developer Tools',
             showDeveloperTools: 'Show Developer Tools',
             hideDeveloperTools: 'Hide Developer Tools',
-            refreshLogs: 'Refresh',
             clearLogs: 'Clear',
             copyLogs: 'Copy'
         },
@@ -97,6 +96,18 @@ const EN = {
         tabs: {
             logs: 'Logs',
             diagnostics: 'Diagnostics'
+        },
+        
+        // Logs filters
+        logsFilters: {
+            levelLabel: 'Type:',
+            levelAll: 'ALL',
+            levelInfo: 'INFO',
+            levelError: 'ERROR',
+            classLabel: 'Class:',
+            classAll: 'All',
+            serverOnlyLabel: 'Show only server requests',
+            logsCounterLabel: 'Logs:'
         },
         
         // Status messages
