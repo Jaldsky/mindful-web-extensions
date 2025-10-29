@@ -1,4 +1,4 @@
-name: 🧪 Tests
+name: 🧪 CI Pipeline
 
 on:
   pull_request:
@@ -22,9 +22,7 @@ jobs:
       - name: 📦 Cache dependencies
         uses: actions/cache@v3
         with:
-          path: |
-            ~/.npm
-            extensions/chrome/node_modules
+          path: extensions/chrome/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('extensions/chrome/package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
@@ -40,6 +38,7 @@ jobs:
   test:
     name: 🧪 Run Tests
     runs-on: ubuntu-latest
+    needs: lint
 
     steps:
       - name: 📥 Checkout code
@@ -53,9 +52,7 @@ jobs:
       - name: 📦 Cache dependencies
         uses: actions/cache@v3
         with:
-          path: |
-            ~/.npm
-            extensions/chrome/node_modules
+          path: extensions/chrome/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('extensions/chrome/package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
@@ -64,10 +61,14 @@ jobs:
         working-directory: ./extensions/chrome
         run: npm install
 
-      - name: 🧪 Run tests
-        working-directory: ./extensions/chrome
-        run: npm test
-
       - name: 📊 Run tests with coverage
         working-directory: ./extensions/chrome
         run: npm run test:coverage
+
+      - name: 📤 Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: extensions/chrome/tests/coverage/
+          retention-days: 7
