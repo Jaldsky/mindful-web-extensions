@@ -83,13 +83,36 @@ const RU = {
             saving: 'Сохранение...',
             reset: 'Сбросить настройки',
             resetting: 'Сброс...',
-            runDiagnostics: 'Запустить диагностику',
+            runDiagnostics: 'Диагностика',
             analyzing: 'Анализ...',
+            clearDiagnostics: 'Очистить',
             developerTools: 'Инструменты разработчика',
             showDeveloperTools: 'Показать инструменты разработчика',
             hideDeveloperTools: 'Скрыть инструменты разработчика',
             clearLogs: 'Очистить',
             copyLogs: 'Копировать'
+        },
+        
+        // Диагностика
+        diagnostics: {
+            // Статусы
+            status: 'Статус:',
+            notRun: 'Не запущено',
+            running: 'Проверка...',
+            success: 'Успешно',
+            failed: 'Ошибка',
+            
+            // Сообщения статусов
+            statusOk: 'Все проверки пройдены',
+            statusWarning: 'Обнаружены предупреждения',
+            statusError: 'Некоторые проверки не прошли',
+            statusUnknown: 'Неизвестный статус',
+            
+            // Метки таблицы
+            labelTotal: 'Всего',
+            labelSuccess: 'Успешно',
+            labelWarnings: 'Предупреждения',
+            labelTime: 'Время'
         },
         
         // Вкладки
@@ -130,20 +153,8 @@ const RU = {
             logsClearError: 'Ошибка очистки логов',
             logsCopied: 'Логи скопированы в буфер обмена',
             logsCopyError: 'Ошибка копирования логов'
-        },
-        
-        // Диагностика
-        diagnostics: {
-            statusOk: 'Все проверки пройдены',
-            statusWarning: 'Обнаружены предупреждения',
-            statusError: 'Обнаружены ошибки',
-            statusUnknown: 'Неизвестный статус',
-            labelTotal: 'Всего',
-            labelSuccess: 'Успешно',
-            labelWarnings: 'Предупреждения',
-            labelErrors: 'Ошибки',
-            labelTime: 'Время'
         }
+        
     },
 
     // Метки кнопок (соответствует структуре CONFIG)

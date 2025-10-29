@@ -83,13 +83,36 @@ const EN = {
             saving: 'Saving...',
             reset: 'Reset to Default',
             resetting: 'Resetting...',
-            runDiagnostics: 'Run Diagnostics',
+            runDiagnostics: 'Diagnostics',
             analyzing: 'Analyzing...',
+            clearDiagnostics: 'Clear',
             developerTools: 'Developer Tools',
             showDeveloperTools: 'Show Developer Tools',
             hideDeveloperTools: 'Hide Developer Tools',
             clearLogs: 'Clear',
             copyLogs: 'Copy'
+        },
+        
+        // Diagnostics
+        diagnostics: {
+            // Status labels
+            status: 'Status:',
+            notRun: 'Not run',
+            running: 'Checking...',
+            success: 'Passed',
+            failed: 'Failed',
+            
+            // Status messages
+            statusOk: 'All checks passed',
+            statusWarning: 'Some warnings detected',
+            statusError: 'Some checks failed',
+            statusUnknown: 'Unknown status',
+            
+            // Table labels
+            labelTotal: 'Total',
+            labelSuccess: 'Passed',
+            labelWarnings: 'Warnings',
+            labelTime: 'Time'
         },
         
         // Tabs
@@ -130,20 +153,8 @@ const EN = {
             logsClearError: 'Error clearing logs',
             logsCopied: 'Logs copied to clipboard',
             logsCopyError: 'Error copying logs'
-        },
-        
-        // Diagnostics
-        diagnostics: {
-            statusOk: 'All checks passed',
-            statusWarning: 'Warnings detected',
-            statusError: 'Errors detected',
-            statusUnknown: 'Unknown status',
-            labelTotal: 'Total',
-            labelSuccess: 'Success',
-            labelWarnings: 'Warnings',
-            labelErrors: 'Errors',
-            labelTime: 'Time'
         }
+        
     },
 
     // Button labels (matching CONFIG structure)

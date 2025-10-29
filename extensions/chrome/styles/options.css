@@ -665,12 +665,23 @@ input[type="url"]:focus {
 /* Diagnostics Specific Styles */
 .diagnostics-actions {
     display: flex;
-    gap: var(--spacing-sm);
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
 }
 
-.run-diagnostics-btn {
-    background-color: var(--color-bg-secondary);
+.diagnostics-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.diagnostics-action-btn {
+    background-color: var(--color-bg-primary);
     color: var(--color-text);
     border: 1px solid var(--border-color);
     padding: 6px 16px;
@@ -678,19 +689,62 @@ input[type="url"]:focus {
     font-size: 0.875rem;
     cursor: pointer;
     transition: background-color var(--transition-normal), border-color var(--transition-normal);
-    min-width: 180px;
+    min-width: 140px;
     text-align: center;
     white-space: nowrap;
 }
 
-.run-diagnostics-btn:hover:not(:disabled) {
+.diagnostics-action-btn:hover:not(:disabled) {
     background-color: var(--color-bg-tertiary);
     border-color: var(--color-primary);
 }
 
-.run-diagnostics-btn:disabled {
+.diagnostics-action-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.diagnostics-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.diagnostics-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.diagnostics-status-label {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.diagnostics-status-value {
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    min-width: 100px;
+    display: inline-block;
+    text-align: left;
+}
+
+.diagnostics-status-value.success {
+    color: var(--color-primary);
+}
+
+.diagnostics-status-value.error {
+    color: var(--color-error);
+}
+
+.diagnostics-status-value.running {
+    color: var(--color-warning);
 }
 
 #diagnosticsResults {
