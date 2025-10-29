@@ -229,46 +229,69 @@ npm run watch
 5. Use source maps for debugging bundled code
 
 #### Code Quality & Pre-commit Hooks
-This project uses automated code quality checks:
+This project uses automated code quality checks before every commit.
 
-**🔍 ESLint Configuration:**
-- Automatic code formatting and style checking
-- Chrome Extension specific rules
-- Jest testing environment support
-- Relaxed rules for existing codebase
+**🔍 What is checked:**
+- ✅ **Tests** - All Jest tests must pass
+- ✅ **Linter** - ESLint with auto-fix for code quality
+- ✅ **Code style** - Automatic formatting corrections
 
-**⚡ Pre-commit Hooks:**
-- **Husky** - Git hooks management
-- **lint-staged** - Run linters on staged files only
-- **Automatic fixes** - ESLint auto-fixes formatting issues
-- **Commit protection** - Prevents commits with linting errors
+**⚡ Pre-commit Hooks Setup (First Time):**
+
+After cloning the repository, just run:
+```bash
+cd extensions/chrome
+npm install
+```
+
+That's it! Hooks are configured automatically and will run on every commit.
+
+> **Note:** In CI environments, hooks installation is automatically skipped.
 
 **What happens on commit:**
-1. 🔍 ESLint checks staged JavaScript files
-2. 🔧 Auto-fixes formatting issues where possible
-3. ❌ Blocks commit if critical errors remain
-4. ✅ Allows commit if all checks pass
+1. 🧪 **npm test** - Runs all 1029 tests (~7 seconds)
+2. 🔍 **npm run lint:fix** - Checks code quality and auto-fixes issues
+3. ❌ **Blocks commit** if tests fail or linter finds errors
+4. ✅ **Allows commit** if all checks pass (warnings are OK)
 
 **Manual testing:**
 ```bash
-# Run linter manually
+# Run tests manually
 cd extensions/chrome
-npm run lint
+npm test
 
 # Run linter with auto-fix
 npm run lint:fix
 
-# Test pre-commit hook
+# Test pre-commit hook manually
+cd ../..
 .husky/pre-commit
 ```
 
-**Disable hooks (if needed):**
+**Commit from terminal (see full output):**
+```bash
+git add .
+git commit -m "your message"
+
+# You will see:
+# ==========================================
+# 🔍 PRE-COMMIT CHECKS
+# ==========================================
+# 🧪 Running tests...
+# ✅ Tests passed
+# 🔍 Running linter...
+# ✅ All checks passed!
+```
+
+**Commit from WebStorm/IDE:**
+- Open built-in Terminal (Alt+F12 / Option+F12)
+- Use `git commit` commands there to see full output
+- Or commit via IDE UI (output in Version Control → Console)
+
+**Skip hooks (if urgently needed):**
 ```bash
 # Skip hooks for one commit
-git commit --no-verify -m "your message"
-
-# Remove hooks completely
-rm -rf .husky
+git commit --no-verify -m "urgent fix"
 ```
 
 ### 🇷🇺 Русский
@@ -286,19 +309,24 @@ rm -rf .husky
 4. В popup нажмите **"Run Diagnostics"** для диагностики
 
 #### Качество кода и Pre-commit хуки
-Проект использует автоматизированные проверки качества кода:
+Проект использует автоматизированные проверки качества кода перед каждым коммитом.
 
-**🔍 Конфигурация ESLint:**
-- Автоматическое форматирование и проверка стиля кода
-- Правила для Chrome Extension
-- Поддержка среды тестирования Jest
-- Расслабленные правила для существующего кода
+**🔍 Что проверяется:**
+- ✅ **Тесты** - Все Jest тесты должны пройти
+- ✅ **Линтер** - ESLint с автоисправлениями для качества кода
+- ✅ **Стиль кода** - Автоматические исправления форматирования
 
-**⚡ Pre-commit хуки:**
-- **Husky** - управление Git хуками
-- **lint-staged** - запуск линтеров только для измененных файлов
-- **Автоматические исправления** - ESLint автоматически исправляет проблемы форматирования
-- **Защита коммитов** - предотвращает коммиты с ошибками линтинга
+**⚡ Настройка Pre-commit хуков (первый раз):**
+
+После клонирования репозитория, просто выполните:
+```bash
+cd extensions/chrome
+npm install
+```
+
+Всё! Хуки настраиваются автоматически и будут запускаться при каждом коммите.
+
+> **Примечание:** В CI окружениях установка хуков автоматически пропускается.
 
 **Что происходит при коммите:**
 1. 🔍 ESLint проверяет измененные JavaScript файлы
@@ -308,24 +336,42 @@ rm -rf .husky
 
 **Ручное тестирование:**
 ```bash
-# Запуск линтера вручную
+# Запуск тестов вручную
 cd extensions/chrome
-npm run lint
+npm test
 
 # Запуск линтера с автоисправлением
 npm run lint:fix
 
-# Тестирование pre-commit хука
+# Тестирование pre-commit хука вручную
+cd ../..
 .husky/pre-commit
 ```
 
-**Отключение хуков (при необходимости):**
+**Коммит через терминал (виден полный вывод):**
+```bash
+git add .
+git commit -m "ваше сообщение"
+
+# Вы увидите:
+# ==========================================
+# 🔍 PRE-COMMIT CHECKS
+# ==========================================
+# 🧪 Running tests...
+# ✅ Tests passed
+# 🔍 Running linter...
+# ✅ All checks passed!
+```
+
+**Коммит через WebStorm/IDE:**
+- Откройте встроенный Terminal (Alt+F12 / Option+F12)
+- Используйте команды `git commit` там для полного вывода
+- Или коммитьте через UI IDE (вывод в Version Control → Console)
+
+**Пропустить хуки (если срочно нужно):**
 ```bash
 # Пропустить хуки для одного коммита
-git commit --no-verify -m "your message"
-
-# Полностью удалить хуки
-rm -rf .husky
+git commit --no-verify -m "срочный фикс"
 ```
 
 ---

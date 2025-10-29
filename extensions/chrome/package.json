@@ -1,7 +1,17 @@
 {
   "name": "mindful-web-chrome-extension",
-  "version": "1.0.0",
   "description": "Chrome extension for mindful internet tracking",
+  "homepage": "https://github.com/Jaldsky/mindful-web#readme",
+  "author": "Mindful Web Team",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jaldsky/mindful-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Jaldsky/mindful-web/issues"
+  },
+  "license": "MIT",
   "scripts": {
     "build": "webpack --mode development",
     "build:prod": "webpack --mode production",
@@ -9,12 +19,9 @@
     "test": "jest --config=tests/jest.config.js",
     "test:watch": "jest --config=tests/jest.config.js --watch",
     "test:coverage": "jest --config=tests/jest.config.js --coverage",
-    "test:dom": "jest --config=tests/jest.config.js tests/app_manager/dom-manager.test.js",
-    "test:notifications": "jest --config=tests/jest.config.js tests/app_manager/notification-manager.test.js",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
-    "prepare": "husky install",
-    "pre-commit": "lint-staged"
+    "postinstall": "node ../../scripts/postinstall.js"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^13.0.1",
@@ -23,25 +30,10 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-n": "^16.6.2",
     "eslint-plugin-promise": "^6.1.1",
-    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "jsdom": "^23.0.1",
-    "lint-staged": "^16.2.4",
     "webpack": "^5.102.1",
     "webpack-cli": "^6.0.1"
-  },
-  "keywords": [
-    "chrome-extension",
-    "testing",
-    "dom",
-    "javascript"
-  ],
-  "author": "Mindful Web Team",
-  "license": "MIT",
-  "lint-staged": {
-    "*.js": [
-      "eslint --fix"
-    ]
   }
 }
