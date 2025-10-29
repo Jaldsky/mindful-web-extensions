@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="options.title">Mindful Web - Settings</title>
+    <script src="theme-init.js"></script>
     <link rel="stylesheet" href="styles/common.css">
     <link rel="stylesheet" href="styles/options.css">
 </head>
@@ -70,10 +71,39 @@
                 <!-- Logs Tab Content -->
                 <div id="logsTabContent" class="tab-content active">
                     <div class="logs-actions">
-                        <button type="button" id="refreshLogs" class="logs-action-btn" data-i18n="options.buttons.refreshLogs">Refresh</button>
-                        <button type="button" id="clearLogs" class="logs-action-btn" data-i18n="options.buttons.clearLogs">Clear</button>
-                        <button type="button" id="copyLogs" class="logs-action-btn" data-i18n="options.buttons.copyLogs">Copy</button>
+                        <div class="logs-buttons">
+                            <button type="button" id="clearLogs" class="logs-action-btn" data-i18n="options.buttons.clearLogs">Clear</button>
+                            <button type="button" id="copyLogs" class="logs-action-btn" data-i18n="options.buttons.copyLogs">Copy</button>
+                        </div>
+                        <div class="logs-counter">
+                            <span class="logs-counter-label" data-i18n="options.logsFilters.logsCounterLabel">Logs:</span>
+                            <span id="logsCounter" class="logs-counter-value">0 / 1000</span>
+                        </div>
                     </div>
+                    
+                    <div class="logs-filters">
+                        <div class="logs-filter-row">
+                            <div class="logs-filter-group">
+                                <span class="logs-filter-label" data-i18n="options.logsFilters.levelLabel">Level:</span>
+                                <button type="button" class="logs-filter-btn active" data-filter-level="all" data-i18n="options.logsFilters.levelAll">ALL</button>
+                                <button type="button" class="logs-filter-btn" data-filter-level="info" data-i18n="options.logsFilters.levelInfo">INFO</button>
+                                <button type="button" class="logs-filter-btn" data-filter-level="error" data-i18n="options.logsFilters.levelError">ERROR</button>
+                            </div>
+                            <div class="logs-filter-group">
+                                <span class="logs-filter-label" data-i18n="options.logsFilters.classLabel">Class:</span>
+                                <select id="logsClassFilter" class="logs-class-filter">
+                                    <option value="all" data-i18n="options.logsFilters.classAll">All Classes</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="logs-filter-row">
+                            <label class="logs-filter-checkbox">
+                                <input type="checkbox" id="logsServerOnlyFilter">
+                                <span class="logs-filter-checkbox-label" data-i18n="options.logsFilters.serverOnlyLabel">Show only server requests</span>
+                            </label>
+                        </div>
+                    </div>
+                    
                     <pre id="logsContent" class="logs-content"></pre>
                 </div>
                 

@@ -88,7 +88,6 @@ const RU = {
             developerTools: 'Инструменты разработчика',
             showDeveloperTools: 'Показать инструменты разработчика',
             hideDeveloperTools: 'Скрыть инструменты разработчика',
-            refreshLogs: 'Обновить',
             clearLogs: 'Очистить',
             copyLogs: 'Копировать'
         },
@@ -97,6 +96,18 @@ const RU = {
         tabs: {
             logs: 'Логи',
             diagnostics: 'Диагностика'
+        },
+        
+        // Фильтры логов
+        logsFilters: {
+            levelLabel: 'Тип:',
+            levelAll: 'ВСЕ',
+            levelInfo: 'ИНФО',
+            levelError: 'ОШИБКИ',
+            classLabel: 'Класс:',
+            classAll: 'Все',
+            serverOnlyLabel: 'Только запросы на сервер',
+            logsCounterLabel: 'Логов:'
         },
         
         // Статусные сообщения

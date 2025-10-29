@@ -98,9 +98,11 @@ class BackendManager extends BaseManager {
                 const payload = { data: events };
                 
                 this._log('Отправка событий на backend', { 
+                    method: 'POST',
                     url: this.backendUrl,
                     eventsCount: events.length,
-                    userId: this.userId
+                    userId: this.userId,
+                    payload: payload
                 });
 
                 const response = await fetch(this.backendUrl, {
@@ -112,17 +114,30 @@ class BackendManager extends BaseManager {
                     body: JSON.stringify(payload)
                 });
 
-                this._log('Ответ от backend', { status: response.status });
+                this._log('Ответ от backend', { 
+                    method: 'POST',
+                    status: response.status 
+                });
 
                 if (!response.ok) {
                     const errorText = await response.text();
                     this._logError('Ошибка ответа от backend', { 
+                        method: 'POST',
                         status: response.status,
                         errorText 
                     });
                     throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
                 }
 
+                // 204 No Content - нет тела ответа
+                if (response.status === 204) {
+                    this._log('События успешно отправлены', { 
+                        eventsCount: events.length
+                    });
+                    return { success: true };
+                }
+
+                // Для других успешных ответов парсим JSON
                 const responseData = await response.json();
                 this._log('События успешно отправлены', { 
                     eventsCount: events.length,
@@ -152,6 +167,7 @@ class BackendManager extends BaseManager {
                 const healthcheckUrl = CONFIG.BACKEND.HEALTHCHECK_URL;
                 
                 this._log('Проверка доступности backend через healthcheck', { 
+                    method: 'GET',
                     url: healthcheckUrl
                 });
 
@@ -163,6 +179,7 @@ class BackendManager extends BaseManager {
                 });
 
                 this._log('Ответ healthcheck', { 
+                    method: 'GET',
                     status: response.status,
                     statusText: response.statusText 
                 });
@@ -174,6 +191,7 @@ class BackendManager extends BaseManager {
                 } else {
                     const errorText = await response.text();
                     this._logError('Backend недоступен', { 
+                        method: 'GET',
                         status: response.status,
                         errorText 
                     });

@@ -4,31 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="app.title">Mindful Web</title>
-    <script>
-        // Apply theme immediately to prevent flash - must be synchronous
-        try {
-            // Try to get theme from localStorage cache first (instant)
-            const cachedTheme = localStorage.getItem('mindful_theme_cache');
-            if (cachedTheme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-            
-            // Then update from chrome.storage (async, for next time)
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                chrome.storage.local.get(['mindful_theme'], function(result) {
-                    const theme = result['mindful_theme'] || 'light';
-                    localStorage.setItem('mindful_theme_cache', theme);
-                    if (theme === 'dark') {
-                        document.documentElement.setAttribute('data-theme', 'dark');
-                    } else {
-                        document.documentElement.removeAttribute('data-theme');
-                    }
-                });
-            }
-        } catch (e) {
-            console.error('Theme initialization error:', e);
-        }
-    </script>
+    <script src="theme-init.js"></script>
     <link rel="stylesheet" href="styles/common.css">
     <link rel="stylesheet" href="styles/app.css">
 </head>

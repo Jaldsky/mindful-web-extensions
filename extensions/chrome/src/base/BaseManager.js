@@ -71,6 +71,9 @@ class BaseManager {
         if (this.enableLogging) {
             const className = this.constructor.name;
             console.log(`[${className}] ${message}`, data !== undefined ? data : '');
+            
+            // Сохраняем лог в storage для отображения в панели разработчика
+            this._saveLogToStorage('INFO', message, data);
         }
     }
 
@@ -85,6 +88,76 @@ class BaseManager {
     _logError(message, error) {
         const className = this.constructor.name;
         console.error(`[${className}] ${message}`, error || '');
+        
+        // Сохраняем лог ошибки в storage для отображения в панели разработчика
+        this._saveLogToStorage('ERROR', message, error);
+    }
+
+    /**
+     * Сохраняет лог в chrome.storage.local для отображения в панели разработчика.
+     * 
+     * @private
+     * @param {string} level - Уровень лога (INFO, ERROR)
+     * @param {string} message - Сообщение лога
+     * @param {*} [data] - Дополнительные данные
+     * @returns {void}
+     */
+    _saveLogToStorage(level, message, data) {
+        // Проверяем доступность chrome.storage
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+            return;
+        }
+
+        try {
+            const className = this.constructor.name;
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                level,
+                className,
+                message,
+                data: data !== undefined ? (data instanceof Error ? { message: data.message, stack: data.stack } : data) : null
+            };
+
+            // Получаем текущие логи и добавляем новый
+            const getResult = chrome.storage.local.get(['mindful_logs'], (result) => {
+                if (chrome.runtime.lastError) {
+                    // Игнорируем ошибки, чтобы не нарушать основной функционал
+                    return;
+                }
+
+                const logs = result.mindful_logs || [];
+                logs.push(logEntry);
+                
+                // Ограничиваем количество логов
+                const maxLogs = CONFIG.LOGS?.MAX_LOGS || 1000;
+                if (logs.length > maxLogs) {
+                    logs.splice(0, logs.length - maxLogs);
+                }
+
+                // Сохраняем обновленные логи
+                const setResult = chrome.storage.local.set({ mindful_logs: logs }, () => {
+                    if (chrome.runtime.lastError) {
+                        // Игнорируем ошибки сохранения
+                    }
+                });
+                
+                // Обработка Promise API (для тестов)
+                if (setResult && typeof setResult.catch === 'function') {
+                    setResult.catch(() => {
+                        // Игнорируем ошибки
+                    });
+                }
+            });
+            
+            // Обработка Promise API (для тестов)
+            if (getResult && typeof getResult.catch === 'function') {
+                getResult.catch(() => {
+                    // Игнорируем ошибки
+                });
+            }
+        } catch (error) {
+            // Игнорируем ошибки, чтобы не нарушать основной функционал
+        }
     }
 
     /**
@@ -171,7 +244,12 @@ class BaseManager {
             const duration = Math.round(performance.now() - startTime);
             
             this.performanceMetrics.set(`${operationName}_lastDuration`, duration);
-            this._log(`${operationName} завершена за ${duration}мс`);
+            
+            // Логируем только операции длительностью больше порога
+            const threshold = CONFIG.LOGS?.PERFORMANCE_LOG_THRESHOLD || 10;
+            if (duration > threshold) {
+                this._log(`${operationName} завершена за ${duration}мс`);
+            }
             
             return result;
         } catch (error) {
@@ -201,7 +279,12 @@ class BaseManager {
             const duration = Math.round(performance.now() - startTime);
             
             this.performanceMetrics.set(`${operationName}_lastDuration`, duration);
-            this._log(`${operationName} завершена за ${duration}мс`);
+            
+            // Логируем только операции длительностью больше порога
+            const threshold = CONFIG.LOGS?.PERFORMANCE_LOG_THRESHOLD || 10;
+            if (duration > threshold) {
+                this._log(`${operationName} завершена за ${duration}мс`);
+            }
             
             return result;
         } catch (error) {
