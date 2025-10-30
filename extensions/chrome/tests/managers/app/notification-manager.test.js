@@ -163,28 +163,18 @@ describe('NotificationManager', () => {
         });
 
         test('should validate message parameter', () => {
-            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-            
             const result1 = notificationManager.showNotification(null, 'success');
             const result2 = notificationManager.showNotification(123, 'success');
             
             expect(result1).toBeNull();
             expect(result2).toBeNull();
-            expect(consoleWarnSpy).toHaveBeenCalled();
-            
-            consoleWarnSpy.mockRestore();
         });
 
         test('should validate type parameter', () => {
-            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-            
             const notification = notificationManager.showNotification('Test', 'invalid-type');
             
             expect(notification).toBeDefined();
             expect(notification.getAttribute('data-type')).toBe('info');
-            expect(consoleWarnSpy).toHaveBeenCalled();
-            
-            consoleWarnSpy.mockRestore();
         });
 
         test('should auto-remove notification after duration', () => {
@@ -467,39 +457,24 @@ describe('NotificationManager', () => {
 
     describe('error handling', () => {
         test('should handle invalid notification type gracefully', () => {
-            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-            
             const notification = notificationManager.showNotification('Test', 'invalid-type');
             
             expect(notification).toBeDefined();
             expect(notification.getAttribute('data-type')).toBe('info');
-            expect(consoleWarnSpy).toHaveBeenCalled();
-            
-            consoleWarnSpy.mockRestore();
         });
 
         test('should handle empty message', () => {
-            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-            
             const notification = notificationManager.showNotification('', 'success');
 
             expect(notification).toBeNull();
-            expect(consoleWarnSpy).toHaveBeenCalled();
-            
-            consoleWarnSpy.mockRestore();
         });
 
         test('should handle null/undefined parameters', () => {
-            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-            
             const result1 = notificationManager.showNotification(null, 'success');
             const result2 = notificationManager.showNotification('Test', null);
             
             expect(result1).toBeNull();
             expect(result2).toBeDefined();
-            expect(consoleWarnSpy).toHaveBeenCalled();
-            
-            consoleWarnSpy.mockRestore();
         });
 
         test('should handle errors in notification creation', () => {

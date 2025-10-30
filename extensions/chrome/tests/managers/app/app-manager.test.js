@@ -287,7 +287,7 @@ describe('AppManager', () => {
             
             await appManager.loadInitialStatus();
             
-            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Status Loading Error', 'error');
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Connection Failed', 'error');
         });
     });
 

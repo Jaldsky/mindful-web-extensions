@@ -55,7 +55,7 @@ class TranslationManager extends BaseManager {
             missingKeys: new Set()
         };
 
-        this._log('TranslationManager создан', { currentLocale: this.currentLocale });
+        this._log({ key: 'logs.translation.created' }, { currentLocale: this.currentLocale });
     }
 
     /**
@@ -79,7 +79,7 @@ class TranslationManager extends BaseManager {
                 if (translation === undefined) {
                     this.statistics.missingTranslations++;
                     this.statistics.missingKeys.add(key);
-                    this._log(`Перевод не найден для ключа: ${key}`, {
+                    this._log({ key: 'logs.translation.missing', params: { key } }, {
                         locale: this.currentLocale
                     });
                     return key;
@@ -94,7 +94,7 @@ class TranslationManager extends BaseManager {
                 return translation;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError(`Ошибка получения перевода для ключа: ${key}`, error);
+                this._logError({ key: 'logs.translation.translateError', params: { key } }, error);
                 return key;
             }
         });
@@ -135,12 +135,12 @@ class TranslationManager extends BaseManager {
      */
     setLocale(locale) {
         if (!this.translations[locale]) {
-            this._logError(`Неподдерживаемая локаль: ${locale}`);
+            this._logError({ key: 'logs.translation.unsupported', params: { locale } });
             return false;
         }
 
         if (this.currentLocale === locale) {
-            this._log(`Локаль уже установлена: ${locale}`);
+            this._log({ key: 'logs.translation.alreadySet', params: { locale } });
             return true;
         }
 
@@ -152,7 +152,7 @@ class TranslationManager extends BaseManager {
             lastLocaleChange: Date.now()
         });
 
-        this._log('Локаль изменена', { 
+        this._log({ key: 'logs.translation.changed' }, { 
             from: oldLocale, 
             to: locale
         });
@@ -248,7 +248,7 @@ class TranslationManager extends BaseManager {
             errors: 0,
             missingKeys: new Set()
         };
-        this._log('Статистика переводов сброшена');
+        this._log({ key: 'logs.translation.statsReset' });
     }
 
     /**
@@ -297,7 +297,7 @@ class TranslationManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов TranslationManager');
+        this._log({ key: 'logs.translation.destroyStart' });
         
         try {
             this.statistics.missingKeys.clear();
@@ -309,9 +309,9 @@ class TranslationManager extends BaseManager {
                 missingKeys: new Set()
             };
             
-            this._log('TranslationManager уничтожен');
+            this._log({ key: 'logs.translation.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении TranslationManager', error);
+            this._logError({ key: 'logs.translation.destroyError' }, error);
         }
         
         super.destroy();

@@ -17,6 +17,98 @@ const RU = {
         no: 'Нет'
     },
 
+    // Логи (для внутреннего логирования, INFO/ERROR)
+    logs: {
+        app: {
+            initStart: 'Начало инициализации AppManager',
+            initSuccess: 'AppManager инициализирован (без периодических обновлений)',
+            initError: 'Ошибка инициализации AppManager',
+            initialStatusLoaded: 'Начальный статус загружен',
+            initialStatusError: 'Ошибка загрузки начального статуса',
+            handlersSetup: 'Настройка обработчиков событий',
+            handlersCount: 'Настроено обработчиков: {count}',
+            openSettings: 'Открытие страницы настроек',
+            testConnection: {
+                start: 'Тестирование подключения',
+                success: 'Тест подключения: успешно',
+                fail: 'Тест подключения: неудача',
+                error: 'Ошибка тестирования подключения'
+            },
+            localeChanged: 'Локаль изменена'
+        },
+        diagnostics: {
+            resultsHeader: 'Результаты диагностики',
+            overall: 'Общий статус',
+            duration: 'Время выполнения (мс)',
+            startedAt: 'Время запуска',
+            generalError: 'Общая ошибка диагностики',
+            checkLine: '{emoji} {name}:',
+            checkError: 'Ошибка в проверке: {name}'
+        },
+        notification: {
+            warnMessageRequired: 'message обязателен и должен быть строкой',
+            warnInvalidType: 'Неверный тип "{type}", используется INFO'
+        },
+        locale: {
+            created: 'LocaleManager создан',
+            alreadyInitialized: 'LocaleManager уже инициализирован',
+            initStart: 'Начало инициализации LocaleManager',
+            savedLocaleLoaded: 'Загружена сохранённая локаль',
+            browserLocaleSet: 'Установлена локаль браузера',
+            initSuccess: 'LocaleManager инициализирован',
+            initError: 'Ошибка инициализации LocaleManager',
+            detectBrowserLocaleError: 'Ошибка определения локали браузера',
+            unsupported: 'Неподдерживаемая локаль: {locale}',
+            alreadySet: 'Локаль уже установлена: {locale}',
+            changed: 'Локаль изменена',
+            listenerAdded: 'Добавлен слушатель изменения локали',
+            listenerRemoved: 'Удалён слушатель изменения локали',
+            listenerError: 'Ошибка в слушателе изменения локали',
+            statisticsReset: 'Вся статистика локализации сброшена',
+            statisticsResetError: 'Ошибка сброса статистики локализации',
+            alreadyDestroyed: 'LocaleManager уже был уничтожен',
+            destroyStart: 'Очистка ресурсов LocaleManager',
+            destroyed: 'LocaleManager уничтожен',
+            destroyError: 'Ошибка при уничтожении LocaleManager'
+        },
+        translation: {
+            created: 'TranslationManager создан',
+            missing: 'Перевод не найден для ключа: {key}',
+            translateError: 'Ошибка получения перевода для ключа: {key}',
+            unsupported: 'Неподдерживаемая локаль: {locale}',
+            alreadySet: 'Локаль уже установлена: {locale}',
+            changed: 'Локаль изменена',
+            statsReset: 'Статистика переводов сброшена',
+            destroyStart: 'Очистка ресурсов TranslationManager',
+            destroyed: 'TranslationManager уничтожен',
+            destroyError: 'Ошибка при уничтожении TranslationManager'
+        },
+        localeDom: {
+            created: 'DOMManager локализации создан',
+            rootNotProvided: 'Root элемент не предоставлен',
+            elementLocalizeError: 'Ошибка локализации элемента',
+            localizedCount: 'Локализовано элементов: {count}',
+            domLocalizeError: 'Ошибка локализации DOM',
+            elementNotFound: 'Элемент не найден: {selector}',
+            elementLocalized: 'Элемент локализован: {selector}',
+            elementLocalizeSelectorError: 'Ошибка локализации элемента: {selector}',
+            elementsNotFound: 'Элементы не найдены: {selector}',
+            elementsLocalized: 'Элементы локализованы: {selector}',
+            elementsLocalizeError: 'Ошибка локализации элементов: {selector}',
+            elementNotProvided: 'Элемент не предоставлен',
+            attrsAdded: 'Атрибуты локализации добавлены',
+            addAttrsError: 'Ошибка добавления атрибутов локализации',
+            attrsRemoved: 'Атрибуты локализации удалены',
+            removeAttrsError: 'Ошибка удаления атрибутов локализации',
+            getElementsError: 'Ошибка получения локализуемых элементов',
+            countElementsError: 'Ошибка подсчёта локализуемых элементов',
+            statsReset: 'Статистика локализации сброшена',
+            destroyStart: 'Очистка ресурсов DOMManager локализации',
+            destroyed: 'DOMManager локализации уничтожен',
+            destroyError: 'Ошибка при уничтожении DOMManager локализации'
+        }
+    },
+
     // Страница приложения
     app: {
         title: 'Mindful Web',

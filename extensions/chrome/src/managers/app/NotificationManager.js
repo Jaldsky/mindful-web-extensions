@@ -62,18 +62,6 @@ class NotificationManager extends BaseManager {
     }
 
     /**
-     * Логирует предупреждения.
-     * 
-     * @private
-     * @param {string} message - Сообщение для логирования
-     * @returns {void}
-     */
-    _logWarning(message) {
-        // eslint-disable-next-line no-console
-        console.warn(`[NotificationManager] ${message}`);
-    }
-
-    /**
      * Показывает уведомление пользователю.
      * 
      * @param {string} message - Текст уведомления
@@ -85,12 +73,12 @@ class NotificationManager extends BaseManager {
      */
     showNotification(message, type = NotificationManager.NOTIFICATION_TYPES.INFO, options = {}) {
         if (!message || typeof message !== 'string') {
-            this._logWarning('message обязателен и должен быть строкой');
+            this._log({ key: 'logs.notification.warnMessageRequired' });
             return null;
         }
 
         if (!Object.values(NotificationManager.NOTIFICATION_TYPES).includes(type)) {
-            this._logWarning(`Неверный тип "${type}", используется INFO`);
+            this._log({ key: 'logs.notification.warnInvalidType', params: { type } });
             type = NotificationManager.NOTIFICATION_TYPES.INFO;
         }
 

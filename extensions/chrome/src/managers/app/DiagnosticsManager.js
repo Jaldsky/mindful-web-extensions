@@ -425,40 +425,27 @@ class DiagnosticsManager extends BaseManager {
 
         this.notificationManager.showNotification(message, notificationType);
 
-        // eslint-disable-next-line no-console
-        console.group('📊 Результаты диагностики');
-        // eslint-disable-next-line no-console
-        console.log('Общий статус:', results.overall);
-        // eslint-disable-next-line no-console
-        console.log('Время выполнения:', `${results.totalDuration}мс`);
-        // eslint-disable-next-line no-console
-        console.log('Время запуска:', results.timestamp);
+        this._log({ key: 'logs.diagnostics.resultsHeader' });
+        this._log({ key: 'logs.diagnostics.overall' }, { overall: results.overall });
+        this._log({ key: 'logs.diagnostics.duration' }, { durationMs: results.totalDuration });
+        this._log({ key: 'logs.diagnostics.startedAt' }, { timestamp: results.timestamp });
         
         if (results.error) {
-            // eslint-disable-next-line no-console
-            console.error('Общая ошибка:', results.error);
+            this._logError({ key: 'logs.diagnostics.generalError' }, results.error);
         }
         
-        // eslint-disable-next-line no-console
-        console.group('Проверки:');
         Object.entries(results.checks).forEach(([name, check]) => {
             const checkEmoji = DiagnosticsManager.STATUS_EMOJI[check.status] ||
                 DiagnosticsManager.STATUS_EMOJI.unknown;
-            // eslint-disable-next-line no-console
-            console.log(
-                `${checkEmoji} ${name}:`, 
-                `${check.message} (${check.duration}мс)`,
-                check.data || ''
-            );
+            this._log({ key: 'logs.diagnostics.checkLine', params: { name, emoji: checkEmoji } }, {
+                message: check.message,
+                durationMs: check.duration,
+                data: check.data || null
+            });
             if (check.error) {
-                // eslint-disable-next-line no-console
-                console.error(`  Ошибка: ${check.error}`);
+                this._logError({ key: 'logs.diagnostics.checkError', params: { name } }, check.error);
             }
         });
-        // eslint-disable-next-line no-console
-        console.groupEnd();
-        // eslint-disable-next-line no-console
-        console.groupEnd();
     }
 
     /**
