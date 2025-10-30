@@ -70,9 +70,16 @@ class BaseManager {
     _log(message, data) {
         if (this.enableLogging) {
             const className = this.constructor.name;
-            console.log(`[${className}] ${message}`, data !== undefined ? data : '');
-            
-            // Сохраняем лог в storage для отображения в панели разработчика
+            const isConsoleEnabledInConfig = (CONFIG.LOGGING && CONFIG.LOGGING.CONSOLE_OUTPUT) === true;
+            const hasProcessEnv = typeof process !== 'undefined' && !!process.env;
+            const testModeValue = (CONFIG.MODES && CONFIG.MODES.TEST) || 'test';
+            const isTestEnv = hasProcessEnv && process.env.NODE_ENV === testModeValue;
+            const shouldConsole = isConsoleEnabledInConfig || isTestEnv;
+            if (shouldConsole) {
+                // eslint-disable-next-line no-console
+                console.log(`[${className}] ${message}`, data !== undefined ? data : '');
+            }
+            // Всегда сохраняем лог в storage для панели расширения
             this._saveLogToStorage('INFO', message, data);
         }
     }
@@ -87,9 +94,16 @@ class BaseManager {
      */
     _logError(message, error) {
         const className = this.constructor.name;
-        console.error(`[${className}] ${message}`, error || '');
-        
-        // Сохраняем лог ошибки в storage для отображения в панели разработчика
+        const isConsoleEnabledInConfig = (CONFIG.LOGGING && CONFIG.LOGGING.CONSOLE_OUTPUT) === true;
+        const hasProcessEnv = typeof process !== 'undefined' && !!process.env;
+        const testModeValue = (CONFIG.MODES && CONFIG.MODES.TEST) || 'test';
+        const isTestEnv = hasProcessEnv && process.env.NODE_ENV === testModeValue;
+        const shouldConsole = isConsoleEnabledInConfig || isTestEnv;
+        if (shouldConsole) {
+            // eslint-disable-next-line no-console
+            console.error(`[${className}] ${message}`, error || '');
+        }
+        // Всегда сохраняем лог ошибки в storage для панели расширения
         this._saveLogToStorage('ERROR', message, error);
     }
 
