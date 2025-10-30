@@ -1,5 +1,8 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../../config.js');
+const StatusHistory = require('./status/History.js');
+const StatusQueue = require('./status/Queue.js');
+const StatusRenderer = require('./status/Renderer.js');
 
 /**
  * @typedef {Object} StatusHistoryEntry
@@ -66,35 +69,31 @@ class StatusManager extends BaseManager {
     constructor(options = {}) {
         super(options);
         
-        /** @type {HTMLElement|null} */
-        this.statusElement = options.statusElement || null;
+        /** @type {StatusRenderer} */
+        this.renderer = new StatusRenderer({
+            element: options.statusElement || null,
+            log: (m, d) => this._log(m, d),
+            logError: (m, e) => this._logError(m, e)
+        });
         
         /** @type {number} */
         this.defaultDuration = options.defaultDuration || StatusManager.DEFAULT_DISPLAY_DURATION;
         
-        /** @type {number|null} */
-        this.hideTimeout = null;
-        
-        /** @type {boolean} */
-        this.enableHistory = options.enableHistory !== false;
-        
-        /** @type {boolean} */
-        this.enableQueue = options.enableQueue === true;
-        
-        /** @type {number} */
-        this.maxHistorySize = options.maxHistorySize || StatusManager.MAX_HISTORY_SIZE;
-        
-        /** @type {number} */
-        this.maxQueueSize = options.maxQueueSize || StatusManager.MAX_QUEUE_SIZE;
-        
-        /** @type {StatusHistoryEntry[]} */
-        this.history = [];
-        
-        /** @type {StatusQueueItem[]} */
-        this.queue = [];
-        
-        /** @type {boolean} */
-        this.isProcessingQueue = false;
+        /** @type {StatusHistory} */
+        this.historyManager = new StatusHistory({
+            enableHistory: options.enableHistory !== false,
+            maxHistorySize: options.maxHistorySize || StatusManager.MAX_HISTORY_SIZE,
+            log: (m, d) => this._log(m, d),
+            logError: (m, e) => this._logError(m, e)
+        });
+
+        /** @type {StatusQueue} */
+        this.queueManager = new StatusQueue({
+            enableQueue: options.enableQueue === true,
+            maxQueueSize: options.maxQueueSize || StatusManager.MAX_QUEUE_SIZE,
+            log: (m, d) => this._log(m, d),
+            logError: (m, e) => this._logError(m, e)
+        });
         
         /** @type {number|null} */
         this.lastDisplayTimestamp = null;
@@ -108,16 +107,12 @@ class StatusManager extends BaseManager {
         });
         
         this._log('StatusManager инициализирован', {
-            enableHistory: this.enableHistory,
-            enableQueue: this.enableQueue,
+            enableHistory: options.enableHistory !== false,
+            enableQueue: options.enableQueue === true,
             defaultDuration: this.defaultDuration,
-            hasStatusElement: !!this.statusElement
+            hasStatusElement: !!this.renderer.statusElement
         });
-        
-        // Валидируем элемент статуса если он предоставлен
-        if (this.statusElement) {
-            this._validateStatusElement();
-        }
+
     }
 
     /**
@@ -127,24 +122,7 @@ class StatusManager extends BaseManager {
      * @throws {Error} Если statusElement некорректен
      * @returns {void}
      */
-    _validateStatusElement() {
-        if (!this.statusElement) {
-            return;
-        }
-        
-        if (!(this.statusElement instanceof HTMLElement)) {
-            const error = new Error('statusElement должен быть HTMLElement');
-            this._logError('Критическая ошибка валидации', error);
-            throw error;
-        }
-        
-        // Проверяем, что элемент в DOM
-        if (!document.body.contains(this.statusElement)) {
-            this._log('Предупреждение: statusElement не находится в DOM');
-        }
-        
-        this._log('statusElement валиден');
-    }
+    _validateStatusElement() { this.renderer.validateElement(); }
 
     /**
      * Устанавливает элемент статуса с валидацией.
@@ -153,16 +131,7 @@ class StatusManager extends BaseManager {
      * @throws {TypeError} Если element не является HTMLElement
      * @returns {void}
      */
-    setStatusElement(element) {
-        if (!(element instanceof HTMLElement)) {
-            throw new TypeError('element должен быть HTMLElement');
-        }
-        
-        this.statusElement = element;
-        this._validateStatusElement();
-        
-        this._log('Элемент статуса установлен и валидирован');
-    }
+    setStatusElement(element) { this.renderer.setElement(element); }
 
     /**
      * Добавляет запись в историю статусов.
@@ -174,30 +143,11 @@ class StatusManager extends BaseManager {
      * @returns {void}
      */
     _addToHistory(type, message, duration) {
-        if (!this.enableHistory) {
-            return;
-        }
-
+        this.historyManager.add(type, message, duration);
         try {
-            /** @type {StatusHistoryEntry} */
-            const entry = {
-                type,
-                message,
-                timestamp: new Date().toISOString(),
-                duration
-            };
-
-            this.history.push(entry);
-
-            // Ограничиваем размер истории
-            if (this.history.length > this.maxHistorySize) {
-                this.history.shift();
-            }
-
-            this.updateState({ historyLength: this.history.length });
-            this._log('Добавлена запись в историю', { entriesCount: this.history.length });
+            this.updateState({ historyLength: this.historyManager.size() });
         } catch (error) {
-            this._logError('Ошибка добавления в историю', error);
+            this._logError('Ошибка обновления длины истории', error);
         }
     }
 
@@ -211,39 +161,12 @@ class StatusManager extends BaseManager {
      * @returns {boolean} true если добавлено в очередь
      */
     _addToQueue(message, type, duration) {
-        if (!this.enableQueue) {
-            return false;
+        const added = this.queueManager.enqueue(message, type, duration);
+        this.updateState({ queueLength: this.queueManager.size() });
+        if (added && !this.state.isVisible) {
+            this._processQueue();
         }
-
-        try {
-            if (this.queue.length >= this.maxQueueSize) {
-                this._log('Очередь переполнена, пропуск сообщения');
-                return false;
-            }
-
-            /** @type {StatusQueueItem} */
-            const item = {
-                message,
-                type,
-                duration,
-                timestamp: Date.now()
-            };
-
-            this.queue.push(item);
-            this.updateState({ queueLength: this.queue.length });
-            
-            this._log('Сообщение добавлено в очередь', { queueLength: this.queue.length });
-            
-            // Запускаем обработку очереди если она не активна
-            if (!this.isProcessingQueue && !this.state.isVisible) {
-                this._processQueue();
-            }
-
-            return true;
-        } catch (error) {
-            this._logError('Ошибка добавления в очередь', error);
-            return false;
-        }
+        return added;
     }
 
     /**
@@ -253,54 +176,13 @@ class StatusManager extends BaseManager {
      * @returns {Promise<void>}
      */
     async _processQueue() {
-        if (this.isProcessingQueue || this.queue.length === 0) {
-            return;
-        }
-
+        if (this.queueManager.size() === 0) return;
         return this._executeWithTimingAsync('processQueue', async () => {
-            this.isProcessingQueue = true;
-            const queueStartSize = this.queue.length;
-            this._log('Начало обработки очереди', { queueLength: queueStartSize });
-
-            let processedCount = 0;
-            let failedCount = 0;
-
-            try {
-                while (this.queue.length > 0) {
-                    const item = this.queue.shift();
-                    this.updateState({ queueLength: this.queue.length });
-
-                    if (item) {
-                        const success = await this._displayStatusInternal(
-                            item.message, 
-                            item.type, 
-                            item.duration
-                        );
-                        
-                        if (success) {
-                            processedCount++;
-                        } else {
-                            failedCount++;
-                        }
-                        
-                        // Ждем завершения отображения текущего статуса
-                        if (item.duration > 0) {
-                            await new Promise(resolve => setTimeout(resolve, item.duration));
-                        }
-                    }
-                }
-
-                this._log('Обработка очереди завершена', {
-                    startSize: queueStartSize,
-                    processed: processedCount,
-                    failed: failedCount
-                });
-                
-            } catch (error) {
-                this._logError('Критическая ошибка обработки очереди', error);
-            } finally {
-                this.isProcessingQueue = false;
-            }
+            await this.queueManager.process(async (item) => {
+                const ok = await this._displayStatusInternal(item.message, item.type, item.duration);
+                this.updateState({ queueLength: this.queueManager.size() });
+                return ok;
+            });
         });
     }
 
@@ -315,38 +197,8 @@ class StatusManager extends BaseManager {
      */
     async _displayStatusInternal(message, type, duration) {
         return this._executeWithTimingAsync('displayStatus', async () => {
-            if (!this.statusElement) {
-                this._logError('Элемент статуса не установлен');
-                return false;
-            }
-
-            // Проверяем, что элемент все еще в DOM
-            if (!document.body.contains(this.statusElement)) {
-                this._logError('Элемент статуса не находится в DOM');
-                return false;
-            }
-
-            // Очищаем предыдущий таймер
-            this._clearHideTimeout();
-
-            // Устанавливаем текст и класс (используем CSS классы из styles/options.css)
-            this.statusElement.textContent = message;
-            this.statusElement.className = `status-message ${type} visible`;
-
-            // Верификация отображения
-            const isVisible = this.statusElement.classList.contains('visible');
-            const hasCorrectClass = this.statusElement.classList.contains('status-message') && 
-                                   this.statusElement.classList.contains(type);
-            const hasCorrectText = this.statusElement.textContent === message;
-
-            if (!isVisible || !hasCorrectClass || !hasCorrectText) {
-                this._logError('Верификация отображения не удалась', {
-                    isVisible,
-                    hasCorrectClass,
-                    hasCorrectText
-                });
-                return false;
-            }
+            const displayed = this.renderer.display(message, type);
+            if (!displayed) return false;
 
             this.lastDisplayTimestamp = Date.now();
 
@@ -365,9 +217,8 @@ class StatusManager extends BaseManager {
             // Добавляем в историю
             this._addToHistory(type, message, duration);
 
-            // Планируем скрытие если указана длительность
             if (duration > 0) {
-                this._scheduleHide(duration);
+                this.renderer.scheduleHide(duration, () => this.hideStatus());
             }
 
             return true;
@@ -393,7 +244,7 @@ class StatusManager extends BaseManager {
             type = StatusManager.STATUS_TYPES.INFO;
         }
 
-        if (!this.statusElement) {
+        if (!this.renderer.statusElement) {
             this._logError('Элемент статуса не установлен');
             return false;
         }
@@ -401,7 +252,7 @@ class StatusManager extends BaseManager {
         const displayDuration = duration !== undefined ? duration : this.defaultDuration;
 
         // Если включена очередь и статус уже отображается, добавляем в очередь
-        if (this.enableQueue && this.state.isVisible) {
+        if (this.queueManager.enableQueue && this.state.isVisible) {
             return this._addToQueue(message, type, displayDuration);
         }
 
@@ -414,76 +265,19 @@ class StatusManager extends BaseManager {
     }
 
     /**
-     * Планирует скрытие статуса через указанное время.
-     * 
-     * @private
-     * @param {number} duration - Длительность в мс
-     * @returns {void}
-     */
-    _scheduleHide(duration) {
-        this.hideTimeout = setTimeout(() => {
-            this.hideStatus();
-        }, duration);
-        
-        this._log(`Скрытие статуса запланировано через ${duration}мс`);
-    }
-
-    /**
-     * Очищает таймер скрытия.
-     * 
-     * @private
-     * @returns {void}
-     */
-    _clearHideTimeout() {
-        if (this.hideTimeout) {
-            clearTimeout(this.hideTimeout);
-            this.hideTimeout = null;
-            this._log('Таймер скрытия очищен');
-        }
-    }
-
-    /**
      * Скрывает статусное сообщение с верификацией.
      * 
      * @returns {boolean} true если сообщение скрыто
      */
     hideStatus() {
-        if (!this.statusElement) {
-            this._log('Нет элемента статуса для скрытия');
-            return false;
-        }
-
         const startTime = performance.now();
-
         try {
-            this._clearHideTimeout();
-            
-            this.statusElement.textContent = '';
-            this.statusElement.className = 'status-message hidden';
-
-            // Верификация скрытия
-            const isHidden = this.statusElement.classList.contains('hidden');
-            const isCleared = this.statusElement.textContent === '';
-
-            if (!isHidden || !isCleared) {
-                this._logError('Верификация скрытия не удалась', {
-                    isHidden,
-                    isCleared
-                });
-                return false;
-            }
-
-            this.updateState({
-                currentType: null,
-                currentMessage: null,
-                isVisible: false
-            });
-
+            const ok = this.renderer.hide();
+            if (!ok) return false;
+            this.updateState({ currentType: null, currentMessage: null, isVisible: false });
             const hideTime = Math.round(performance.now() - startTime);
             this.performanceMetrics.set('hideStatus_lastDuration', hideTime);
-            
             this._log(`Статус скрыт и верифицирован (${hideTime}мс)`);
-            
             return true;
         } catch (error) {
             const hideTime = Math.round(performance.now() - startTime);
@@ -546,22 +340,13 @@ class StatusManager extends BaseManager {
      */
     getHistory(options = {}) {
         try {
-            let result = [...this.history];
-
-            // Фильтр по типу
-            if (options.type && Object.values(StatusManager.STATUS_TYPES).includes(options.type)) {
-                result = result.filter(entry => entry.type === options.type);
+            const opts = { ...options };
+            if (opts.type && !Object.values(StatusManager.STATUS_TYPES).includes(opts.type)) {
+                delete opts.type;
             }
-
-            // Ограничение количества
-            if (options.limit && typeof options.limit === 'number' && options.limit > 0) {
-                result = result.slice(-options.limit);
-            }
-
-            return result;
-        } catch (error) {
-            this._logError('Ошибка получения истории', error);
-            return [];
+            return this.historyManager.get(opts);
+        } catch (_e) {
+            return this.historyManager.get();
         }
     }
 
@@ -572,11 +357,8 @@ class StatusManager extends BaseManager {
      */
     clearHistory() {
         try {
-            const count = this.history.length;
-            this.history = [];
+            const count = this.historyManager.clear();
             this.updateState({ historyLength: 0 });
-            
-            this._log(`История очищена: ${count} записей`);
             return count;
         } catch (error) {
             this._logError('Ошибка очистки истории', error);
@@ -591,17 +373,9 @@ class StatusManager extends BaseManager {
      * @returns {number} Количество удаленных сообщений
      */
     _clearQueue() {
-        try {
-            const count = this.queue.length;
-            this.queue = [];
-            this.updateState({ queueLength: 0 });
-            
-            this._log(`Очередь очищена: ${count} сообщений`);
-            return count;
-        } catch (error) {
-            this._logError('Ошибка очистки очереди', error);
-            return 0;
-        }
+        const count = this.queueManager.clear();
+        this.updateState({ queueLength: 0 });
+        return count;
     }
 
     /**
@@ -611,20 +385,34 @@ class StatusManager extends BaseManager {
      */
     getStatistics() {
         try {
+            // Валидация внутренних структур перед расчетом
+            if (!Array.isArray(this.historyManager.history)) {
+                throw new Error('invalid history');
+            }
+            let queueItemsIsArray = false;
+            try {
+                queueItemsIsArray = Array.isArray(this.queueManager.items);
+            } catch (_e) {
+                queueItemsIsArray = false;
+            }
+            if (!queueItemsIsArray) {
+                throw new Error('invalid queue');
+            }
+
             const historyByType = {};
             Object.values(StatusManager.STATUS_TYPES).forEach(type => {
-                historyByType[type] = this.history.filter(entry => entry.type === type).length;
+                historyByType[type] = this.historyManager.get({ type }).length;
             });
 
             return {
-                totalHistoryEntries: this.history.length,
+                totalHistoryEntries: this.historyManager.size(),
                 historyByType,
-                queueLength: this.queue.length,
+                queueLength: this.queueManager.size(),
                 isVisible: this.state.isVisible,
                 currentType: this.state.currentType,
                 lastDisplayTimestamp: this.lastDisplayTimestamp,
                 performanceMetrics: this.getPerformanceMetrics(),
-                isProcessingQueue: this.isProcessingQueue
+                isProcessingQueue: this.queueManager.isProcessing
             };
         } catch (error) {
             this._logError('Ошибка получения статистики', error);
@@ -641,7 +429,8 @@ class StatusManager extends BaseManager {
         const issues = [];
 
         try {
-            if (this.statusElement && !(this.statusElement instanceof HTMLElement)) {
+            const HTMLElementCtor = (typeof HTMLElement !== 'undefined') ? HTMLElement : (typeof window !== 'undefined' ? window.HTMLElement : null);
+            if (this.renderer.statusElement && HTMLElementCtor && !(this.renderer.statusElement instanceof HTMLElementCtor)) {
                 issues.push('statusElement не является HTMLElement');
             }
 
@@ -649,12 +438,24 @@ class StatusManager extends BaseManager {
                 issues.push('defaultDuration не может быть отрицательным');
             }
 
-            if (this.history.length > this.maxHistorySize) {
-                issues.push(`История превышает максимальный размер: ${this.history.length}/${this.maxHistorySize}`);
+            if (this.historyManager.size() > (this.historyManager.maxHistorySize)) {
+                issues.push(`История превышает максимальный размер: ${this.historyManager.size()}/${this.historyManager.maxHistorySize}`);
             }
 
-            if (this.queue.length > this.maxQueueSize) {
-                issues.push(`Очередь превышает максимальный размер: ${this.queue.length}/${this.maxQueueSize}`);
+            if (this.queueManager.size() > (this.queueManager.maxQueueSize)) {
+                issues.push(`Очередь превышает максимальный размер: ${this.queueManager.size()}/${this.queueManager.maxQueueSize}`);
+            }
+
+            if (!Array.isArray(this.historyManager.history)) {
+                issues.push('История имеет некорректный формат');
+            }
+            try {
+                const items = this.queueManager.items;
+                if (!Array.isArray(items)) {
+                    issues.push('Очередь имеет некорректный формат');
+                }
+            } catch (_e) {
+                issues.push('Очередь имеет некорректный формат');
             }
 
             if (this.state.isVisible && !this.state.currentType) {
@@ -693,7 +494,7 @@ class StatusManager extends BaseManager {
         
         try {
             // Останавливаем все таймеры
-        this._clearHideTimeout();
+        this.renderer.clearHideTimeout();
             
             // Очищаем очередь
             this._clearQueue();
@@ -705,12 +506,12 @@ class StatusManager extends BaseManager {
         this.hideStatus();
             
             // Очищаем историю
-            if (this.enableHistory) {
+            if (this.historyManager.enableHistory) {
                 this.clearHistory();
             }
             
             // Убираем ссылку на элемент
-        this.statusElement = null;
+        this.renderer.statusElement = null;
             
             this._log('StatusManager уничтожен');
         } catch (error) {
