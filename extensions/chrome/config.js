@@ -28,7 +28,7 @@ const CONFIG = {
         HEALTHCHECK_URL: 'http://localhost:8000/api/v1/healthcheck',
         TIMEOUT: 10000, // Таймаут запроса (мс)
         RETRY_ATTEMPTS: 3, // Количество попыток повтора
-        RETRY_DELAY: 5000 // Задержка между попытками (мс)
+        RETRY_DELAY: 20000 // Задержка между попытками (мс)
     },
 
     /**
@@ -204,6 +204,9 @@ const CONFIG = {
     LOGGING: {
         ENABLE_BY_DEFAULT: true,
         PREFIX: '[Mindful Web]',
+        // Управляет выводом в консоль DevTools. Логи всегда сохраняются в storage,
+        // но в консоль попадают только если этот флаг true.
+        CONSOLE_OUTPUT: false,
         COLORS: {
             LOG: '#4CAF50',
             ERROR: '#f44336',
