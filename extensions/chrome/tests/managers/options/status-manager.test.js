@@ -43,10 +43,10 @@ describe('StatusManager', () => {
     describe('Инициализация', () => {
         test('должен создаваться с настройками по умолчанию', () => {
             expect(statusManager).toBeInstanceOf(StatusManager);
-            expect(statusManager.statusElement).toBe(statusElement);
+            expect(statusManager.renderer.statusElement).toBe(statusElement);
             expect(statusManager.defaultDuration).toBe(1000);
-            expect(statusManager.enableHistory).toBe(true);
-            expect(statusManager.enableQueue).toBe(false);
+            expect(statusManager.historyManager.enableHistory).toBe(true);
+            expect(statusManager.queueManager.enableQueue).toBe(false);
         });
 
         test('должен создаваться с пользовательскими настройками', () => {
@@ -59,10 +59,10 @@ describe('StatusManager', () => {
                 maxQueueSize: 5
             });
 
-            expect(customManager.enableHistory).toBe(false);
-            expect(customManager.enableQueue).toBe(true);
-            expect(customManager.maxHistorySize).toBe(25);
-            expect(customManager.maxQueueSize).toBe(5);
+            expect(customManager.historyManager.enableHistory).toBe(false);
+            expect(customManager.queueManager.enableQueue).toBe(true);
+            expect(customManager.historyManager.maxHistorySize).toBe(25);
+            expect(customManager.queueManager.maxQueueSize).toBe(5);
 
             customManager.destroy();
         });
@@ -70,7 +70,7 @@ describe('StatusManager', () => {
         test('должен работать без statusElement', () => {
             const manager = new StatusManager({ enableLogging: false });
 
-            expect(manager.statusElement).toBeNull();
+            expect(manager.renderer.statusElement).toBeNull();
             manager.destroy();
         });
 
@@ -96,7 +96,7 @@ describe('StatusManager', () => {
         test('должен использовать defaultDuration', async () => {
             await statusManager.showSuccess('Test message');
 
-            expect(statusManager.hideTimeout).not.toBeNull();
+            expect(statusManager.renderer.hideTimeout).not.toBeNull();
         });
     });
 
@@ -148,7 +148,7 @@ describe('StatusManager', () => {
             await statusManager.showSuccess('Test');
             statusManager.hideStatus();
 
-            expect(statusManager.hideTimeout).toBeNull();
+            expect(statusManager.renderer.hideTimeout).toBeNull();
         });
     });
 
@@ -242,7 +242,7 @@ describe('StatusManager', () => {
             const result3 = await manager.showSuccess('Message 3');
 
             // Второе и третье должны быть в очереди
-            expect(manager.queue.length).toBeGreaterThan(0);
+            expect(manager.queueManager.size()).toBeGreaterThan(0);
 
             manager.destroy();
         });
@@ -251,7 +251,7 @@ describe('StatusManager', () => {
             await statusManager.showSuccess('Message 1');
             await statusManager.showSuccess('Message 2');
 
-            expect(statusManager.queue).toHaveLength(0);
+            expect(statusManager.queueManager.size()).toBe(0);
         });
 
         test('должен ограничивать размер очереди', async () => {
@@ -267,7 +267,7 @@ describe('StatusManager', () => {
             await manager.showSuccess('Message 3');
             await manager.showSuccess('Message 4'); // Должно быть отклонено
 
-            expect(manager.queue.length).toBeLessThanOrEqual(2);
+            expect(manager.queueManager.size()).toBeLessThanOrEqual(2);
 
             manager.destroy();
         });
@@ -318,7 +318,7 @@ describe('StatusManager', () => {
         });
 
         test('должен выявлять проблемы в состоянии', () => {
-            statusManager.queue = 'not-an-array'; // намеренно ломаем
+            statusManager.queueManager.items = 'not-an-array'; // намеренно ломаем
 
             const result = statusManager.validateState();
 
@@ -334,7 +334,7 @@ describe('StatusManager', () => {
 
             statusManager.setStatusElement(newElement);
 
-            expect(statusManager.statusElement).toBe(newElement);
+            expect(statusManager.renderer.statusElement).toBe(newElement);
 
             newElement.parentNode.removeChild(newElement);
         });
@@ -388,10 +388,10 @@ describe('StatusManager', () => {
             await statusManager.showSuccess('Test');
             statusManager.destroy();
 
-            expect(statusManager.history).toEqual([]);
-            expect(statusManager.queue).toEqual([]);
-            expect(statusManager.hideTimeout).toBeNull();
-            expect(statusManager.statusElement).toBeNull();
+            expect(statusManager.historyManager.size()).toBe(0);
+            expect(statusManager.queueManager.size()).toBe(0);
+            expect(statusManager.renderer.hideTimeout).toBeNull();
+            expect(statusManager.renderer.statusElement).toBeNull();
         });
 
         test('должен останавливать обработку очереди', async () => {
@@ -406,7 +406,7 @@ describe('StatusManager', () => {
 
             manager.destroy();
 
-            expect(manager.isProcessingQueue).toBe(false);
+            expect(manager.queueManager.isProcessing).toBe(false);
         });
     });
 
@@ -458,7 +458,7 @@ describe('StatusManager', () => {
             await statusManager.showSuccess('Test');
             
             // Создаем ситуацию, которая вызовет ошибку
-            statusManager.statusElement = null;
+            statusManager.renderer.statusElement = null;
             
             const result = statusManager.hideStatus();
 
@@ -467,7 +467,7 @@ describe('StatusManager', () => {
 
         test('должен обрабатывать ошибки в getHistory', () => {
             // Ломаем историю
-            statusManager.history = null;
+            statusManager.historyManager.history = null;
 
             const history = statusManager.getHistory();
 
@@ -475,7 +475,7 @@ describe('StatusManager', () => {
         });
 
         test('должен обрабатывать ошибки в clearHistory', () => {
-            statusManager.history = null;
+            statusManager.historyManager.history = null;
 
             const count = statusManager.clearHistory();
 
@@ -483,7 +483,7 @@ describe('StatusManager', () => {
         });
 
         test('должен обрабатывать ошибки в getStatistics', () => {
-            statusManager.history = null;
+            statusManager.historyManager.history = null;
 
             const stats = statusManager.getStatistics();
 
@@ -492,7 +492,7 @@ describe('StatusManager', () => {
 
         test('должен обрабатывать ошибки в validateState', () => {
             // Создаем ситуацию, которая вызовет ошибку
-            Object.defineProperty(statusManager, 'statusElement', {
+            Object.defineProperty(statusManager.renderer, 'statusElement', {
                 get: function() {
                     throw new Error('Cannot access statusElement');
                 }
@@ -507,7 +507,7 @@ describe('StatusManager', () => {
 
     describe('validateState - расширенные проверки', () => {
         test('должен выявлять некорректный statusElement', () => {
-            statusManager.statusElement = 'not-an-element';
+            statusManager.renderer.statusElement = 'not-an-element';
 
             const result = statusManager.validateState();
 
@@ -525,10 +525,10 @@ describe('StatusManager', () => {
         });
 
         test('должен выявлять превышение размера истории', () => {
-            statusManager.maxHistorySize = 2;
+            statusManager.historyManager.maxHistorySize = 2;
             
             // Принудительно добавляем больше элементов, чем максимальный размер
-            statusManager.history = new Array(5).fill({ type: 'success', message: 'test', timestamp: new Date().toISOString(), duration: 1000 });
+            statusManager.historyManager.history = new Array(5).fill({ type: 'success', message: 'test', timestamp: new Date().toISOString(), duration: 1000 });
 
             const result = statusManager.validateState();
 
@@ -544,7 +544,7 @@ describe('StatusManager', () => {
                 maxQueueSize: 2
             });
 
-            manager.queue = new Array(5).fill({ message: 'test' });
+            manager.queueManager.items = new Array(5).fill({ message: 'test' });
 
             const result = manager.validateState();
 
@@ -586,7 +586,7 @@ describe('StatusManager', () => {
             });
 
             // Ломаем queue
-            manager.queue = null;
+            manager.queueManager.items = null;
 
             await manager.showSuccess('Message 1');
             await manager.showSuccess('Message 2');
@@ -605,7 +605,7 @@ describe('StatusManager', () => {
             await manager.showSuccess('Message 1');
             
             // Ломаем queue перед обработкой
-            manager.queue = null;
+            manager.queueManager.items = null;
 
             // Пытаемся обработать очередь
             jest.advanceTimersByTime(100);
@@ -621,10 +621,9 @@ describe('StatusManager', () => {
                 enableQueue: true
             });
 
-            manager.queue = null;
+            manager.queueManager.items = null;
 
             const count = manager._clearQueue();
-
             expect(count).toBe(0);
             manager.destroy();
         });
@@ -648,15 +647,15 @@ describe('StatusManager', () => {
         test('должен обрабатывать пользовательскую длительность', async () => {
             await statusManager.showSuccess('Test', 5000);
 
-            expect(statusManager.hideTimeout).not.toBeNull();
+            expect(statusManager.renderer.hideTimeout).not.toBeNull();
         });
 
         test('должен очищать предыдущий таймер при новом статусе', async () => {
             await statusManager.showSuccess('Message 1');
-            const firstTimeout = statusManager.hideTimeout;
+            const firstTimeout = statusManager.renderer.hideTimeout;
             
             await statusManager.showSuccess('Message 2');
-            const secondTimeout = statusManager.hideTimeout;
+            const secondTimeout = statusManager.renderer.hideTimeout;
 
             expect(secondTimeout).not.toBe(firstTimeout);
         });
@@ -717,7 +716,7 @@ describe('StatusManager', () => {
 
             statusManager.setStatusElement(newElement);
 
-            expect(statusManager.statusElement).toBe(newElement);
+            expect(statusManager.renderer.statusElement).toBe(newElement);
 
             newElement.parentNode.removeChild(newElement);
         });
@@ -736,7 +735,7 @@ describe('StatusManager', () => {
             await manager.showSuccess('Message 2');
             await manager.showSuccess('Message 3');
 
-            expect(manager.queue.length).toBeGreaterThan(0);
+            expect(manager.queueManager.size()).toBeGreaterThan(0);
 
             // Обрабатываем очередь
             jest.advanceTimersByTime(200);
@@ -754,8 +753,8 @@ describe('StatusManager', () => {
             await manager.showSuccess('Message 1');
             
             // Добавляем невалидный элемент в очередь
-            manager.queue.push(null);
-            manager.queue.push({ message: 'Valid message', type: 'success' });
+            manager.queueManager.items.push(null);
+            manager.queueManager.items.push({ message: 'Valid message', type: 'success', duration: 0 });
 
             jest.advanceTimersByTime(100);
 
@@ -779,7 +778,7 @@ describe('StatusManager', () => {
                 statusElement: detachedElement
             });
             
-            expect(manager.statusElement).toBe(detachedElement);
+            expect(manager.renderer.statusElement).toBe(detachedElement);
         });
 
         test('_addToHistory - должен обрабатывать ошибки', () => {
@@ -789,7 +788,7 @@ describe('StatusManager', () => {
             });
             
             // Ломаем history чтобы вызвать ошибку
-            Object.defineProperty(manager, 'history', {
+            Object.defineProperty(manager.historyManager, 'history', {
                 get() {
                     throw new Error('History error');
                 }
@@ -809,7 +808,7 @@ describe('StatusManager', () => {
             const result = manager._addToQueue('Test message', 'success', 1000);
             
             expect(result).toBe(false);
-            expect(manager.queue.length).toBe(0);
+            expect(manager.queueManager.size()).toBe(0);
             
             manager.destroy();
         });
@@ -823,13 +822,13 @@ describe('StatusManager', () => {
             });
             
             // Заполняем очередь вручную чтобы избежать обработки
-            manager.queue.push({ message: 'Message 1', type: 'success', duration: 1000 });
-            manager.queue.push({ message: 'Message 2', type: 'success', duration: 1000 });
+            manager.queueManager.items.push({ message: 'Message 1', type: 'success', duration: 1000 });
+            manager.queueManager.items.push({ message: 'Message 2', type: 'success', duration: 1000 });
             
             const result3 = manager._addToQueue('Message 3', 'success', 1000);
             
             expect(result3).toBe(false);
-            expect(manager.queue.length).toBe(2);
+            expect(manager.queueManager.items.length).toBe(2);
             
             manager.destroy();
         });
@@ -877,7 +876,7 @@ describe('StatusManager', () => {
             });
             
             // Ломаем queue чтобы вызвать ошибку
-            Object.defineProperty(manager, 'queue', {
+            Object.defineProperty(manager.queueManager, 'items', {
                 get() {
                     throw new Error('Queue error');
                 }
@@ -899,7 +898,7 @@ describe('StatusManager', () => {
             
             await manager._processQueue();
             
-            expect(manager.isProcessingQueue).toBe(false);
+            expect(manager.queueManager.isProcessing).toBe(false);
             
             manager.destroy();
         });
@@ -911,12 +910,12 @@ describe('StatusManager', () => {
                 statusElement: statusElement
             });
             
-            manager.isProcessingQueue = true;
+            manager.queueManager.isProcessing = true;
             
             await manager._processQueue();
             
             // Должен выйти без обработки
-            expect(manager.isProcessingQueue).toBe(true);
+            expect(manager.queueManager.isProcessing).toBe(true);
             
             manager.destroy();
         });
@@ -948,14 +947,14 @@ describe('StatusManager', () => {
             });
             
             // Добавляем сообщение в очередь вручную
-            manager.queue.push({ message: 'Test message', type: 'success', duration: 0 });
+            manager.queueManager.items.push({ message: 'Test message', type: 'success', duration: 0 });
             
             // Мокируем _displayStatusInternal чтобы выбросить ошибку
             jest.spyOn(manager, '_displayStatusInternal').mockRejectedValue(new Error('Display error'));
             
             await manager._processQueue();
             
-            expect(manager.isProcessingQueue).toBe(false);
+            expect(manager.queueManager.isProcessing).toBe(false);
             
             manager.destroy();
         });
@@ -988,7 +987,7 @@ describe('StatusManager', () => {
             // С большой duration
             await manager.showStatus('Test 3', 'error', 5000);
             
-            expect(manager.history.length).toBeGreaterThan(0);
+            expect(manager.historyManager.size()).toBeGreaterThan(0);
             
             manager.destroy();
         });
@@ -1013,10 +1012,10 @@ describe('StatusManager', () => {
             });
             
             // Проверяем что очередь существует и пустая
-            expect(manager.queue).toBeDefined();
-            expect(Array.isArray(manager.queue)).toBe(true);
-            expect(manager.queue.length).toBe(0);
-            expect(manager.enableQueue).toBe(false);
+            expect(manager.queueManager).toBeDefined();
+            expect(Array.isArray(manager.queueManager.items)).toBe(true);
+            expect(manager.queueManager.size()).toBe(0);
+            expect(manager.queueManager.enableQueue).toBe(false);
             
             manager.destroy();
         });
@@ -1028,11 +1027,11 @@ describe('StatusManager', () => {
             });
             
             // Устанавливаем таймер
-            manager.hideTimeout = setTimeout(() => {}, 10000);
+            manager.renderer.hideTimeout = setTimeout(() => {}, 10000);
             
             manager.destroy();
             
-            expect(manager.hideTimeout).toBeNull();
+            expect(manager.renderer.hideTimeout).toBeNull();
         });
 
         test('hideStatus - должен скрывать статус', () => {
