@@ -69,7 +69,7 @@ class LocaleManager extends BaseManager {
             currentLocale: this.translationManager.getCurrentLocale()
         });
 
-        this._log('LocaleManager создан', { 
+        this._log({ key: 'logs.locale.created' }, { 
             currentLocale: this.translationManager.getCurrentLocale() 
         });
     }
@@ -83,27 +83,27 @@ class LocaleManager extends BaseManager {
      */
     async init() {
         if (this.isInitialized) {
-            this._log('LocaleManager уже инициализирован');
+            this._log({ key: 'logs.locale.alreadyInitialized' });
             return;
         }
 
         await this._executeWithTimingAsync('init', async () => {
             try {
-                this._log('Начало инициализации LocaleManager');
+                this._log({ key: 'logs.locale.initStart' });
 
                 // Загружаем сохраненную локаль
                 const savedLocale = await this.storageManager.loadLocale();
                 
                 if (savedLocale && this.translationManager.isLocaleSupported(savedLocale)) {
                     this.translationManager.setLocale(savedLocale);
-                    this._log('Загружена сохраненная локаль', { locale: savedLocale });
+                    this._log({ key: 'logs.locale.savedLocaleLoaded' }, { locale: savedLocale });
                 } else {
                     // Пытаемся определить локаль браузера
                     const browserLocale = this._detectBrowserLocale();
                     if (browserLocale && this.translationManager.isLocaleSupported(browserLocale)) {
                         this.translationManager.setLocale(browserLocale);
                         await this.storageManager.saveLocale(browserLocale);
-                        this._log('Установлена локаль браузера', { locale: browserLocale });
+                        this._log({ key: 'logs.locale.browserLocaleSet' }, { locale: browserLocale });
                     }
                 }
 
@@ -113,12 +113,12 @@ class LocaleManager extends BaseManager {
                     currentLocale: this.translationManager.getCurrentLocale()
                 });
 
-                this._log('LocaleManager инициализирован успешно', { 
+                this._log({ key: 'logs.locale.initSuccess' }, { 
                     currentLocale: this.translationManager.getCurrentLocale(),
                     performanceMetrics: this.getPerformanceMetrics()
                 });
             } catch (error) {
-                this._logError('Ошибка инициализации LocaleManager', error);
+                this._logError({ key: 'logs.locale.initError' }, error);
                 // Используем локаль по умолчанию при ошибке
                 this.translationManager.setLocale(LocaleManager.DEFAULT_LOCALE);
                 this.isInitialized = true;
@@ -151,7 +151,7 @@ class LocaleManager extends BaseManager {
 
             return null;
         } catch (error) {
-            this._logError('Ошибка определения локали браузера', error);
+            this._logError({ key: 'logs.locale.detectBrowserLocaleError' }, error);
             return null;
         }
     }
@@ -178,14 +178,14 @@ class LocaleManager extends BaseManager {
     async setLocale(locale) {
         return await this._executeWithTimingAsync('setLocale', async () => {
             if (!this.translationManager.isLocaleSupported(locale)) {
-                this._logError(`Неподдерживаемая локаль: ${locale}`);
+                this._logError({ key: 'logs.locale.unsupported', params: { locale } });
                 return false;
             }
 
             const currentLocale = this.translationManager.getCurrentLocale();
             
             if (currentLocale === locale) {
-                this._log(`Локаль уже установлена: ${locale}`);
+                this._log({ key: 'logs.locale.alreadySet', params: { locale } });
                 return true;
             }
 
@@ -203,7 +203,7 @@ class LocaleManager extends BaseManager {
 
             this.updateState({ currentLocale: locale });
 
-            this._log('Локаль изменена', { 
+            this._log({ key: 'logs.locale.changed' }, { 
                 from: oldLocale, 
                 to: locale,
                 saved 
@@ -256,7 +256,7 @@ class LocaleManager extends BaseManager {
         }
 
         this.listeners.push(listener);
-        this._log('Добавлен слушатель изменения локали', {
+        this._log({ key: 'logs.locale.listenerAdded' }, {
             listenersCount: this.listeners.length
         });
 
@@ -276,7 +276,7 @@ class LocaleManager extends BaseManager {
         const index = this.listeners.indexOf(listener);
         if (index !== -1) {
             this.listeners.splice(index, 1);
-            this._log('Удален слушатель изменения локали', {
+            this._log({ key: 'logs.locale.listenerRemoved' }, {
                 listenersCount: this.listeners.length
             });
             return true;
@@ -297,7 +297,7 @@ class LocaleManager extends BaseManager {
             try {
                 listener(newLocale, oldLocale);
             } catch (error) {
-                this._logError('Ошибка в слушателе изменения локали', error);
+                this._logError({ key: 'logs.locale.listenerError' }, error);
             }
         });
     }
@@ -409,9 +409,9 @@ class LocaleManager extends BaseManager {
             this.storageManager.resetStatistics();
             this.translationManager.resetStatistics();
             this.domManager.resetStatistics();
-            this._log('Вся статистика сброшена');
+            this._log({ key: 'logs.locale.statisticsReset' });
         } catch (error) {
-            this._logError('Ошибка сброса статистики', error);
+            this._logError({ key: 'logs.locale.statisticsResetError' }, error);
         }
     }
 
@@ -472,20 +472,20 @@ class LocaleManager extends BaseManager {
      */
     destroy() {
         if (!this.isInitialized) {
-            this._log('LocaleManager уже был уничтожен');
+            this._log({ key: 'logs.locale.alreadyDestroyed' });
             return;
         }
 
-        this._log('Очистка ресурсов LocaleManager');
+        this._log({ key: 'logs.locale.destroyStart' });
         
         try {
             this.listeners = [];
             this._destroyManagers();
             this.isInitialized = false;
             
-            this._log('LocaleManager уничтожен');
+            this._log({ key: 'logs.locale.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении LocaleManager', error);
+            this._logError({ key: 'logs.locale.destroyError' }, error);
         }
         
         super.destroy();

@@ -30,6 +30,7 @@ class BaseManager {
      * @param {Object} [options.initialState] - Начальное состояние
      * @param {boolean} [options.enableLogging=false] - Включить логирование
      * @param {boolean} [options.enablePerformanceTracking=true] - Включить отслеживание производительности
+     * @param {Function} [options.translateFn] - Функция перевода: (key: string, params?: Object) => string
      */
     constructor(options = {}) {
         /** @type {Object} */
@@ -63,7 +64,7 @@ class BaseManager {
      * Логирует сообщение, если логирование включено.
      * 
      * @protected
-     * @param {string} message - Сообщение для логирования
+     * @param {string|{key:string,params?:Object,fallback?:string}} message - Сообщение или объект перевода
      * @param {*} [data] - Дополнительные данные
      * @returns {void}
      */
@@ -75,12 +76,13 @@ class BaseManager {
             const testModeValue = (CONFIG.MODES && CONFIG.MODES.TEST) || 'test';
             const isTestEnv = hasProcessEnv && process.env.NODE_ENV === testModeValue;
             const shouldConsole = isConsoleEnabledInConfig || isTestEnv;
+            const { resolvedMessage, messageKey, messageParams } = this._resolveMessage(message);
             if (shouldConsole) {
                 // eslint-disable-next-line no-console
-                console.log(`[${className}] ${message}`, data !== undefined ? data : '');
+                console.log(`[${className}] ${resolvedMessage}`, data !== undefined ? data : '');
             }
             // Всегда сохраняем лог в storage для панели расширения
-            this._saveLogToStorage('INFO', message, data);
+            this._saveLogToStorage('INFO', resolvedMessage, data, messageKey, messageParams);
         }
     }
 
@@ -88,7 +90,7 @@ class BaseManager {
      * Логирует ошибку.
      * 
      * @protected
-     * @param {string} message - Сообщение об ошибке
+     * @param {string|{key:string,params?:Object,fallback?:string}} message - Сообщение или объект перевода
      * @param {Error|*} [error] - Объект ошибки
      * @returns {void}
      */
@@ -99,12 +101,36 @@ class BaseManager {
         const testModeValue = (CONFIG.MODES && CONFIG.MODES.TEST) || 'test';
         const isTestEnv = hasProcessEnv && process.env.NODE_ENV === testModeValue;
         const shouldConsole = isConsoleEnabledInConfig || isTestEnv;
+        const { resolvedMessage, messageKey, messageParams } = this._resolveMessage(message);
         if (shouldConsole) {
             // eslint-disable-next-line no-console
-            console.error(`[${className}] ${message}`, error || '');
+            console.error(`[${className}] ${resolvedMessage}`, error || '');
         }
         // Всегда сохраняем лог ошибки в storage для панели расширения
-        this._saveLogToStorage('ERROR', message, error);
+        this._saveLogToStorage('ERROR', resolvedMessage, error, messageKey, messageParams);
+    }
+
+    /**
+     * Разрешает сообщение логирования: поддерживает строки и объекты { key, params, fallback }.
+     * @private
+     * @param {*} message
+     * @returns {{resolvedMessage:string, messageKey:string|null, messageParams:Object|null}}
+     */
+    _resolveMessage(message) {
+        try {
+            if (message && typeof message === 'object' && typeof message.key === 'string') {
+                const key = message.key;
+                const params = message.params || {};
+                const translate = this.options && typeof this.options.translateFn === 'function'
+                    ? this.options.translateFn
+                    : null;
+                const resolved = translate ? translate(key, params) : (message.fallback || key);
+                return { resolvedMessage: resolved, messageKey: key, messageParams: params };
+            }
+            return { resolvedMessage: String(message), messageKey: null, messageParams: null };
+        } catch (_e) {
+            return { resolvedMessage: String(message), messageKey: null, messageParams: null };
+        }
     }
 
     /**
@@ -116,7 +142,7 @@ class BaseManager {
      * @param {*} [data] - Дополнительные данные
      * @returns {void}
      */
-    _saveLogToStorage(level, message, data) {
+    _saveLogToStorage(level, message, data, messageKey, messageParams) {
         // Проверяем доступность chrome.storage
         if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
             return;
@@ -129,6 +155,8 @@ class BaseManager {
                 level,
                 className,
                 message,
+                messageKey: messageKey || null,
+                messageParams: messageParams || null,
                 data: data !== undefined ? (data instanceof Error ? { message: data.message, stack: data.stack } : data) : null
             };
 

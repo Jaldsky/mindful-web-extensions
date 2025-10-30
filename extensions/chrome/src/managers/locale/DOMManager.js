@@ -51,7 +51,7 @@ class DOMManager extends BaseManager {
         /** @type {WeakMap<HTMLElement, string>} Кэш оригинальных ключей элементов */
         this.elementKeyCache = new WeakMap();
 
-        this._log('DOMManager создан');
+        this._log({ key: 'logs.localeDom.created' });
     }
 
     /**
@@ -64,7 +64,7 @@ class DOMManager extends BaseManager {
     localizeDOM(root = document) {
         return this._executeWithTiming('localizeDOM', () => {
             if (!root) {
-                this._log('Root элемент не предоставлен');
+                this._log({ key: 'logs.localeDom.rootNotProvided' });
                 return 0;
             }
 
@@ -80,7 +80,7 @@ class DOMManager extends BaseManager {
                         }
                     } catch (error) {
                         this.statistics.errors++;
-                        this._logError('Ошибка локализации элемента', error);
+                        this._logError({ key: 'logs.localeDom.elementLocalizeError' }, error);
                     }
                 });
 
@@ -94,11 +94,11 @@ class DOMManager extends BaseManager {
                     lastElementCount: count
                 });
 
-                this._log(`Локализовано элементов: ${count}`);
+                this._log({ key: 'logs.localeDom.localizedCount', params: { count } });
                 return count;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError('Ошибка локализации DOM', error);
+                this._logError({ key: 'logs.localeDom.domLocalizeError' }, error);
                 return 0;
             }
         });
@@ -147,7 +147,7 @@ class DOMManager extends BaseManager {
         try {
             const element = document.querySelector(selector);
             if (!element) {
-                this._log(`Элемент не найден: ${selector}`);
+                this._log({ key: 'logs.localeDom.elementNotFound', params: { selector } });
                 return false;
             }
 
@@ -159,11 +159,11 @@ class DOMManager extends BaseManager {
                 element.textContent = translation;
             }
 
-            this._log(`Элемент локализован: ${selector}`, { key, translation });
+            this._log({ key: 'logs.localeDom.elementLocalized', params: { selector } }, { key, translation });
             return true;
         } catch (error) {
             this.statistics.errors++;
-            this._logError(`Ошибка локализации элемента: ${selector}`, error);
+            this._logError({ key: 'logs.localeDom.elementLocalizeSelectorError', params: { selector } }, error);
             return false;
         }
     }
@@ -180,7 +180,7 @@ class DOMManager extends BaseManager {
         try {
             const elements = document.querySelectorAll(selector);
             if (elements.length === 0) {
-                this._log(`Элементы не найдены: ${selector}`);
+                this._log({ key: 'logs.localeDom.elementsNotFound', params: { selector } });
                 return 0;
             }
 
@@ -197,15 +197,15 @@ class DOMManager extends BaseManager {
                     count++;
                 } catch (error) {
                     this.statistics.errors++;
-                    this._logError('Ошибка локализации элемента', error);
+                    this._logError({ key: 'logs.localeDom.elementLocalizeError' }, error);
                 }
             });
 
-            this._log(`Элементы локализованы: ${selector}`, { count, key });
+            this._log({ key: 'logs.localeDom.elementsLocalized', params: { selector } }, { count, key });
             return count;
         } catch (error) {
             this.statistics.errors++;
-            this._logError(`Ошибка локализации элементов: ${selector}`, error);
+            this._logError({ key: 'logs.localeDom.elementsLocalizeError', params: { selector } }, error);
             return 0;
         }
     }
@@ -221,7 +221,7 @@ class DOMManager extends BaseManager {
     addLocalizationAttributes(element, key, attr = null) {
         try {
             if (!element) {
-                this._log('Элемент не предоставлен');
+                this._log({ key: 'logs.localeDom.elementNotProvided' });
                 return false;
             }
 
@@ -234,11 +234,11 @@ class DOMManager extends BaseManager {
             // Сразу локализуем элемент
             this._localizeElement(element);
 
-            this._log('Атрибуты локализации добавлены', { key, attr });
+            this._log({ key: 'logs.localeDom.attrsAdded' }, { key, attr });
             return true;
         } catch (error) {
             this.statistics.errors++;
-            this._logError('Ошибка добавления атрибутов локализации', error);
+            this._logError({ key: 'logs.localeDom.addAttrsError' }, error);
             return false;
         }
     }
@@ -252,18 +252,18 @@ class DOMManager extends BaseManager {
     removeLocalizationAttributes(element) {
         try {
             if (!element) {
-                this._log('Элемент не предоставлен');
+                this._log({ key: 'logs.localeDom.elementNotProvided' });
                 return false;
             }
 
             element.removeAttribute(DOMManager.I18N_ATTRIBUTE);
             element.removeAttribute(DOMManager.I18N_ATTR_ATTRIBUTE);
 
-            this._log('Атрибуты локализации удалены');
+            this._log({ key: 'logs.localeDom.attrsRemoved' });
             return true;
         } catch (error) {
             this.statistics.errors++;
-            this._logError('Ошибка удаления атрибутов локализации', error);
+            this._logError({ key: 'logs.localeDom.removeAttrsError' }, error);
             return false;
         }
     }
@@ -278,7 +278,7 @@ class DOMManager extends BaseManager {
         try {
             return root.querySelectorAll(`[${DOMManager.I18N_ATTRIBUTE}]`);
         } catch (error) {
-            this._logError('Ошибка получения локализуемых элементов', error);
+            this._logError({ key: 'logs.localeDom.getElementsError' }, error);
             return [];
         }
     }
@@ -294,7 +294,7 @@ class DOMManager extends BaseManager {
             const elements = this.getLocalizableElements(root);
             return elements.length;
         } catch (error) {
-            this._logError('Ошибка подсчета локализуемых элементов', error);
+            this._logError({ key: 'logs.localeDom.countElementsError' }, error);
             return 0;
         }
     }
@@ -326,7 +326,7 @@ class DOMManager extends BaseManager {
             lastLocalizationTime: null,
             lastElementCount: 0
         };
-        this._log('Статистика локализации сброшена');
+        this._log({ key: 'logs.localeDom.statsReset' });
     }
 
     /**
@@ -335,7 +335,7 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов DOMManager');
+        this._log({ key: 'logs.localeDom.destroyStart' });
         
         try {
             this.elementKeyCache = new WeakMap();
@@ -347,9 +347,9 @@ class DOMManager extends BaseManager {
                 lastElementCount: 0
             };
             
-            this._log('DOMManager уничтожен');
+            this._log({ key: 'logs.localeDom.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении DOMManager', error);
+            this._logError({ key: 'logs.localeDom.destroyError' }, error);
         }
         
         super.destroy();

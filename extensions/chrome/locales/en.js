@@ -17,6 +17,98 @@ const EN = {
         no: 'No'
     },
 
+    // Logs (for internal logging, INFO/ERROR)
+    logs: {
+        app: {
+            initStart: 'Starting AppManager initialization',
+            initSuccess: 'AppManager initialized (no periodic updates)',
+            initError: 'AppManager initialization error',
+            initialStatusLoaded: 'Initial status loaded',
+            initialStatusError: 'Initial status loading error',
+            handlersSetup: 'Setting up event handlers',
+            handlersCount: 'Handlers set up: {count}',
+            openSettings: 'Open settings page',
+            testConnection: {
+                start: 'Testing connection',
+                success: 'Test connection: success',
+                fail: 'Test connection: fail',
+                error: 'Test connection error'
+            },
+            localeChanged: 'Locale changed'
+        },
+        diagnostics: {
+            resultsHeader: 'Diagnostics results',
+            overall: 'Overall status',
+            duration: 'Duration (ms)',
+            startedAt: 'Started at',
+            generalError: 'General diagnostics error',
+            checkLine: '{emoji} {name}:',
+            checkError: 'Error in check: {name}'
+        },
+        notification: {
+            warnMessageRequired: 'message is required and must be a string',
+            warnInvalidType: 'Invalid type "{type}", INFO will be used'
+        },
+        locale: {
+            created: 'LocaleManager created',
+            alreadyInitialized: 'LocaleManager is already initialized',
+            initStart: 'Starting LocaleManager initialization',
+            savedLocaleLoaded: 'Saved locale loaded',
+            browserLocaleSet: 'Browser locale set',
+            initSuccess: 'LocaleManager initialized',
+            initError: 'LocaleManager initialization error',
+            detectBrowserLocaleError: 'Error detecting browser locale',
+            unsupported: 'Unsupported locale: {locale}',
+            alreadySet: 'Locale already set: {locale}',
+            changed: 'Locale changed',
+            listenerAdded: 'Locale change listener added',
+            listenerRemoved: 'Locale change listener removed',
+            listenerError: 'Error in locale change listener',
+            statisticsReset: 'All localization statistics reset',
+            statisticsResetError: 'Error resetting localization statistics',
+            alreadyDestroyed: 'LocaleManager already destroyed',
+            destroyStart: 'Destroying LocaleManager',
+            destroyed: 'LocaleManager destroyed',
+            destroyError: 'Error destroying LocaleManager'
+        },
+        translation: {
+            created: 'TranslationManager created',
+            missing: 'Missing translation for key: {key}',
+            translateError: 'Error translating key: {key}',
+            unsupported: 'Unsupported locale: {locale}',
+            alreadySet: 'Locale already set: {locale}',
+            changed: 'Locale changed',
+            statsReset: 'Translation statistics reset',
+            destroyStart: 'Destroying TranslationManager',
+            destroyed: 'TranslationManager destroyed',
+            destroyError: 'Error destroying TranslationManager'
+        },
+        localeDom: {
+            created: 'Localization DOMManager created',
+            rootNotProvided: 'Root element is not provided',
+            elementLocalizeError: 'Element localization error',
+            localizedCount: 'Elements localized: {count}',
+            domLocalizeError: 'DOM localization error',
+            elementNotFound: 'Element not found: {selector}',
+            elementLocalized: 'Element localized: {selector}',
+            elementLocalizeSelectorError: 'Element localization error: {selector}',
+            elementsNotFound: 'Elements not found: {selector}',
+            elementsLocalized: 'Elements localized: {selector}',
+            elementsLocalizeError: 'Elements localization error: {selector}',
+            elementNotProvided: 'Element is not provided',
+            attrsAdded: 'Localization attributes added',
+            addAttrsError: 'Error adding localization attributes',
+            attrsRemoved: 'Localization attributes removed',
+            removeAttrsError: 'Error removing localization attributes',
+            getElementsError: 'Error getting localizable elements',
+            countElementsError: 'Error counting localizable elements',
+            statsReset: 'Localization statistics reset',
+            destroyStart: 'Destroying Localization DOMManager',
+            destroyed: 'Localization DOMManager destroyed',
+            destroyError: 'Error destroying Localization DOMManager'
+        }
+    },
+
     // App page
     app: {
         title: 'Mindful Web',
