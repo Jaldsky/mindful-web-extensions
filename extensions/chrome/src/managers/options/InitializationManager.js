@@ -34,6 +34,24 @@ class InitializationManager {
 
             manager.uiManager.setupEventHandlers();
 
+            // Load initial activity stats for always-visible panel
+            if (manager.uiManager && typeof manager.uiManager.loadActivityStats === 'function') {
+                try {
+                    await manager.uiManager.loadActivityStats();
+                } catch (e) {
+                    manager._logError('Ошибка начальной загрузки активности', e);
+                }
+            }
+
+            // Start auto refresh for activity (same cadence as logs)
+            if (manager.uiManager && typeof manager.uiManager.startActivityAutoRefresh === 'function') {
+                manager.uiManager.startActivityAutoRefresh();
+                // Apply default range active state in UI
+                if (typeof manager.uiManager._markActiveRangeButton === 'function') {
+                    manager.uiManager._markActiveRangeButton(manager.uiManager.activityRangeKey);
+                }
+            }
+
             manager.localeManager.addLocaleChangeListener(() => {
                 manager.uiManager.onLocaleChange();
             });

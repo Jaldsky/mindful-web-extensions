@@ -77,6 +77,7 @@ const CONFIG = {
         GET_STATUS: 'getStatus',
         GET_TRACKING_STATUS: 'getTrackingStatus',
         GET_TODAY_STATS: 'getTodayStats',
+        GET_DETAILED_STATS: 'getDetailedStats',
         
         // Подключение
         TEST_CONNECTION: 'testConnection',
@@ -85,7 +86,10 @@ const CONFIG = {
         // Настройки
         UPDATE_BACKEND_URL: 'updateBackendUrl',
         RELOAD_EXTENSION: 'reloadExtension',
-        OPEN_OPTIONS: 'openOptions'
+        OPEN_OPTIONS: 'openOptions',
+        
+        // Отладка
+        GENERATE_RANDOM_DOMAINS: 'generateRandomDomains'
     },
 
     /**
@@ -223,6 +227,30 @@ const CONFIG = {
         AUTO_REFRESH_INTERVAL: 1000, // Интервал автообновления логов (мс)
         SELECTION_TIMEOUT: 5000, // Таймаут для выделения текста перед возобновлением обновления (мс)
         PERFORMANCE_LOG_THRESHOLD: 10 // Порог логирования операций (мс) - логируются только операции > 10мс
+    },
+
+    /**
+     * Настройки панели активности и графика
+     */
+    ACTIVITY: {
+        AUTO_REFRESH_INTERVAL: 1000, // Частота автообновления панели активности (мс)
+        MAX_DOMAINS_DISPLAY: 100, // Максимум доменов в списке
+        CHART_MAX_POINTS: 600, // Максимум точек в истории для графика
+        CHART_HEIGHT: 120, // Высота канваса в CSS пикселях
+        CHART_PADDING: 20, // Внутренние отступы графика
+        GRID_Y_COUNT: 4, // Количество делений по Oy
+        GRID_X_COUNT: 3, // Количество делений по Ox
+        HISTORY_MAX_MS: 24 * 60 * 60 * 1000, // 24 часа хранения истории
+        RANGES: {
+            '1m': 1 * 60 * 1000,
+            '5m': 5 * 60 * 1000,
+            '15m': 15 * 60 * 1000,
+            '30m': 30 * 60 * 1000,
+            '1h': 60 * 60 * 1000,
+            '6h': 6 * 60 * 60 * 1000,
+            '1d': 24 * 60 * 60 * 1000
+        },
+        DEFAULT_RANGE_KEY: '5m'
     }
 };
 

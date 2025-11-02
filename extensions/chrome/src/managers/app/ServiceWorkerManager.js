@@ -15,6 +15,17 @@ const CONFIG = require('../../../config.js');
  */
 
 /**
+ * @typedef {Object} DetailedStats
+ * @property {number} eventsTracked - Общее количество отслеженных событий
+ * @property {number} activeEvents - Количество событий "active"
+ * @property {number} inactiveEvents - Количество событий "inactive"
+ * @property {number} domainsVisited - Количество уникальных доменов
+ * @property {Array<string>} domains - Список доменов
+ * @property {number} queueSize - Текущий размер очереди
+ * @property {boolean} isTracking - Статус отслеживания
+ */
+
+/**
  * @typedef {Object} MessageResponse
  * @property {boolean} [success] - Статус успешности операции
  * @property {*} [data] - Данные ответа
@@ -253,6 +264,49 @@ class ServiceWorkerManager extends BaseManager {
     }
 
     /**
+     * Получает подробную статистику за сегодня.
+     * 
+     * @returns {Promise<DetailedStats>} Подробная статистика
+     */
+    async getDetailedStats() {
+        const defaultStats = {
+            eventsTracked: 0,
+            activeEvents: 0,
+            inactiveEvents: 0,
+            domainsVisited: 0,
+            domains: [],
+            queueSize: 0,
+            isTracking: false
+        };
+
+        try {
+            const response = await this.sendMessage(
+                ServiceWorkerManager.MESSAGE_TYPES.GET_DETAILED_STATS
+            );
+
+            if (response && typeof response === 'object') {
+                const stats = {
+                    eventsTracked: Number(response.eventsTracked) || 0,
+                    activeEvents: Number(response.activeEvents) || 0,
+                    inactiveEvents: Number(response.inactiveEvents) || 0,
+                    domainsVisited: Number(response.domainsVisited) || 0,
+                    domains: Array.isArray(response.domains) ? response.domains : [],
+                    queueSize: Number(response.queueSize) || 0,
+                    isTracking: Boolean(response.isTracking)
+                };
+
+                this._log('Получена подробная статистика', stats);
+                return stats;
+            }
+
+            return defaultStats;
+        } catch (error) {
+            this._logError('Ошибка получения подробной статистики', error);
+            return defaultStats;
+        }
+    }
+
+    /**
      * Проверяет доступность Service Worker.
      * 
      * @returns {Promise<boolean>} true, если Service Worker доступен
@@ -279,6 +333,21 @@ class ServiceWorkerManager extends BaseManager {
             metrics[key] = value;
         });
         return metrics;
+    }
+
+    /**
+     * Генерирует случайные домены (для отладки) в фоне.
+     * @param {number} [count=100] Количество доменов
+     * @returns {Promise<{success:boolean, generated:number}>}
+     */
+    async generateRandomDomains(count = 100) {
+        try {
+            const response = await this.sendMessage(ServiceWorkerManager.MESSAGE_TYPES.GENERATE_RANDOM_DOMAINS, { count });
+            return response;
+        } catch (error) {
+            this._logError('Ошибка генерации доменов', error);
+            return { success: false, generated: 0, error: error.message };
+        }
     }
 
     /**

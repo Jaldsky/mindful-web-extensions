@@ -1,7 +1,13 @@
+const CONFIG = require('../../../config.js');
+
 class UIManager {
     constructor(manager) {
         this.manager = manager;
         this.buttonFeedbackTimers = new Map();
+        this.activityHistory = [];
+        this.activityChartInitialized = false;
+        this.activityRangeKey = (CONFIG.ACTIVITY && CONFIG.ACTIVITY.DEFAULT_RANGE_KEY) || '1h';
+        this.activityRangeMs = (CONFIG.ACTIVITY && CONFIG.ACTIVITY.RANGES && CONFIG.ACTIVITY.RANGES[this.activityRangeKey]) || (60 * 60 * 1000);
     }
 
     setupEventHandlers() {
@@ -90,6 +96,8 @@ class UIManager {
             handlersCount++;
         }
 
+        // activityTab removed: activity is now always-visible panel
+
         const clearLogs = document.getElementById('clearLogs');
         if (clearLogs) {
             const handler = () => manager.clearLogs();
@@ -104,6 +112,20 @@ class UIManager {
             copyLogs.addEventListener('click', handler);
             manager.eventHandlers.set('copyLogs', handler);
             handlersCount++;
+        }
+
+        // refresh button removed; auto-refresh is enabled instead
+
+        // Activity range select
+        const rangeSelect = document.getElementById('activityRangeSelect');
+        if (rangeSelect) {
+            rangeSelect.value = this.activityRangeKey;
+            const handler = (e) => {
+                const key = e.target.value;
+                this.setActivityRangeByKey(key);
+            };
+            rangeSelect.addEventListener('change', handler);
+            manager.eventHandlers.set('activityRangeSelect', handler);
         }
 
         const filterButtons = document.querySelectorAll('.logs-filter-btn');
@@ -172,6 +194,37 @@ class UIManager {
         } else {
             manager._log('Предупреждение: кнопка developer tools не найдена, обработчик не установлен');
         }
+
+        // Visibility-based auto-refresh control for activity
+        const visHandler = () => {
+            try {
+                if (document.visibilityState === 'visible') {
+                    this.startActivityAutoRefresh();
+                    this.loadActivityStats().catch(() => {});
+                } else {
+                    this.stopActivityAutoRefresh();
+                }
+            } catch (_) {}
+        };
+        document.addEventListener('visibilitychange', visHandler);
+        manager.eventHandlers.set('visibilitychange', visHandler);
+        handlersCount++;
+
+        const focusHandler = () => {
+            try {
+                this.startActivityAutoRefresh();
+            } catch (_) {}
+        };
+        const blurHandler = () => {
+            try {
+                this.stopActivityAutoRefresh();
+            } catch (_) {}
+        };
+        window.addEventListener('focus', focusHandler);
+        window.addEventListener('blur', blurHandler);
+        manager.eventHandlers.set('windowFocus', focusHandler);
+        manager.eventHandlers.set('windowBlur', blurHandler);
+        handlersCount += 2;
 
         manager.developerToolsManager.restoreState();
 
@@ -544,6 +597,335 @@ class UIManager {
             }
         } catch (error) {
             manager._logError('Ошибка обновления отображения темы', error);
+        }
+    }
+
+    async loadActivityStats() {
+        const manager = this.manager;
+        try {
+            const stats = await manager.serviceWorkerManager.getDetailedStats();
+
+            const setText = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.textContent = String(value);
+                }
+            };
+
+            setText('activityEvents', stats.eventsTracked);
+            setText('activityActive', stats.activeEvents);
+            setText('activityInactive', stats.inactiveEvents);
+            setText('activityDomainsCount', stats.domainsVisited);
+            setText('activityQueueSize', stats.queueSize);
+
+            const list = document.getElementById('activityDomainsList');
+            if (list) {
+                list.innerHTML = '';
+                const domains = Array.isArray(stats.domains) ? stats.domains : [];
+                if (domains.length === 0) {
+                    const li = document.createElement('li');
+                    li.className = 'activity-domains-empty';
+                    const emptyText = (this.manager.localeManager && typeof this.manager.localeManager.t === 'function')
+                        ? (this.manager.localeManager.t('options.activity.noDomains') || 'No domains')
+                        : 'No domains';
+                    li.textContent = emptyText;
+                    list.appendChild(li);
+                } else {
+                    const maxItems = (CONFIG.ACTIVITY && typeof CONFIG.ACTIVITY.MAX_DOMAINS_DISPLAY === 'number')
+                        ? CONFIG.ACTIVITY.MAX_DOMAINS_DISPLAY
+                        : 100;
+                    domains.slice(0, maxItems).forEach(domain => {
+                        const li = document.createElement('li');
+                        li.textContent = domain;
+                        list.appendChild(li);
+                    });
+                }
+            }
+
+            manager._log('Обновлены данные активности', { countDomains: stats.domainsVisited });
+
+            this._updateActivityChart(stats.eventsTracked, true);
+
+            // meta labels removed by design
+        } catch (error) {
+            manager._logError('Ошибка загрузки подробной статистики', error);
+        }
+    }
+
+    setActivityRangeByKey(key) {
+        try {
+            if (!CONFIG.ACTIVITY || !CONFIG.ACTIVITY.RANGES || !CONFIG.ACTIVITY.RANGES[key]) {
+                return;
+            }
+            this.activityRangeKey = key;
+            this.activityRangeMs = CONFIG.ACTIVITY.RANGES[key];
+            this._markActiveRangeButton(key);
+            // Redraw with new range without adding a new point
+            const last = this.activityHistory.length > 0 ? this.activityHistory[this.activityHistory.length - 1].v : 0;
+            this._updateActivityChart(last, false);
+        } catch (error) {
+            this.manager._logError('Ошибка установки диапазона активности', error);
+        }
+    }
+
+    _markActiveRangeButton(key) {
+        const select = document.getElementById('activityRangeSelect');
+        if (select) {
+            select.value = key;
+        }
+    }
+
+    startActivityAutoRefresh() {
+        const manager = this.manager;
+        try {
+            this.stopActivityAutoRefresh();
+            const interval = (CONFIG.ACTIVITY && typeof CONFIG.ACTIVITY.AUTO_REFRESH_INTERVAL === 'number' && CONFIG.ACTIVITY.AUTO_REFRESH_INTERVAL > 0)
+                ? CONFIG.ACTIVITY.AUTO_REFRESH_INTERVAL
+                : ((CONFIG.LOGS && typeof CONFIG.LOGS.AUTO_REFRESH_INTERVAL === 'number') ? CONFIG.LOGS.AUTO_REFRESH_INTERVAL : 1000);
+            // Immediate tick so UI updates without waiting a full interval
+            this.loadActivityStats().catch(() => {});
+            manager.activityRefreshIntervalId = setInterval(() => {
+                this.loadActivityStats().catch(() => {});
+            }, interval);
+            manager._log(`Автообновление активности запущено (каждые ${interval}мс)`);
+        } catch (error) {
+            manager._logError('Ошибка запуска автообновления активности', error);
+        }
+    }
+
+    _ensureActivityChartInitialized() {
+        if (this.activityChartInitialized) {
+            return;
+        }
+
+        const canvas = document.getElementById('activityChart');
+        if (!canvas) {
+            return;
+        }
+
+        // Set canvas height from config if provided
+        const height = (CONFIG.ACTIVITY && typeof CONFIG.ACTIVITY.CHART_HEIGHT === 'number')
+            ? CONFIG.ACTIVITY.CHART_HEIGHT
+            : (canvas.height || 120);
+        // Ensure CSS height reflects configured height
+        try { canvas.style.height = `${height}px`; } catch (_) {}
+        // Set initial device-pixel sized backing store
+        const dpr = window.devicePixelRatio || 1;
+        const cssWidth = canvas.clientWidth || canvas.offsetWidth || 300;
+        const targetWidth = Math.max(1, Math.floor(cssWidth * dpr));
+        const targetHeight = Math.max(1, Math.floor(height * dpr));
+        if (canvas.width !== targetWidth) canvas.width = targetWidth;
+        if (canvas.height !== targetHeight) canvas.height = targetHeight;
+        this.activityChartInitialized = true;
+    }
+
+    _updateActivityChart(currentValue, addPoint = true) {
+        try {
+            this._ensureActivityChartInitialized();
+            const canvas = document.getElementById('activityChart');
+            if (!canvas) {
+                return;
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+            const cssWidth = canvas.clientWidth || canvas.offsetWidth || 300;
+            const cssHeight = parseFloat(getComputedStyle(canvas).height) || canvas.height || 120;
+            const targetWidth = Math.max(1, Math.floor(cssWidth * dpr));
+            const targetHeight = Math.max(1, Math.floor(cssHeight * dpr));
+            if (canvas.width !== targetWidth) canvas.width = targetWidth;
+            if (canvas.height !== targetHeight) canvas.height = targetHeight;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                return;
+            }
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.scale(dpr, dpr);
+
+            // Update history
+            const maxPoints = (CONFIG.ACTIVITY && typeof CONFIG.ACTIVITY.CHART_MAX_POINTS === 'number')
+                ? CONFIG.ACTIVITY.CHART_MAX_POINTS
+                : 60;
+
+            const now = Date.now();
+            if (addPoint) {
+                this.activityHistory.push({ t: now, v: Number(currentValue) || 0 });
+            }
+            // Prune old points beyond max history window
+            const maxWindow = (CONFIG.ACTIVITY && CONFIG.ACTIVITY.HISTORY_MAX_MS) || (24 * 60 * 60 * 1000);
+            const minTime = now - maxWindow;
+            if (this.activityHistory.length > 0) {
+                let startIndex = 0;
+                while (startIndex < this.activityHistory.length && this.activityHistory[startIndex].t < minTime) {
+                    startIndex++;
+                }
+                if (startIndex > 0) {
+                    this.activityHistory.splice(0, startIndex);
+                }
+            }
+            if (this.activityHistory.length > maxPoints) {
+                this.activityHistory.splice(0, this.activityHistory.length - maxPoints);
+            }
+
+            // Filter by selected time range
+            const rangeMs = this.activityRangeMs || ((CONFIG.ACTIVITY && CONFIG.ACTIVITY.RANGES && CONFIG.ACTIVITY.RANGES['1h']) || 60 * 60 * 1000);
+            const cutoff = now - rangeMs;
+            const data = this.activityHistory.filter(p => p.t >= cutoff);
+
+            const values = data.map(p => p.v);
+            const minV = Math.min(...values);
+            const maxV = Math.max(...values);
+
+            // Integer-only ticks for event counts
+            const yDesiredCount = (CONFIG.ACTIVITY && Number.isFinite(CONFIG.ACTIVITY.GRID_Y_COUNT)) ? Math.max(2, CONFIG.ACTIVITY.GRID_Y_COUNT) : 4;
+            let minInt = isFinite(minV) ? Math.floor(minV) : 0;
+            let maxInt = isFinite(maxV) ? Math.ceil(maxV) : 1;
+            if (maxInt - minInt <= 0) {
+                minInt = Math.max(0, minInt - 1);
+                maxInt = minInt + 1;
+            }
+            const step = Math.max(1, Math.ceil((maxInt - minInt) / yDesiredCount));
+            const ticksAll = [];
+            for (let v = minInt; v <= maxInt; v += step) {
+                ticksAll.push(v);
+            }
+            const maxTicks = yDesiredCount + 1;
+            const sampleStep = Math.max(1, Math.ceil(ticksAll.length / maxTicks));
+            const yTicks = ticksAll.filter((_, i) => i % sampleStep === 0);
+            while (yTicks.length > maxTicks) yTicks.pop();
+            const axisMin = minInt;
+            const axisMax = maxInt;
+            const axisRange = Math.max(1, axisMax - axisMin);
+            const basePadding = (CONFIG.ACTIVITY && typeof CONFIG.ACTIVITY.CHART_PADDING === 'number')
+                ? CONFIG.ACTIVITY.CHART_PADDING
+                : 20;
+            const width = cssWidth;
+            const height = cssHeight;
+            const fontSize = 12;
+            ctx.font = `${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+            const unitEventsShort = (this.manager.localeManager && typeof this.manager.localeManager.t === 'function')
+                ? (this.manager.localeManager.t('options.activity.axis.unitEventsShort') || 'evt')
+                : 'evt';
+            const formatVal = (v) => `${Math.round(v)} ${unitEventsShort}`;
+            // Estimate Y tick label width using computed ticks
+            const maxYTickWidth = yTicks.reduce((m, v) => Math.max(m, ctx.measureText(formatVal(v)).width), 0);
+            const yTitlePad = 0; // no axis titles
+            const xTitlePad = 0; // no axis titles
+            const xTickHeight = fontSize; // approximate tick label height
+            const spacing = 2; // between tick labels and content
+            const leftPadding = basePadding + Math.ceil(maxYTickWidth + 8) + yTitlePad;
+            const rightPadding = basePadding + 6;
+            const topPadding = basePadding;
+            const bottomPadding = basePadding + xTickHeight + spacing + xTitlePad;
+            const innerW = Math.max(1, width - leftPadding - rightPadding);
+            const innerH = Math.max(1, height - topPadding - bottomPadding);
+
+            // Grid background
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--color-bg-secondary') || '#f5f5f5';
+            ctx.fillRect(0, 0, width, height);
+
+            // Axes
+            const axisColor = getComputedStyle(document.body).getPropertyValue('--color-text-secondary') || '#777';
+            ctx.strokeStyle = axisColor;
+            ctx.lineWidth = 1.25;
+            ctx.beginPath();
+            ctx.moveTo(leftPadding, topPadding);
+            ctx.lineTo(leftPadding, height - bottomPadding);
+            ctx.lineTo(width - rightPadding, height - bottomPadding);
+            ctx.stroke();
+
+            // Grid and ticks
+            const gridColor = getComputedStyle(document.body).getPropertyValue('--border-color') || '#ddd';
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 4]);
+            const xCount = (CONFIG.ACTIVITY && Number.isFinite(CONFIG.ACTIVITY.GRID_X_COUNT)) ? Math.max(2, CONFIG.ACTIVITY.GRID_X_COUNT) : 3;
+            // Horizontal grid lines + y labels
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--color-text-secondary') || '#666';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            yTicks.forEach((val) => {
+                const t = (val - axisMin) / axisRange;
+                const y = topPadding + innerH - t * innerH;
+                ctx.beginPath();
+                ctx.moveTo(leftPadding, y);
+                ctx.lineTo(width - rightPadding, y);
+                ctx.stroke();
+                // Avoid overlap with X label at origin: nudge bottom Y label slightly up
+                if (Math.abs(y - (height - bottomPadding)) < 1.5) {
+                    const prevBaseline = ctx.textBaseline;
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(formatVal(val), leftPadding - 6, y - 1);
+                    ctx.textBaseline = prevBaseline;
+                } else {
+                    ctx.fillText(formatVal(val), leftPadding - 6, y);
+                }
+            });
+            // Vertical grid lines + x labels (time)
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const xMin = cutoff;
+            const xMax = now;
+            const xRange = Math.max(1, xMax - xMin);
+            for (let i = 0; i <= xCount; i++) {
+                const t = i / xCount;
+                const x = leftPadding + t * innerW;
+                ctx.beginPath();
+                ctx.moveTo(x, topPadding);
+                ctx.lineTo(x, height - bottomPadding);
+                ctx.stroke();
+                const labelTs = new Date(xMin + t * xRange);
+                const hh = String(labelTs.getHours()).padStart(2, '0');
+                const mm = String(labelTs.getMinutes()).padStart(2, '0');
+                // Adjust alignment at edges to reduce overlap with Y tick label
+                const prevAlign = ctx.textAlign;
+                let dx = 0;
+                if (i === 0) { ctx.textAlign = 'left'; dx = 2; } else if (i === xCount) { ctx.textAlign = 'right'; dx = -2; }
+                ctx.fillText(`${hh}:${mm}`, x + dx, height - bottomPadding + 2);
+                ctx.textAlign = prevAlign;
+            }
+            ctx.setLineDash([]);
+
+            // No axis titles
+
+            // Line or single point if not enough data (time-based X)
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--color-primary') || '#4CAF50';
+            ctx.lineWidth = 2;
+            if (data.length >= 2) {
+                ctx.beginPath();
+                data.forEach((p, i) => {
+                    const xr = (p.t - xMin) / xRange;
+                    const x = leftPadding + xr * innerW;
+                    const y = topPadding + innerH - ((p.v - axisMin) / axisRange) * innerH;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            } else if (data.length === 1) {
+                const p = data[0];
+                const xr = (p.t - xMin) / xRange;
+                const x = leftPadding + xr * innerW;
+                const y = topPadding + innerH - ((p.v - axisMin) / axisRange) * innerH;
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.beginPath();
+                ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } catch (error) {
+            this.manager._logError('Ошибка отрисовки графика активности', error);
+        }
+    }
+
+    stopActivityAutoRefresh() {
+        const manager = this.manager;
+        try {
+            if (manager.activityRefreshIntervalId) {
+                clearInterval(manager.activityRefreshIntervalId);
+                manager.activityRefreshIntervalId = null;
+                manager._log('Автообновление активности остановлено');
+            }
+        } catch (error) {
+            manager._logError('Ошибка остановки автообновления активности', error);
         }
     }
 }

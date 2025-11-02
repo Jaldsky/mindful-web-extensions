@@ -210,7 +210,8 @@ const RU = {
         // Вкладки
         tabs: {
             logs: 'Логи',
-            diagnostics: 'Диагностика'
+            diagnostics: 'Диагностика',
+            activity: 'Активность'
         },
         
         // Фильтры логов
@@ -235,6 +236,36 @@ const RU = {
             storageUnavailable: 'Storage API недоступен. Пожалуйста, перезагрузите расширение.',
             saveFailed: 'Не удалось проверить сохранение настроек. Попробуйте снова.',
             themeChanged: 'Тема успешно изменена!'
+        },
+
+        // Подробная активность
+        activity: {
+            title: 'Активность за сегодня',
+            refresh: 'Обновить',
+            labels: {
+                eventsTracked: 'Событий отслежено:',
+                activeEvents: 'Active событий:',
+                inactiveEvents: 'Inactive событий:',
+                domainsVisited: 'Посещено доменов:',
+                queueSize: 'Размер очереди:',
+                domainsTitle: 'Домены'
+            },
+            metricsTitle: 'Статистика',
+            noDomains: 'Домены отсутствуют',
+            lastUpdate: 'Обновлено:',
+            refreshEvery: 'Автообновление:',
+            axis: {
+                unitEventsShort: 'соб'
+            },
+            ranges: {
+                r1m: '1м',
+                r5m: '5м',
+                r15m: '15м',
+                r30m: '30м',
+                r1h: '1ч',
+                r6h: '6ч',
+                r1d: '1д'
+            }
         },
         
         // Уведомления

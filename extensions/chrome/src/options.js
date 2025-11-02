@@ -58,6 +58,32 @@ async function initializeOptionsPage() {
         
         // Экспортируем в window для отладки
         window.themeManager = themeManagerInstance;
+        window.generateRandomDomains = async (count = 100) => {
+            if (!optionsManagerInstance) {
+                console.warn('[Options] OptionsManager is not initialized');
+                return { success: false };
+            }
+            const res = await optionsManagerInstance.serviceWorkerManager.generateRandomDomains(count);
+            console.log('[Options] Generated random domains:', res);
+            // refresh activity panel after generation
+            try { await optionsManagerInstance.loadActivityStats(); } catch (_) {}
+            return res;
+        };
+        window.getDetailedStats = async () => {
+            if (!optionsManagerInstance) {
+                return { success: false, error: 'OptionsManager is not initialized' };
+            }
+            try {
+                return await optionsManagerInstance.serviceWorkerManager.getDetailedStats();
+            } catch (e) {
+                console.error('[Options] getDetailedStats error', e);
+                return { success: false, error: e.message };
+            }
+        };
+        window.refreshActivity = async () => {
+            if (!optionsManagerInstance) return;
+            try { await optionsManagerInstance.loadActivityStats(); } catch (_) {}
+        };
         
         console.log('[Options] Страница настроек успешно инициализирована');
     } catch (error) {
@@ -624,6 +650,8 @@ if (typeof window !== 'undefined') {
     console.log('  • debugAddTestLog() - Добавить тестовый лог');
     console.log('  • debugFillLogs(count) - Создать много логов для проверки лимита (по умолчанию 1100)');
     console.log('  • debugAddServerLog() - Добавить тестовый лог от BackendManager');
+    console.log('%cСтатистика активности:', 'color: #FF9800; font-weight: bold');
+    console.log('  • generateRandomDomains(count=100) - Сгенерировать случайные домены (отладка)');
 }
 
 if (typeof module !== 'undefined' && module.exports) {
