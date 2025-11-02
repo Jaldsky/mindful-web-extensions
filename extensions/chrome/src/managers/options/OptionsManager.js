@@ -50,7 +50,7 @@ class OptionsManager extends BaseManager {
         try {
             this.statusManager = new StatusManager({
                 enableLogging: this.enableLogging,
-                statusElement: this.domManager.elements.status,
+                statusElement: null,
                 enableHistory: true,
                 enableQueue: true,
                 maxHistorySize: 50,

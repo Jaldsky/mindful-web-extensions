@@ -227,8 +227,6 @@ const RU = {
         
         // Статусные сообщения
         status: {
-            settingsSaved: 'Настройки успешно сохранены!',
-            settingsReset: 'Настройки сброшены к значениям по умолчанию',
             loadError: 'Ошибка загрузки настроек',
             saveError: 'Ошибка сохранения настроек',
             resetError: 'Ошибка сброса настроек',
@@ -241,10 +239,10 @@ const RU = {
         
         // Уведомления
         notifications: {
-            logsCleared: 'Логи успешно очищены',
-            logsClearError: 'Ошибка очистки логов',
-            logsCopied: 'Логи скопированы в буфер обмена',
-            logsCopyError: 'Ошибка копирования логов'
+            logsClearedShort: 'Очищено',
+            logsClearErrorShort: 'Ошибка',
+            logsCopiedShort: 'Скопировано',
+            logsCopyErrorShort: 'Ошибка'
         }
         
     },

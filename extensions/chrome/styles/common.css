@@ -213,8 +213,8 @@ button:focus {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 6px 12px;
+    gap: 6px;
+    padding: 6px 10px;
     background: var(--color-bg-primary);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-md);
@@ -237,16 +237,27 @@ button:focus {
 }
 
 .language-icon {
-    font-size: 14px;
+    font-size: 1em;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2em; /* фиксируем ширину под флаг, чтобы текст не скакал */
+    height: 1.2em;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    vertical-align: middle;
+    transform: translateY(1px); /* легкий нодж для выравнивания baseline на разных системах */
 }
 
 .language-code {
-    font-size: 11px;
+    font-size: inherit;
     font-weight: 700;
     color: var(--color-primary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
 }
 
 /* Theme toggle button */
@@ -255,8 +266,8 @@ button:focus {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 6px 12px;
+    gap: 6px;
+    padding: 6px 10px;
     background: var(--color-bg-primary);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-md);
@@ -279,15 +290,23 @@ button:focus {
 }
 
 .theme-icon {
-    font-size: 14px;
+    font-size: 1em;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2em;
+    height: 1.2em;
 }
 
 .theme-label {
-    font-size: 11px;
+    font-size: inherit;
     font-weight: 700;
     color: var(--color-primary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
 }
 

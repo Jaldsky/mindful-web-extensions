@@ -227,8 +227,6 @@ const EN = {
         
         // Status messages
         status: {
-            settingsSaved: 'Settings saved successfully!',
-            settingsReset: 'Settings reset to default',
             loadError: 'Error loading settings',
             saveError: 'Error saving settings',
             resetError: 'Error resetting settings',
@@ -241,10 +239,10 @@ const EN = {
         
         // Notifications
         notifications: {
-            logsCleared: 'Logs cleared successfully',
-            logsClearError: 'Error clearing logs',
-            logsCopied: 'Logs copied to clipboard',
-            logsCopyError: 'Error copying logs'
+            logsClearedShort: 'Cleared',
+            logsClearErrorShort: 'Clear error',
+            logsCopiedShort: 'Copied',
+            logsCopyErrorShort: 'Copy error'
         }
         
     },

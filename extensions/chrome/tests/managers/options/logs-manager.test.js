@@ -17,6 +17,8 @@ describe('LogsManager', () => {
             <div id="logsCounter"></div>
             <button class="logs-filter-btn" data-filter-level="info"></button>
             <button class="logs-filter-btn" data-filter-level="error"></button>
+            <button type="button" id="clearLogs" class="logs-action-btn">Clear</button>
+            <button type="button" id="copyLogs" class="logs-action-btn">Copy</button>
         `;
     };
 
@@ -26,10 +28,10 @@ describe('LogsManager', () => {
         manager.statusManager.showSuccess.mockReturnValue(true);
         manager.statusManager.showError.mockReturnValue(true);
         manager.localeManager.t.mockImplementation((key) => ({
-            'options.notifications.logsCleared': 'Logs cleared successfully',
-            'options.notifications.logsClearError': 'Error clearing logs',
-            'options.notifications.logsCopied': 'Logs copied to clipboard',
-            'options.notifications.logsCopyError': 'Error copying logs',
+            'options.notifications.logsClearedShort': 'Cleared',
+            'options.notifications.logsClearErrorShort': 'Clear error',
+            'options.notifications.logsCopiedShort': 'Copied',
+            'options.notifications.logsCopyErrorShort': 'Copy error',
             'options.logsFilters.classAll': 'All Classes'
         }[key] || key));
 
@@ -121,8 +123,11 @@ describe('LogsManager', () => {
         await logsManager.clearLogs();
 
         expect(global.chrome.storage.local.set).toHaveBeenCalledWith({ mindful_logs: [] });
-        expect(manager.statusManager.showSuccess).toHaveBeenCalledWith('Logs cleared successfully');
         expect(document.getElementById('logsCounter').textContent).toBe('0 / 1000');
+        const clearButton = document.getElementById('clearLogs');
+        expect(clearButton.textContent).toBe('Cleared');
+        expect(clearButton.disabled).toBe(true);
+        expect(manager.statusManager.showSuccess).not.toHaveBeenCalled();
     });
 
     test('copyLogs копирует содержимое и уведомляет пользователя', async () => {
@@ -133,6 +138,9 @@ describe('LogsManager', () => {
         await logsManager.copyLogs();
 
         expect(global.navigator.clipboard.writeText).toHaveBeenCalledWith('Sample logs');
-        expect(manager.statusManager.showSuccess).toHaveBeenCalledWith('Logs copied to clipboard');
+        const copyButton = document.getElementById('copyLogs');
+        expect(copyButton.textContent).toBe('Copied');
+        expect(copyButton.disabled).toBe(true);
+        expect(manager.statusManager.showSuccess).not.toHaveBeenCalled();
     });
 });
