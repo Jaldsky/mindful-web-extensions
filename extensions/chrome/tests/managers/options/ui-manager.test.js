@@ -26,10 +26,8 @@ describe('UIManager', () => {
         manager.localeManager.t.mockImplementation((key) => ({
             'options.buttons.save': 'Save',
             'options.buttons.saving': 'Saving...',
-            'options.status.settingsSaved': 'Saved',
             'options.buttons.reset': 'Reset',
             'options.buttons.resetting': 'Resetting...',
-            'options.status.settingsReset': 'Reset ok',
             'options.status.resetError': 'Reset error',
             'options.status.saveFailed': 'Save failed',
             'options.status.saveError': 'Save error',
@@ -58,7 +56,7 @@ describe('UIManager', () => {
         expect(manager.validationManager.validateBackendUrl).toHaveBeenCalledWith('https://api.test');
         expect(manager.storageManager.saveBackendUrl).toHaveBeenCalledWith('https://api.test');
         expect(manager.storageManager.notifyBackgroundScript).toHaveBeenCalledWith('https://api.test');
-        expect(manager.statusManager.showSuccess).toHaveBeenCalledWith('Saved');
+        expect(manager.statusManager.showSuccess).not.toHaveBeenCalled();
         expect(manager.domManager.setButtonState).toHaveBeenCalledWith(manager.domManager.elements.saveBtn, 'Save', false);
     });
 
@@ -80,7 +78,7 @@ describe('UIManager', () => {
         expect(result).toBe(true);
         expect(manager.storageManager.resetToDefault).toHaveBeenCalled();
         expect(manager.domManager.setBackendUrlValue).toHaveBeenCalledWith('https://default');
-        expect(manager.statusManager.showSuccess).toHaveBeenCalledWith('Reset ok');
+        expect(manager.statusManager.showSuccess).not.toHaveBeenCalled();
         expect(manager.domManager.setButtonState).toHaveBeenCalledWith(manager.domManager.elements.resetBtn, 'Resetting...', true);
         expect(manager.domManager.setButtonState).toHaveBeenCalledWith(manager.domManager.elements.resetBtn, 'Reset', false);
     });

@@ -6,7 +6,6 @@ const BaseManager = require('../../base/BaseManager.js');
  * @property {HTMLInputElement|null} backendUrl - Поле ввода URL бэкенда
  * @property {HTMLButtonElement|null} saveBtn - Кнопка сохранения
  * @property {HTMLButtonElement|null} resetBtn - Кнопка сброса
- * @property {HTMLElement|null} status - Элемент статуса
  * @property {HTMLButtonElement|null} runDiagnostics - Кнопка диагностики
  * @property {HTMLButtonElement|null} toggleDeveloperTools - Кнопка переключения developer tools
  */

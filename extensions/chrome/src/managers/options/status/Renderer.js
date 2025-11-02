@@ -46,12 +46,8 @@ class StatusRenderer {
     }
 
     display(message, type) {
-        if (!this.statusElement) {
-            this._logError('Элемент статуса не установлен');
-            return false;
-        }
-        if (!document.body.contains(this.statusElement)) {
-            this._logError('Элемент статуса не находится в DOM');
+        if (!this.statusElement || !document.body.contains(this.statusElement)) {
+            this._log('Элемент статуса недоступен, отображение пропущено');
             return false;
         }
         this.clearHideTimeout();
@@ -69,8 +65,8 @@ class StatusRenderer {
     }
 
     hide() {
-        if (!this.statusElement) {
-            this._log('Нет элемента статуса для скрытия');
+        if (!this.statusElement || !document.body.contains(this.statusElement)) {
+            this._log('Элемент статуса недоступен, скрытие пропущено');
             return false;
         }
         this.clearHideTimeout();
