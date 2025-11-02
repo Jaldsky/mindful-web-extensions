@@ -210,7 +210,8 @@ const EN = {
         // Tabs
         tabs: {
             logs: 'Logs',
-            diagnostics: 'Diagnostics'
+            diagnostics: 'Diagnostics',
+            activity: 'Activity'
         },
         
         // Logs filters
@@ -235,6 +236,36 @@ const EN = {
             storageUnavailable: 'Storage API unavailable. Please reload the extension.',
             saveFailed: 'Settings save verification failed. Please try again.',
             themeChanged: 'Theme changed successfully!'
+        },
+
+        // Activity details
+        activity: {
+            title: "Today's Activity",
+            refresh: 'Refresh',
+            labels: {
+                eventsTracked: 'Events tracked:',
+                activeEvents: 'Active events:',
+                inactiveEvents: 'Inactive events:',
+                domainsVisited: 'Domains visited:',
+                queueSize: 'Queue size:',
+                domainsTitle: 'Domains'
+            },
+            metricsTitle: 'Statistics',
+            noDomains: 'No domains yet',
+            lastUpdate: 'Last update:',
+            refreshEvery: 'Auto-refresh:',
+            axis: {
+                unitEventsShort: 'evt'
+            },
+            ranges: {
+                r1m: '1m',
+                r5m: '5m',
+                r15m: '15m',
+                r30m: '30m',
+                r1h: '1h',
+                r6h: '6h',
+                r1d: '1d'
+            }
         },
         
         // Notifications

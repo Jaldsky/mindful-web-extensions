@@ -48,6 +48,62 @@
         
     </div>
 
+    <!-- Activity Container (separate from settings) -->
+    <div class="container activity-container" style="margin-top: 20px;">
+        <div class="header-with-language" style="margin-bottom: 8px;">
+            <h1 data-i18n="options.activity.title">Today's Activity</h1>
+            <div>
+                <select id="activityRangeSelect" class="logs-class-filter">
+                    <option value="1m" data-i18n="options.activity.ranges.r1m">1m</option>
+                    <option value="5m" data-i18n="options.activity.ranges.r5m">5m</option>
+                    <option value="15m" data-i18n="options.activity.ranges.r15m">15m</option>
+                    <option value="30m" data-i18n="options.activity.ranges.r30m">30m</option>
+                    <option value="1h" data-i18n="options.activity.ranges.r1h">1h</option>
+                    <option value="6h" data-i18n="options.activity.ranges.r6h">6h</option>
+                    <option value="1d" data-i18n="options.activity.ranges.r1d">1d</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-top: 8px;">
+            <canvas id="activityChart" style="width: 100%; height: auto;" height="120"></canvas>
+        </div>
+        <!-- Auto-refreshed: no manual refresh button -->
+        <div class="diagnostics-summary" style="margin-top: 12px;">
+            <div class="activity-section-title" data-i18n="options.activity.metricsTitle">Statistics</div>
+            <div class="activity-stats-row">
+                <div class="activity-metrics">
+                    <div>
+                        <span data-i18n="options.activity.labels.eventsTracked">Events tracked:</span>
+                        <span id="activityEvents">0</span>
+                    </div>
+                    <div>
+                        <span data-i18n="options.activity.labels.activeEvents">Active events:</span>
+                        <span id="activityActive">0</span>
+                    </div>
+                    <div>
+                        <span data-i18n="options.activity.labels.inactiveEvents">Inactive events:</span>
+                        <span id="activityInactive">0</span>
+                    </div>
+                    <div>
+                        <span data-i18n="options.activity.labels.domainsVisited">Domains visited:</span>
+                        <span id="activityDomainsCount">0</span>
+                    </div>
+                    <div>
+                        <span data-i18n="options.activity.labels.queueSize">Queue size:</span>
+                        <span id="activityQueueSize">0</span>
+                    </div>
+                    
+                </div>
+                <div class="activity-domains-col">
+                    <div class="activity-domains-title" data-i18n="options.activity.labels.domainsTitle">Domains</div>
+                    <div class="activity-domains-window">
+                        <ul id="activityDomainsList" class="activity-domains-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Developer Tools Panels Container -->
     <div class="developer-panels-container">
         <!-- Tabbed Panel -->
@@ -128,6 +184,7 @@
                         <div class="diagnostics-summary" id="diagnosticsSummary"></div>
                     <div class="diagnostics-checks" id="diagnosticsChecks"></div>
                 </div>
+                
             </div>
         </div>
     </div>

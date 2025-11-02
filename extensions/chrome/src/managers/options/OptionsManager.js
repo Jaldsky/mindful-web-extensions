@@ -78,6 +78,7 @@ class OptionsManager extends BaseManager {
         this.originalButtonTexts = new Map();
         this.isInitialized = false;
         this.logsRefreshIntervalId = null;
+        this.activityRefreshIntervalId = null;
         this.lastSelectionChangeTime = 0;
         this.logsFilter = {
             level: 'all',
@@ -190,6 +191,16 @@ class OptionsManager extends BaseManager {
 
     async copyLogs() {
         return this.logsManager.copyLogs();
+    }
+
+    async loadActivityStats() {
+        return this.uiManager.loadActivityStats();
+    }
+
+    setActivityRange(rangeKey) {
+        if (this.uiManager && typeof this.uiManager.setActivityRangeByKey === 'function') {
+            this.uiManager.setActivityRangeByKey(rangeKey);
+        }
     }
 
     getCurrentBackendUrl() {

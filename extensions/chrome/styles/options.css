@@ -411,6 +411,23 @@ input[type="url"]:focus {
     border-color: var(--color-primary);
 }
 
+/* Activity range buttons styling (reuse logs-action-btn, add active/press states) */
+.activity-range-btn {
+    min-width: 48px;
+    padding: 6px 10px;
+}
+
+.activity-range-btn.active {
+    background-color: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.02) inset;
+}
+
+.activity-range-btn:active {
+    transform: translateY(1px);
+}
+
 /* Logs filters */
 .logs-filters {
     display: flex;
@@ -529,6 +546,16 @@ input[type="url"]:focus {
 
 .logs-class-filter:disabled:hover {
     border-color: var(--border-color);
+}
+
+/* Compact width for activity range select to fit its text */
+#activityRangeSelect.logs-class-filter {
+    width: fit-content;
+    max-width: none;
+    min-width: 0;
+    display: inline-block;
+    padding-right: 18px; /* keep room for arrow */
+    padding-left: 8px;
 }
 
 .logs-content {
@@ -661,6 +688,103 @@ input[type="url"]:focus {
     padding: var(--spacing-md);
     background-color: rgba(244, 67, 54, 0.1);
     border-radius: var(--border-radius-sm);
+}
+
+/* Activity domains mini window */
+.activity-domains-window {
+    height: 120px;
+    overflow-y: auto;
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+}
+
+.activity-domains-list {
+    margin: 0;
+    padding-left: 16px;
+}
+
+.activity-domains-empty {
+    list-style: none;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    padding-left: 0;
+    max-width: 70%;
+    margin: 0 auto;
+    text-align: center;
+    display: block;
+}
+
+.activity-meta {
+    margin-top: var(--spacing-sm);
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.activity-meta .separator {
+    margin: 0 6px;
+    color: var(--color-text-secondary);
+}
+
+.activity-stats-row {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: flex-start;
+    flex-wrap: nowrap;
+}
+
+.activity-metrics,
+.activity-domains-col {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.activity-domains-title {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+/* Nudge metrics down to align visually with Domains column */
+.activity-metrics {
+    margin-top: var(--spacing-xxl);
+}
+
+/* Improve readability of metrics list */
+.activity-metrics > div:not(.activity-meta) {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.activity-metrics > div:not(.activity-meta) span:first-child {
+    color: var(--color-text-secondary);
+    font-weight: 600;
+}
+
+.activity-metrics > div:not(.activity-meta) span:last-child {
+    font-size: inherit;
+    font-weight: inherit;
+    color: var(--color-text);
+    margin-left: 6px;
+}
+
+.activity-metrics-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.activity-section-title {
+    font-weight: 700;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text);
+    text-align: center;
+    font-size: var(--font-size-lg);
+}
+
+/* Reduce extra space under activity statistics block */
+.activity-container .diagnostics-summary {
+    margin-bottom: 0;
 }
 
 /* Slide animations */

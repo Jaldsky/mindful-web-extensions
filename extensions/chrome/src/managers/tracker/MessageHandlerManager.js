@@ -117,9 +117,17 @@ class MessageHandlerManager extends BaseManager {
                     this._handleGetTodayStats(sendResponse);
                     break;
 
+                case MessageHandlerManager.MESSAGE_TYPES.GET_DETAILED_STATS:
+                    this._handleGetDetailedStats(sendResponse);
+                    break;
+
                 case MessageHandlerManager.MESSAGE_TYPES.TEST_CONNECTION:
                 case MessageHandlerManager.MESSAGE_TYPES.CHECK_CONNECTION:
                     this._handleTestConnection(sendResponse, messageType);
+                    break;
+
+                case MessageHandlerManager.MESSAGE_TYPES.GENERATE_RANDOM_DOMAINS:
+                    this._handleGenerateRandomDomains(request, sendResponse);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.UPDATE_BACKEND_URL:
@@ -199,6 +207,58 @@ class MessageHandlerManager extends BaseManager {
         };
 
         this._log('Отправка статистики', response);
+        sendResponse(response);
+    }
+
+    /**
+     * Генерирует случайные домены и добавляет события (для отладки).
+     * @private
+     * @param {{data?:{count?:number}}} request
+     * @param {Function} sendResponse
+     */
+    _handleGenerateRandomDomains(request, sendResponse) {
+        try {
+            const count = Math.max(1, Math.min(1000, Number(request?.data?.count) || 100));
+            const generated = new Set();
+            const tlds = ['com', 'net', 'org', 'io', 'app', 'dev', 'site'];
+            const randStr = (len) => Array.from({ length: len }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
+            for (let i = 0; i < count; i++) {
+                const domain = `${randStr(5 + Math.floor(Math.random() * 5))}.${tlds[Math.floor(Math.random() * tlds.length)]}`;
+                if (generated.has(domain)) {
+                    i--; // ensure uniqueness
+                    continue;
+                }
+                generated.add(domain);
+                this.statisticsManager.addEvent('active', domain);
+            }
+            this._log('Сгенерированы домены', { count: generated.size });
+            sendResponse({ success: true, generated: generated.size });
+        } catch (error) {
+            this._logError('Ошибка генерации доменов', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    }
+
+    /**
+     * Обрабатывает запрос подробной статистики за сегодня.
+     * 
+     * @private
+     * @param {Function} sendResponse - Функция для отправки ответа
+     * @returns {void}
+     */
+    _handleGetDetailedStats(sendResponse) {
+        const detailed = this.statisticsManager.getDetailedStatistics();
+        const response = {
+            eventsTracked: detailed.eventsTracked,
+            activeEvents: detailed.activeEvents,
+            inactiveEvents: detailed.inactiveEvents,
+            domainsVisited: detailed.domainsVisited,
+            domains: detailed.domains || [],
+            queueSize: this.eventQueueManager.getQueueSize(),
+            isTracking: detailed.isTracking
+        };
+
+        this._log('Отправка подробной статистики', response);
         sendResponse(response);
     }
 
