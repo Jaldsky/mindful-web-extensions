@@ -31,7 +31,10 @@ class DOMManager extends BaseManager {
         RESET_BTN: 'resetBtn',
         STATUS: 'status',
         RUN_DIAGNOSTICS: 'runDiagnostics',
-        TOGGLE_DEVELOPER_TOOLS: 'toggleDeveloperTools'
+        TOGGLE_DEVELOPER_TOOLS: 'toggleDeveloperTools',
+        DOMAIN_EXCEPTION_INPUT: 'domainExceptionInput',
+        ADD_DOMAIN_EXCEPTION_BTN: 'addDomainExceptionBtn',
+        DOMAIN_EXCEPTIONS_LIST: 'domainExceptionsList'
     };
 
     /**
@@ -131,7 +134,10 @@ class DOMManager extends BaseManager {
             resetBtn: getElement(DOMManager.ELEMENT_IDS.RESET_BTN),
             status: getElement(DOMManager.ELEMENT_IDS.STATUS),
             runDiagnostics: getElement(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS),
-            toggleDeveloperTools: getElement(DOMManager.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS)
+            toggleDeveloperTools: getElement(DOMManager.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS),
+            domainExceptionInput: getElement(DOMManager.ELEMENT_IDS.DOMAIN_EXCEPTION_INPUT),
+            addDomainExceptionBtn: getElement(DOMManager.ELEMENT_IDS.ADD_DOMAIN_EXCEPTION_BTN),
+            domainExceptionsList: getElement(DOMManager.ELEMENT_IDS.DOMAIN_EXCEPTIONS_LIST)
         };
     }
 

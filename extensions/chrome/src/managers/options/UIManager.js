@@ -1,4 +1,5 @@
 const CONFIG = require('../../../config.js');
+const { normalizeDomain, normalizeDomainList } = require('../../utils/domainUtils.js');
 
 class UIManager {
     constructor(manager) {
@@ -8,6 +9,144 @@ class UIManager {
         this.activityChartInitialized = false;
         this.activityRangeKey = (CONFIG.ACTIVITY && CONFIG.ACTIVITY.DEFAULT_RANGE_KEY) || '1h';
         this.activityRangeMs = (CONFIG.ACTIVITY && CONFIG.ACTIVITY.RANGES && CONFIG.ACTIVITY.RANGES[this.activityRangeKey]) || (60 * 60 * 1000);
+        this.domainExceptions = new Set();
+    }
+
+    _getLocaleText(key, fallback) {
+        try {
+            if (this.manager && this.manager.localeManager && typeof this.manager.localeManager.t === 'function') {
+                const translated = this.manager.localeManager.t(key);
+                if (translated && translated !== key) {
+                    return translated;
+                }
+            }
+        } catch (error) {
+            this.manager._logError(`Ошибка получения текста локали для ключа ${key}`, error);
+        }
+        return fallback;
+    }
+
+    setDomainExceptions(domains) {
+        const normalizedList = normalizeDomainList(domains);
+        this.domainExceptions = new Set(normalizedList);
+        if (this.manager) {
+            this.manager.domainExceptions = normalizedList;
+        }
+        this.renderDomainExceptions();
+    }
+
+    getDomainExceptions() {
+        return Array.from(this.domainExceptions);
+    }
+
+    _showDomainInputError(key, fallback) {
+        const input = this.manager?.domManager?.elements?.domainExceptionInput;
+        if (!input) {
+            return;
+        }
+        const message = this._getLocaleText(key, fallback);
+        try {
+            input.setCustomValidity(message);
+            input.reportValidity();
+            setTimeout(() => {
+                try { input.setCustomValidity(''); } catch (_) {}
+            }, 0);
+        } catch (error) {
+            this.manager._logError('Ошибка отображения ошибки ввода домена', error);
+        }
+    }
+
+    addDomainException(value) {
+        const input = this.manager?.domManager?.elements?.domainExceptionInput;
+        const rawValue = value !== undefined ? value : (input ? input.value : '');
+        const normalized = normalizeDomain(rawValue);
+
+        if (!normalized) {
+            this._showDomainInputError('options.form.domainExceptionsInvalid', 'Enter a valid domain name');
+            return false;
+        }
+
+        if (this.domainExceptions.has(normalized)) {
+            this._showDomainInputError('options.form.domainExceptionsDuplicate', 'Domain is already in the exclusion list');
+            return false;
+        }
+
+        this.domainExceptions.add(normalized);
+        if (this.manager) {
+            this.manager.domainExceptions = this.getDomainExceptions();
+        }
+        this.renderDomainExceptions();
+
+        if (input) {
+            input.value = '';
+            input.setCustomValidity('');
+            input.focus();
+        }
+
+        this.manager._log('Домен добавлен в исключения', { domain: normalized });
+        return true;
+    }
+
+    removeDomainException(domain) {
+        if (!domain) {
+            return;
+        }
+        const normalized = normalizeDomain(domain);
+        if (!normalized || !this.domainExceptions.has(normalized)) {
+            return;
+        }
+
+        this.domainExceptions.delete(normalized);
+        if (this.manager) {
+            this.manager.domainExceptions = this.getDomainExceptions();
+        }
+        this.renderDomainExceptions();
+
+        this.manager._log('Домен удален из исключений', { domain: normalized });
+    }
+
+    renderDomainExceptions() {
+        const list = this.manager?.domManager?.elements?.domainExceptionsList;
+        if (!list) {
+            this.manager?._log('Список исключений доменов не найден в DOM');
+            return;
+        }
+
+        list.innerHTML = '';
+        const domains = this.getDomainExceptions();
+
+        if (domains.length === 0) {
+            try {
+                list.classList.remove('has-items');
+            } catch (_) {}
+            return;
+        }
+
+        try {
+            list.classList.add('has-items');
+        } catch (_) {}
+
+        const removeLabel = this._getLocaleText('options.form.domainExceptionsRemove', 'Remove from exclusion list');
+
+        domains.forEach(domain => {
+            const item = document.createElement('li');
+            item.className = 'domain-exception-item';
+
+            const text = document.createElement('span');
+            text.textContent = domain;
+            item.appendChild(text);
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'domain-exception-remove';
+            button.setAttribute('data-domain', domain);
+            button.setAttribute('title', removeLabel);
+            button.setAttribute('aria-label', `${removeLabel}: ${domain}`);
+            button.textContent = '✕';
+            item.appendChild(button);
+
+            list.appendChild(item);
+        });
     }
 
     setupEventHandlers() {
@@ -176,6 +315,46 @@ class UIManager {
             };
             themeToggle.addEventListener('click', handler);
             manager.eventHandlers.set('themeToggle', handler);
+            handlersCount++;
+        }
+
+        const addDomainBtn = manager.domManager.elements.addDomainExceptionBtn;
+        if (addDomainBtn) {
+            const handler = (event) => {
+                event.preventDefault();
+                this.addDomainException();
+            };
+            addDomainBtn.addEventListener('click', handler);
+            manager.eventHandlers.set('addDomainExceptionBtn', handler);
+            handlersCount++;
+        }
+
+        const domainInput = manager.domManager.elements.domainExceptionInput;
+        if (domainInput) {
+            const handler = (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.addDomainException();
+                }
+            };
+            domainInput.addEventListener('keydown', handler);
+            manager.eventHandlers.set('domainExceptionInputKeydown', handler);
+            handlersCount++;
+        }
+
+        const domainList = manager.domManager.elements.domainExceptionsList;
+        if (domainList) {
+            const handler = (event) => {
+                const button = event.target && event.target.closest ? event.target.closest('.domain-exception-remove') : null;
+                if (!button) {
+                    return;
+                }
+                event.preventDefault();
+                const domain = button.getAttribute('data-domain');
+                this.removeDomainException(domain);
+            };
+            domainList.addEventListener('click', handler);
+            manager.eventHandlers.set('domainExceptionsList', handler);
             handlersCount++;
         }
 
@@ -358,10 +537,23 @@ class UIManager {
                 throw new Error('Верификация сохранения не удалась');
             }
 
+            const domainExceptions = this.getDomainExceptions();
+            const domainsSaved = await manager.storageManager.saveDomainExceptions(domainExceptions);
+
+            if (!domainsSaved) {
+                throw new Error('Не удалось сохранить список исключений доменов');
+            }
+
             const notifySuccess = await manager.storageManager.notifyBackgroundScript(validationResult.value);
 
             if (!notifySuccess) {
                 manager._log('Background script не был уведомлен (продолжаем работу)');
+            }
+
+            const notifyDomainSuccess = await manager.storageManager.notifyDomainExceptionsUpdate(domainExceptions);
+
+            if (!notifyDomainSuccess) {
+                manager._log('Background script не получил обновление исключений доменов (продолжаем работу)');
             }
 
             const totalTime = Math.round(performance.now() - operationStartTime);
@@ -369,6 +561,8 @@ class UIManager {
             manager._log('Настройки успешно сохранены', {
                 totalTime: `${totalTime}мс`,
                 backgroundNotified: notifySuccess,
+                domainExceptionsCount: domainExceptions.length,
+                domainNotification: notifyDomainSuccess,
                 statusDisplayed: false,
                 statusMetrics: manager.statusManager.getPerformanceMetrics(),
                 validationMetrics: manager.validationManager.getPerformanceMetrics(),
@@ -424,6 +618,15 @@ class UIManager {
 
             const defaultUrl = await manager.storageManager.resetToDefault();
 
+            const defaultDomainExceptions = [];
+            const domainsReset = await manager.storageManager.saveDomainExceptions(defaultDomainExceptions);
+
+            if (!domainsReset) {
+                throw new Error('Не удалось сбросить список исключений доменов');
+            }
+
+            this.setDomainExceptions(defaultDomainExceptions);
+
             const uiUpdateSuccess = manager.domManager.setBackendUrlValue(defaultUrl);
 
             if (!uiUpdateSuccess) {
@@ -436,6 +639,12 @@ class UIManager {
                 manager._log('Background script не был уведомлен (продолжаем работу)');
             }
 
+            const notifyDomainSuccess = await manager.storageManager.notifyDomainExceptionsUpdate(defaultDomainExceptions);
+
+            if (!notifyDomainSuccess) {
+                manager._log('Background script не получил обновление исключений доменов (продолжаем работу)');
+            }
+
             const totalTime = Math.round(performance.now() - operationStartTime);
 
             manager._log('Настройки сброшены к значениям по умолчанию', {
@@ -443,6 +652,8 @@ class UIManager {
                 totalTime: `${totalTime}мс`,
                 uiUpdateSuccess,
                 backgroundNotified: notifySuccess,
+                domainExceptionsCount: this.domainExceptions.size,
+                domainNotification: notifyDomainSuccess,
                 statusDisplayed: false,
                 statusMetrics: manager.statusManager.getPerformanceMetrics(),
                 domMetrics: manager.domManager.getPerformanceMetrics(),
@@ -508,6 +719,7 @@ class UIManager {
             manager.localeManager.localizeDOM();
             this.updateLanguageDisplay();
             this.updateThemeDisplay();
+            this.renderDomainExceptions();
 
             const diagnosticsLabel = document.querySelector('.diagnostics-status-label');
             if (diagnosticsLabel) {

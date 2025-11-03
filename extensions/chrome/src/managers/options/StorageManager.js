@@ -1,5 +1,6 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../../config.js');
+const { normalizeDomainList } = require('../../utils/domainUtils.js');
 
 /**
  * @typedef {Object} OptionsStorageData
@@ -36,7 +37,8 @@ class StorageManager extends BaseManager {
      * @enum {string}
      */
     static DEFAULT_VALUES = {
-        BACKEND_URL: CONFIG.BACKEND.DEFAULT_URL
+        BACKEND_URL: CONFIG.BACKEND.DEFAULT_URL,
+        DOMAIN_EXCEPTIONS: []
     };
 
     /**
@@ -120,6 +122,30 @@ class StorageManager extends BaseManager {
         });
     }
 
+    async loadDomainExceptions() {
+        return this._executeWithTimingAsync('loadDomainExceptions', async () => {
+            this._log('Загрузка списка исключений доменов');
+
+            try {
+                const result = await chrome.storage.local.get([
+                    StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS
+                ]);
+
+                const stored = result[StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS];
+                const domains = normalizeDomainList(Array.isArray(stored) ? stored : []);
+
+                this._log('Список исключений доменов загружен', {
+                    count: domains.length
+                });
+
+                return domains;
+            } catch (error) {
+                this._logError('Ошибка загрузки исключений доменов', error);
+                return [];
+            }
+        });
+    }
+
     /**
      * Сохраняет URL бэкенда в хранилище.
      * Включает валидацию, измерение производительности и проверку успешности.
@@ -159,6 +185,38 @@ class StorageManager extends BaseManager {
         });
     }
 
+    async saveDomainExceptions(domains) {
+        if (!Array.isArray(domains)) {
+            throw new TypeError('domains должен быть массивом строк');
+        }
+
+        const normalized = normalizeDomainList(domains);
+
+        return this._executeWithTimingAsync('saveDomainExceptions', async () => {
+            this._log('Сохранение исключений доменов в хранилище', { count: normalized.length });
+
+            await chrome.storage.local.set({
+                [StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS]: normalized
+            });
+
+            const verification = await chrome.storage.local.get([
+                StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS
+            ]);
+
+            const saved = Array.isArray(verification[StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS])
+                ? verification[StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS]
+                : [];
+
+            if (saved.length !== normalized.length || saved.some((domain, index) => domain !== normalized[index])) {
+                throw new Error('Верификация сохранения не удалась');
+            }
+
+            this._log('Исключения доменов успешно сохранены');
+
+            return true;
+        });
+    }
+
     /**
      * Сбрасывает настройки к значениям по умолчанию.
      * Использует saveBackendUrl для обеспечения консистентности.
@@ -173,6 +231,7 @@ class StorageManager extends BaseManager {
             
             const defaultUrl = StorageManager.DEFAULT_VALUES.BACKEND_URL;
             await this.saveBackendUrl(defaultUrl);
+            await this.saveDomainExceptions([...StorageManager.DEFAULT_VALUES.DOMAIN_EXCEPTIONS]);
             
             this._log('Настройки сброшены к значениям по умолчанию');
             
@@ -221,6 +280,40 @@ class StorageManager extends BaseManager {
         });
     }
 
+    async notifyDomainExceptionsUpdate(domains) {
+        if (!Array.isArray(domains)) {
+            throw new TypeError('domains должен быть массивом строк');
+        }
+
+        const normalized = normalizeDomainList(domains);
+
+        return this._executeWithTimingAsync('notifyDomainExceptionsUpdate', async () => {
+            this._log('Отправка исключений доменов background script', {
+                count: normalized.length
+            });
+
+            try {
+                const timeoutPromise = new Promise((_resolve, reject) => {
+                    setTimeout(() => reject(new Error('Таймаут уведомления исключений доменов')),
+                        StorageManager.NOTIFICATION_TIMEOUT);
+                });
+
+                const sendPromise = chrome.runtime.sendMessage({
+                    action: CONFIG.MESSAGE_TYPES.UPDATE_DOMAIN_EXCEPTIONS,
+                    domains: normalized
+                });
+
+                await Promise.race([sendPromise, timeoutPromise]);
+
+                this._log('Исключения доменов отправлены background script');
+                return true;
+            } catch (error) {
+                this._log('Background script не ответил на обновление исключений доменов', error);
+                return false;
+            }
+        });
+    }
+
     /**
      * Получает значение по умолчанию для бэкенда.
      * 
@@ -228,6 +321,10 @@ class StorageManager extends BaseManager {
      */
     getDefaultBackendUrl() {
         return StorageManager.DEFAULT_VALUES.BACKEND_URL;
+    }
+
+    getDefaultDomainExceptions() {
+        return [...StorageManager.DEFAULT_VALUES.DOMAIN_EXCEPTIONS];
     }
 
     /**

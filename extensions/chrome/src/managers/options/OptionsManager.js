@@ -85,6 +85,7 @@ class OptionsManager extends BaseManager {
             className: 'all',
             serverOnly: false
         };
+        this.domainExceptions = [];
 
         this.initializationManager = new InitializationManager(this);
         this.uiManager = new UIManager(this);
@@ -115,6 +116,11 @@ class OptionsManager extends BaseManager {
 
     async resetToDefault() {
         return this.uiManager.resetToDefault();
+    }
+
+    setDomainExceptions(domains) {
+        this.domainExceptions = Array.isArray(domains) ? [...domains] : [];
+        return this.uiManager.setDomainExceptions(domains);
     }
 
     async runDiagnostics() {

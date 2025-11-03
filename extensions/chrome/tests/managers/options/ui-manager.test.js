@@ -18,6 +18,8 @@ describe('UIManager', () => {
         manager.validationManager.validateBackendUrl.mockReturnValue({ isValid: true, value: 'https://api.test' });
         manager.storageManager.saveBackendUrl.mockResolvedValue(true);
         manager.storageManager.notifyBackgroundScript.mockResolvedValue(true);
+        manager.storageManager.saveDomainExceptions.mockResolvedValue(true);
+        manager.storageManager.notifyDomainExceptionsUpdate.mockResolvedValue(true);
         manager.storageManager.resetToDefault.mockResolvedValue('https://default');
         manager.domManager.setBackendUrlValue.mockReturnValue(true);
         manager.statusManager.showSuccess.mockReturnValue(true);
@@ -56,6 +58,8 @@ describe('UIManager', () => {
         expect(manager.validationManager.validateBackendUrl).toHaveBeenCalledWith('https://api.test');
         expect(manager.storageManager.saveBackendUrl).toHaveBeenCalledWith('https://api.test');
         expect(manager.storageManager.notifyBackgroundScript).toHaveBeenCalledWith('https://api.test');
+        expect(manager.storageManager.saveDomainExceptions).toHaveBeenCalledWith([]);
+        expect(manager.storageManager.notifyDomainExceptionsUpdate).toHaveBeenCalledWith([]);
         expect(manager.statusManager.showSuccess).not.toHaveBeenCalled();
         expect(manager.domManager.setButtonState).toHaveBeenCalledWith(manager.domManager.elements.saveBtn, 'Save', false);
     });
@@ -78,6 +82,8 @@ describe('UIManager', () => {
         expect(result).toBe(true);
         expect(manager.storageManager.resetToDefault).toHaveBeenCalled();
         expect(manager.domManager.setBackendUrlValue).toHaveBeenCalledWith('https://default');
+        expect(manager.storageManager.saveDomainExceptions).toHaveBeenCalledWith([]);
+        expect(manager.storageManager.notifyDomainExceptionsUpdate).toHaveBeenCalledWith([]);
         expect(manager.statusManager.showSuccess).not.toHaveBeenCalled();
         expect(manager.domManager.setButtonState).toHaveBeenCalledWith(manager.domManager.elements.resetBtn, 'Resetting...', true);
         expect(manager.domManager.setButtonState).toHaveBeenCalledWith(manager.domManager.elements.resetBtn, 'Reset', false);

@@ -1,5 +1,6 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../../config.js');
+const { normalizeDomainList } = require('../../utils/domainUtils.js');
 
 /**
  * @typedef {Object} StorageKeys
@@ -44,6 +45,9 @@ class StorageManager extends BaseManager {
         
         /** @type {string} */
         this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
+
+        /** @type {Array<string>} */
+        this.domainExceptions = [];
         
         /** @type {Map<string, number>} */
         this.performanceMetrics = new Map();
@@ -126,6 +130,23 @@ class StorageManager extends BaseManager {
         });
     }
 
+    async loadDomainExceptions() {
+        return await this._executeWithTimingAsync('loadDomainExceptions', async () => {
+            try {
+                const result = await chrome.storage.local.get([StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS]);
+                const domains = normalizeDomainList(result[StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS] || []);
+                this.domainExceptions = domains;
+                this.updateState({ domainExceptionsCount: domains.length });
+                this._log('Исключения доменов загружены', { count: domains.length });
+                return domains;
+            } catch (error) {
+                this._logError('Ошибка загрузки исключений доменов', error);
+                this.domainExceptions = [];
+                return [];
+            }
+        });
+    }
+
     /**
      * Сохраняет URL backend в хранилище.
      * 
@@ -145,6 +166,24 @@ class StorageManager extends BaseManager {
                 return true;
             } catch (error) {
                 this._logError('Ошибка сохранения Backend URL', error);
+                return false;
+            }
+        });
+    }
+
+    async saveDomainExceptions(domains) {
+        return await this._executeWithTimingAsync('saveDomainExceptions', async () => {
+            const normalized = normalizeDomainList(domains || []);
+            try {
+                await chrome.storage.local.set({
+                    [StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS]: normalized
+                });
+                this.domainExceptions = normalized;
+                this.updateState({ domainExceptionsCount: normalized.length });
+                this._log('Исключения доменов сохранены', { count: normalized.length });
+                return true;
+            } catch (error) {
+                this._logError('Ошибка сохранения исключений доменов', error);
                 return false;
             }
         });
@@ -216,6 +255,10 @@ class StorageManager extends BaseManager {
         return this.backendUrl;
     }
 
+    getDomainExceptions() {
+        return [...this.domainExceptions];
+    }
+
     /**
      * Очищает все данные из хранилища.
      * 
@@ -228,11 +271,16 @@ class StorageManager extends BaseManager {
                 await chrome.storage.local.remove([
                     StorageManager.STORAGE_KEYS.USER_ID,
                     StorageManager.STORAGE_KEYS.BACKEND_URL,
-                    StorageManager.STORAGE_KEYS.EVENT_QUEUE
+                    StorageManager.STORAGE_KEYS.EVENT_QUEUE,
+                    StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS
                 ]);
                 
                 this.userId = null;
                 this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
+                this.domainExceptions = [];
+                this.updateState({
+                    domainExceptionsCount: 0
+                });
                 
                 this._log('Все данные очищены из хранилища');
                 return true;
@@ -252,6 +300,7 @@ class StorageManager extends BaseManager {
         this.performanceMetrics.clear();
         this.userId = null;
         this.backendUrl = null;
+        this.domainExceptions = [];
         super.destroy();
         this._log('StorageManager уничтожен');
     }

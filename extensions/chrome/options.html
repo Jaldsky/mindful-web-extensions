@@ -39,6 +39,36 @@
                     Enter the URL of your Mindful Web backend API endpoint
                 </div>
             </div>
+
+            <div class="form-group">
+                <label for="domainExceptionInput" data-i18n="options.form.domainExceptionsLabel">Domain exclusions:</label>
+                <div class="domain-exceptions-input">
+                    <input
+                        type="text"
+                        id="domainExceptionInput"
+                        data-i18n-attr="placeholder"
+                        data-i18n="options.form.domainExceptionsPlaceholder"
+                        placeholder="example.com"
+                        autocomplete="off"
+                    >
+                    <button
+                        type="button"
+                        id="addDomainExceptionBtn"
+                        class="domain-exception-add-btn"
+                        data-i18n="options.form.domainExceptionsAdd"
+                    >Add domain</button>
+                </div>
+                <div class="help-text domain-exceptions-help" data-i18n="options.form.domainExceptionsHelp">
+                    Requests will not be sent for these domains.
+                </div>
+                <ul
+                    id="domainExceptionsList"
+                    class="domain-exceptions-list"
+                    aria-live="polite"
+                    data-i18n-attr="aria-label"
+                    data-i18n="options.form.domainExceptionsListLabel"
+                ></ul>
+            </div>
             
             <div class="button-group">
                 <button type="submit" id="saveBtn" class="options-action-btn options-save-btn" data-i18n="options.buttons.save">Save Settings</button>

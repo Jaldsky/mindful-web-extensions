@@ -578,6 +578,9 @@ function getAllMetrics() {
         },
         currentUrl: optionsManagerInstance.getCurrentBackendUrl(),
         isUrlValid: optionsManagerInstance.isCurrentUrlValid(),
+        domainExceptions: optionsManagerInstance.uiManager && typeof optionsManagerInstance.uiManager.getDomainExceptions === 'function'
+            ? optionsManagerInstance.uiManager.getDomainExceptions()
+            : [],
         timestamp: new Date().toISOString()
     };
 }

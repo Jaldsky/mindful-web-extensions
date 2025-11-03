@@ -17,6 +17,9 @@ describe('DOMManager', () => {
                 <input type="url" id="backendUrl" />
                 <button type="submit" id="saveBtn">Save</button>
                 <button type="button" id="resetBtn">Reset</button>
+                <input type="text" id="domainExceptionInput" />
+                <button type="button" id="addDomainExceptionBtn">Add</button>
+                <ul id="domainExceptionsList"></ul>
             </form>
             <div id="status"></div>
             <button type="button" id="runDiagnostics">Run Diagnostics</button>
@@ -49,6 +52,9 @@ describe('DOMManager', () => {
             expect(domManager.elements.status).toBeInstanceOf(HTMLDivElement);
             expect(domManager.elements.runDiagnostics).toBeInstanceOf(HTMLButtonElement);
             expect(domManager.elements.toggleDeveloperTools).toBeInstanceOf(HTMLButtonElement);
+            expect(domManager.elements.domainExceptionInput).toBeInstanceOf(HTMLInputElement);
+            expect(domManager.elements.addDomainExceptionBtn).toBeInstanceOf(HTMLButtonElement);
+            expect(domManager.elements.domainExceptionsList).toBeInstanceOf(HTMLUListElement);
         });
 
         test('должен создаваться с пользовательскими настройками', () => {
@@ -72,6 +78,9 @@ describe('DOMManager', () => {
             expect(DOMManager.ELEMENT_IDS.STATUS).toBe('status');
             expect(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS).toBe('runDiagnostics');
             expect(DOMManager.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS).toBe('toggleDeveloperTools');
+            expect(DOMManager.ELEMENT_IDS.DOMAIN_EXCEPTION_INPUT).toBe('domainExceptionInput');
+            expect(DOMManager.ELEMENT_IDS.ADD_DOMAIN_EXCEPTION_BTN).toBe('addDomainExceptionBtn');
+            expect(DOMManager.ELEMENT_IDS.DOMAIN_EXCEPTIONS_LIST).toBe('domainExceptionsList');
         });
     });
 
@@ -270,10 +279,10 @@ describe('DOMManager', () => {
         test('должен корректно считать доступные элементы', () => {
             const stats = domManager.getElementsStatistics();
 
-            expect(stats.total).toBe(7);
-            expect(stats.available).toBe(7);
+            expect(stats.total).toBe(10);
+            expect(stats.available).toBe(10);
             expect(stats.missing).toEqual([]);
-            expect(stats.inDOM).toBe(7);
+            expect(stats.inDOM).toBe(10);
             expect(stats.notInDOM).toEqual([]);
         });
 
@@ -283,10 +292,10 @@ describe('DOMManager', () => {
 
             const stats = domManager.getElementsStatistics();
 
-            expect(stats.total).toBe(7);
-            expect(stats.available).toBe(6);
+            expect(stats.total).toBe(10);
+            expect(stats.available).toBe(9);
             expect(stats.missing).toEqual(['saveBtn']);
-            expect(stats.inDOM).toBe(6);
+            expect(stats.inDOM).toBe(9);
         });
     });
 
@@ -368,7 +377,7 @@ describe('DOMManager', () => {
             const stats = domManager.getElementsStatistics();
 
             expect(Object.keys(metrics).length).toBeGreaterThan(0);
-            expect(stats.total).toBe(7);
+            expect(stats.total).toBe(10);
         });
     });
 

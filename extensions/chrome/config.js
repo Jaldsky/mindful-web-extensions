@@ -49,6 +49,7 @@ const CONFIG = {
         USER_ID: 'mindful_user_id',
         BACKEND_URL: 'mindful_backend_url',
         LOCALE: 'mindful_locale',
+        DOMAIN_EXCEPTIONS: 'mindful_domain_exceptions',
         
         // Tracker
         EVENT_QUEUE: 'mindful_event_queue',
@@ -85,6 +86,7 @@ const CONFIG = {
         
         // Настройки
         UPDATE_BACKEND_URL: 'updateBackendUrl',
+        UPDATE_DOMAIN_EXCEPTIONS: 'updateDomainExceptions',
         RELOAD_EXTENSION: 'reloadExtension',
         OPEN_OPTIONS: 'openOptions',
         

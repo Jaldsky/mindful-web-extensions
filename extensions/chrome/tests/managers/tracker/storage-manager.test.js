@@ -6,6 +6,7 @@ const StorageManager = require('../../../src/managers/tracker/StorageManager.js'
 
 describe('StorageManager (Tracker)', () => {
     let storageManager;
+    let memoryStorage;
 
     beforeEach(() => {
         // Настраиваем chrome API
@@ -23,10 +24,32 @@ describe('StorageManager (Tracker)', () => {
             };
         }
 
+        memoryStorage = {};
+
         // Настраиваем моки по умолчанию
-        global.chrome.storage.local.get.mockResolvedValue({});
-        global.chrome.storage.local.set.mockResolvedValue();
-        global.chrome.storage.local.remove.mockResolvedValue();
+        global.chrome.storage.local.get.mockImplementation((keys) => {
+            if (!Array.isArray(keys)) {
+                return Promise.resolve({});
+            }
+
+            const result = {};
+            keys.forEach((key) => {
+                if (Object.prototype.hasOwnProperty.call(memoryStorage, key)) {
+                    result[key] = memoryStorage[key];
+                }
+            });
+            return Promise.resolve(result);
+        });
+        global.chrome.storage.local.set.mockImplementation((items) => {
+            Object.assign(memoryStorage, items);
+            return Promise.resolve();
+        });
+        global.chrome.storage.local.remove.mockImplementation((keys) => {
+            (Array.isArray(keys) ? keys : [keys]).forEach((key) => {
+                delete memoryStorage[key];
+            });
+            return Promise.resolve();
+        });
 
         storageManager = new StorageManager({ enableLogging: false });
     });
@@ -88,9 +111,7 @@ describe('StorageManager (Tracker)', () => {
     describe('loadBackendUrl', () => {
         test('должен загружать URL из хранилища', async () => {
             const testUrl = 'http://test.com/api';
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_backend_url: testUrl
-            });
+            memoryStorage.mindful_backend_url = testUrl;
 
             const url = await storageManager.loadBackendUrl();
 
@@ -99,15 +120,13 @@ describe('StorageManager (Tracker)', () => {
         });
 
         test('должен использовать URL по умолчанию если не найден', async () => {
-            global.chrome.storage.local.get.mockResolvedValue({});
-
             const url = await storageManager.loadBackendUrl();
 
             expect(url).toBe('http://localhost:8000/api/v1/events/send');
         });
 
         test('должен обрабатывать ошибки и возвращать URL по умолчанию', async () => {
-            global.chrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
 
             const url = await storageManager.loadBackendUrl();
 
@@ -123,13 +142,11 @@ describe('StorageManager (Tracker)', () => {
 
             expect(result).toBe(true);
             expect(storageManager.backendUrl).toBe(testUrl);
-            expect(global.chrome.storage.local.set).toHaveBeenCalledWith({
-                mindful_backend_url: testUrl
-            });
+            expect(memoryStorage.mindful_backend_url).toBe(testUrl);
         });
 
         test('должен обрабатывать ошибки при сохранении', async () => {
-            global.chrome.storage.local.set.mockRejectedValue(new Error('Save error'));
+            global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Save error'));
 
             const result = await storageManager.saveBackendUrl('http://test.com');
 
@@ -142,9 +159,7 @@ describe('StorageManager (Tracker)', () => {
             const testQueue = [
                 { event: 'active', domain: 'test.com', timestamp: '2024-01-01' }
             ];
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_event_queue: testQueue
-            });
+            memoryStorage.mindful_event_queue = testQueue;
 
             const queue = await storageManager.restoreEventQueue();
 
@@ -160,7 +175,7 @@ describe('StorageManager (Tracker)', () => {
         });
 
         test('должен обрабатывать ошибки', async () => {
-            global.chrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
 
             const queue = await storageManager.restoreEventQueue();
 
@@ -177,15 +192,50 @@ describe('StorageManager (Tracker)', () => {
             const result = await storageManager.saveEventQueue(testQueue);
 
             expect(result).toBe(true);
-            expect(global.chrome.storage.local.set).toHaveBeenCalledWith({
-                mindful_event_queue: testQueue
-            });
+            expect(memoryStorage.mindful_event_queue).toEqual(testQueue);
         });
 
         test('должен обрабатывать ошибки при сохранении', async () => {
-            global.chrome.storage.local.set.mockRejectedValue(new Error('Save error'));
+            global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Save error'));
 
             const result = await storageManager.saveEventQueue([]);
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('loadDomainExceptions', () => {
+        test('должен загружать список исключений доменов', async () => {
+            memoryStorage.mindful_domain_exceptions = ['Example.com', 'test.com', 'example.com'];
+
+            const domains = await storageManager.loadDomainExceptions();
+
+            expect(domains).toEqual(['example.com', 'test.com']);
+            expect(storageManager.getDomainExceptions()).toEqual(['example.com', 'test.com']);
+        });
+
+        test('должен возвращать пустой массив при ошибке', async () => {
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
+
+            const domains = await storageManager.loadDomainExceptions();
+
+            expect(domains).toEqual([]);
+            expect(storageManager.getDomainExceptions()).toEqual([]);
+        });
+    });
+
+    describe('saveDomainExceptions', () => {
+        test('должен сохранять нормализованный список исключений', async () => {
+            const result = await storageManager.saveDomainExceptions(['Example.com', 'sub.Example.com', 'example.com']);
+
+            expect(result).toBe(true);
+            expect(memoryStorage.mindful_domain_exceptions).toEqual(['example.com', 'sub.example.com']);
+        });
+
+        test('должен возвращать false при ошибке сохранения', async () => {
+            global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Save error'));
+
+            const result = await storageManager.saveDomainExceptions(['example.com']);
 
             expect(result).toBe(false);
         });
@@ -209,6 +259,8 @@ describe('StorageManager (Tracker)', () => {
         test('должен очищать все данные из хранилища', async () => {
             storageManager.userId = 'test-id';
             storageManager.backendUrl = 'http://test.com';
+            storageManager.domainExceptions = ['example.com'];
+            memoryStorage.mindful_domain_exceptions = ['example.com'];
 
             const result = await storageManager.clearAll();
 
@@ -216,10 +268,12 @@ describe('StorageManager (Tracker)', () => {
             expect(storageManager.userId).toBeNull();
             expect(storageManager.backendUrl).toBe('http://localhost:8000/api/v1/events/send');
             expect(global.chrome.storage.local.remove).toHaveBeenCalled();
+            expect(storageManager.getDomainExceptions()).toEqual([]);
+            expect(memoryStorage.mindful_domain_exceptions).toBeUndefined();
         });
 
         test('должен обрабатывать ошибки при очистке', async () => {
-            global.chrome.storage.local.remove.mockRejectedValue(new Error('Remove error'));
+            global.chrome.storage.local.remove.mockRejectedValueOnce(new Error('Remove error'));
 
             const result = await storageManager.clearAll();
 

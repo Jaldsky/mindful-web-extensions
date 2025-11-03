@@ -114,6 +114,16 @@ describe('EventQueueManager', () => {
             expect(statisticsManager.updateQueueSize).toHaveBeenCalledWith(1);
         });
 
+        test('не должен добавлять событие для исключенного домена', async () => {
+            await eventQueueManager.setDomainExceptions(['blocked.com']);
+            statisticsManager.addEvent.mockClear();
+
+            eventQueueManager.addEvent('active', 'blocked.com');
+
+            expect(eventQueueManager.queue.length).toBe(0);
+            expect(statisticsManager.addEvent).not.toHaveBeenCalled();
+        });
+
         test('должен отправлять батч только при достижении 100 событий (аварийная мера)', async () => {
             // Мокируем sendEvents для успешной отправки
             backendManager.sendEvents.mockResolvedValue({ success: true });
@@ -200,6 +210,25 @@ describe('EventQueueManager', () => {
             expect(storageManager.saveEventQueue).toHaveBeenCalled();
         });
 
+        test('должен исключать домены из списка исключений при отправке', async () => {
+            backendManager.sendEvents.mockResolvedValue({ success: true });
+            storageManager.saveEventQueue.mockResolvedValue(true);
+
+            await eventQueueManager.setDomainExceptions(['blocked.com']);
+            eventQueueManager.queue = [
+                { event: 'active', domain: 'blocked.com', timestamp: new Date().toISOString() },
+                { event: 'inactive', domain: 'allowed.com', timestamp: new Date().toISOString() }
+            ];
+
+            await eventQueueManager.processQueue();
+
+            expect(backendManager.sendEvents).toHaveBeenCalledTimes(1);
+            const sentEvents = backendManager.sendEvents.mock.calls[0][0];
+            expect(sentEvents).toHaveLength(1);
+            expect(sentEvents[0].domain).toBe('allowed.com');
+            expect(storageManager.saveEventQueue).toHaveBeenCalled();
+        });
+
         test('не должен обрабатывать пустую очередь', async () => {
             await eventQueueManager.processQueue();
 
@@ -225,6 +254,23 @@ describe('EventQueueManager', () => {
 
             // События должны остаться в очереди
             expect(eventQueueManager.queue.length).toBe(2);
+        });
+    });
+
+    describe('setDomainExceptions', () => {
+        test('должен обновлять список исключений и очищать очередь', async () => {
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            eventQueueManager.queue = [
+                { event: 'active', domain: 'blocked.com', timestamp: new Date().toISOString() },
+                { event: 'active', domain: 'allowed.com', timestamp: new Date().toISOString() }
+            ];
+
+            const result = await eventQueueManager.setDomainExceptions(['blocked.com']);
+
+            expect(result.count).toBe(1);
+            expect(result.removedFromQueue).toBe(1);
+            expect(eventQueueManager.queue).toHaveLength(1);
+            expect(eventQueueManager.queue[0].domain).toBe('allowed.com');
         });
     });
 

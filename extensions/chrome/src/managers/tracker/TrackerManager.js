@@ -114,9 +114,14 @@ class TrackerManager extends BaseManager {
                 this.backendManager.setBackendUrl(backendUrl);
                 this._log('Backend URL загружен', { backendUrl });
 
+                const domainExceptions = await this.storageManager.loadDomainExceptions();
+                this._log('Исключения доменов загружены', { count: domainExceptions.length });
+
                 // 3. Восстанавливаем очередь событий
                 await this.eventQueueManager.restoreQueue();
                 this._log('Очередь событий восстановлена');
+
+                await this.eventQueueManager.setDomainExceptions(domainExceptions);
 
                 // 4. Настраиваем обработчики сообщений
                 this.messageHandlerManager.init();
@@ -246,6 +251,7 @@ class TrackerManager extends BaseManager {
             queueState: this.eventQueueManager.getState(),
             trackingState: this.tabTrackingManager.getState(),
             performanceMetrics: this.getPerformanceMetrics(),
+            domainExceptions: this.storageManager.getDomainExceptions(),
             timestamp: new Date().toISOString()
         };
     }

@@ -17,6 +17,9 @@ function createBaseOptionsManager() {
             loadBackendUrl: jest.fn(),
             saveBackendUrl: jest.fn(),
             notifyBackgroundScript: jest.fn(),
+            loadDomainExceptions: jest.fn(),
+            saveDomainExceptions: jest.fn(),
+            notifyDomainExceptionsUpdate: jest.fn(),
             resetToDefault: jest.fn(),
             getDefaultBackendUrl: jest.fn(),
             getPerformanceMetrics: jest.fn(() => ({})),
@@ -76,6 +79,7 @@ function createBaseOptionsManager() {
             toggleTheme: jest.fn(),
             updateThemeDisplay: jest.fn()
         },
+        setDomainExceptions: jest.fn(),
         eventHandlers: new Map()
     };
 }
