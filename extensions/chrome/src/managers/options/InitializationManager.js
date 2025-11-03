@@ -91,7 +91,10 @@ class InitializationManager {
         try {
             manager._log('Загрузка настроек');
 
-            const backendUrl = await manager.storageManager.loadBackendUrl();
+            const [backendUrl, domainExceptions] = await Promise.all([
+                manager.storageManager.loadBackendUrl(),
+                manager.storageManager.loadDomainExceptions()
+            ]);
             const setSuccess = manager.domManager.setBackendUrlValue(backendUrl);
 
             if (!setSuccess) {
@@ -106,9 +109,19 @@ class InitializationManager {
                 }
             }
 
+            try {
+                manager.setDomainExceptions(domainExceptions);
+            } catch (error) {
+                manager._logError('Не удалось обновить список исключений доменов в UI', error);
+                manager.statusManager.showWarning(
+                    manager.localeManager.t('options.status.uiUpdateError')
+                );
+            }
+
             const loadTime = Math.round(performance.now() - startTime);
             manager._log('Настройки загружены успешно', {
                 backendUrl: backendUrl.substring(0, 50) + (backendUrl.length > 50 ? '...' : ''),
+                domainExceptionsCount: Array.isArray(domainExceptions) ? domainExceptions.length : 0,
                 loadTime: `${loadTime}мс`,
                 uiUpdateSuccess: setSuccess
             });

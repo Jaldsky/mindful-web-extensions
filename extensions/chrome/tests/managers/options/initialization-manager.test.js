@@ -55,19 +55,23 @@ describe('InitializationManager', () => {
     test('loadSettings обновляет DOM и не показывает предупреждение при успехе', async () => {
         const manager = createBaseOptionsManager();
         manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.test');
+        manager.storageManager.loadDomainExceptions.mockResolvedValue([]);
         manager.domManager.setBackendUrlValue.mockReturnValue(true);
 
         const initializationManager = new InitializationManager(manager);
         await initializationManager.loadSettings();
 
         expect(manager.storageManager.loadBackendUrl).toHaveBeenCalled();
+        expect(manager.storageManager.loadDomainExceptions).toHaveBeenCalled();
         expect(manager.domManager.setBackendUrlValue).toHaveBeenCalledWith('https://api.test');
         expect(manager.statusManager.showWarning).not.toHaveBeenCalled();
+        expect(manager.setDomainExceptions).toHaveBeenCalledWith([]);
     });
 
     test('loadSettings показывает предупреждение при неудачном обновлении UI', async () => {
         const manager = createBaseOptionsManager();
         manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.test');
+        manager.storageManager.loadDomainExceptions.mockResolvedValue([]);
         manager.domManager.setBackendUrlValue.mockReturnValue(false);
         manager.statusManager.showWarning.mockReturnValue(true);
 
@@ -75,5 +79,6 @@ describe('InitializationManager', () => {
         await initializationManager.loadSettings();
 
         expect(manager.statusManager.showWarning).toHaveBeenCalled();
+        expect(manager.setDomainExceptions).toHaveBeenCalledWith([]);
     });
 });

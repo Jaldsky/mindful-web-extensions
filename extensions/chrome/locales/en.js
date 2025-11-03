@@ -158,7 +158,15 @@ const EN = {
         form: {
             backendUrlLabel: 'Backend URL:',
             backendUrlPlaceholder: 'http://localhost:8000/api/v1/events/send',
-            backendUrlHelp: 'Enter the URL of your Mindful Web backend API endpoint'
+            backendUrlHelp: 'Enter the URL of your Mindful Web backend API endpoint',
+            domainExceptionsLabel: 'Domain exclusions:',
+            domainExceptionsPlaceholder: 'example.com',
+            domainExceptionsHelp: 'Requests will not be sent for these domains',
+            domainExceptionsAdd: 'Add domain',
+            domainExceptionsRemove: 'Remove from exclusions',
+            domainExceptionsInvalid: 'Please enter a valid domain (example.com)',
+            domainExceptionsDuplicate: 'This domain is already in the exclusion list',
+            domainExceptionsListLabel: 'Excluded domains list'
         },
         
         // Theme

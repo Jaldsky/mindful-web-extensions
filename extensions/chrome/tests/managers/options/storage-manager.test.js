@@ -6,6 +6,7 @@ const StorageManager = require('../../../src/managers/options/StorageManager.js'
 
 describe('StorageManager', () => {
     let storageManager;
+    let memoryStorage;
 
     beforeEach(() => {
         // Убеждаемся что chrome API существует
@@ -28,12 +29,25 @@ describe('StorageManager', () => {
             };
         }
 
+        memoryStorage = {};
+
         // Настраиваем моки chrome.storage
         global.chrome.storage.local.get.mockImplementation((keys) => {
-            return Promise.resolve({});
+            if (!Array.isArray(keys)) {
+                return Promise.resolve({});
+            }
+
+            const result = {};
+            keys.forEach((key) => {
+                if (Object.prototype.hasOwnProperty.call(memoryStorage, key)) {
+                    result[key] = memoryStorage[key];
+                }
+            });
+            return Promise.resolve(result);
         });
 
         global.chrome.storage.local.set.mockImplementation((items) => {
+            Object.assign(memoryStorage, items);
             return Promise.resolve();
         });
 
@@ -69,9 +83,7 @@ describe('StorageManager', () => {
     describe('loadBackendUrl', () => {
         test('должен загружать URL из хранилища', async () => {
             const testUrl = 'http://test.com/api';
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_backend_url: testUrl
-            });
+            memoryStorage.mindful_backend_url = testUrl;
 
             const url = await storageManager.loadBackendUrl();
 
@@ -80,17 +92,13 @@ describe('StorageManager', () => {
         });
 
         test('должен возвращать значение по умолчанию если URL не найден', async () => {
-            global.chrome.storage.local.get.mockResolvedValue({});
-
             const url = await storageManager.loadBackendUrl();
 
             expect(url).toBe(StorageManager.DEFAULT_VALUES.BACKEND_URL);
         });
 
         test('должен валидировать загруженное значение', async () => {
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_backend_url: ''
-            });
+            memoryStorage.mindful_backend_url = '';
 
             const url = await storageManager.loadBackendUrl();
 
@@ -98,7 +106,7 @@ describe('StorageManager', () => {
         });
 
         test('должен обрабатывать ошибки загрузки', async () => {
-            global.chrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
 
             await expect(storageManager.loadBackendUrl()).rejects.toThrow('Storage error');
         });
@@ -107,25 +115,15 @@ describe('StorageManager', () => {
     describe('saveBackendUrl', () => {
         test('должен сохранять URL в хранилище', async () => {
             const testUrl = 'http://test.com/api';
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_backend_url: testUrl
-            });
 
             const result = await storageManager.saveBackendUrl(testUrl);
 
             expect(result).toBe(true);
-            expect(global.chrome.storage.local.set).toHaveBeenCalledWith({
-                mindful_backend_url: testUrl
-            });
+            expect(memoryStorage.mindful_backend_url).toBe(testUrl);
         });
 
         test('должен верифицировать сохранение', async () => {
             const testUrl = 'http://test.com/api';
-            
-            // Первый вызов для верификации после сохранения
-            global.chrome.storage.local.get.mockResolvedValueOnce({
-                mindful_backend_url: testUrl
-            });
 
             const result = await storageManager.saveBackendUrl(testUrl);
 
@@ -135,11 +133,10 @@ describe('StorageManager', () => {
 
         test('должен выбрасывать ошибку если верификация не удалась', async () => {
             const testUrl = 'http://test.com/api';
-            
-            // Верификация возвращает другое значение
-            global.chrome.storage.local.get.mockResolvedValueOnce({
+
+            global.chrome.storage.local.get.mockImplementationOnce(() => Promise.resolve({
                 mindful_backend_url: 'http://wrong.com'
-            });
+            }));
 
             await expect(storageManager.saveBackendUrl(testUrl))
                 .rejects.toThrow('Верификация сохранения не удалась');
@@ -152,16 +149,68 @@ describe('StorageManager', () => {
         });
     });
 
+    describe('loadDomainExceptions', () => {
+        test('должен загружать и нормализовать домены', async () => {
+            memoryStorage.mindful_domain_exceptions = ['Example.com', ' ', 'sub.Example.com', 'example.com'];
+
+            const domains = await storageManager.loadDomainExceptions();
+
+            expect(domains).toEqual(['example.com', 'sub.example.com']);
+        });
+
+        test('должен возвращать пустой массив при ошибке', async () => {
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
+
+            const domains = await storageManager.loadDomainExceptions();
+
+            expect(domains).toEqual([]);
+        });
+    });
+
+    describe('saveDomainExceptions', () => {
+        test('должен сохранять нормализованный список доменов', async () => {
+            const result = await storageManager.saveDomainExceptions(['Example.com', 'test.com', 'example.com']);
+
+            expect(result).toBe(true);
+            expect(memoryStorage.mindful_domain_exceptions).toEqual(['example.com', 'test.com']);
+        });
+
+        test('должен выбрасывать ошибку если аргумент не массив', async () => {
+            await expect(storageManager.saveDomainExceptions('example.com')).rejects.toThrow(TypeError);
+        });
+    });
+
+    describe('notifyDomainExceptionsUpdate', () => {
+        test('должен отправлять обновление исключений доменов', async () => {
+            const result = await storageManager.notifyDomainExceptionsUpdate(['Example.com']);
+
+            expect(result).toBe(true);
+            expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith({
+                action: 'updateDomainExceptions',
+                domains: ['example.com']
+            });
+        });
+
+        test('должен возвращать false при ошибке отправки', async () => {
+            global.chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Send error'));
+
+            const result = await storageManager.notifyDomainExceptionsUpdate(['example.com']);
+
+            expect(result).toBe(false);
+        });
+
+        test('должен выбрасывать ошибку при неверном типе данных', async () => {
+            await expect(storageManager.notifyDomainExceptionsUpdate('example.com')).rejects.toThrow(TypeError);
+        });
+    });
+
     describe('resetToDefault', () => {
         test('должен сбрасывать настройки к значениям по умолчанию', async () => {
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_backend_url: StorageManager.DEFAULT_VALUES.BACKEND_URL
-            });
-
             const url = await storageManager.resetToDefault();
 
             expect(url).toBe(StorageManager.DEFAULT_VALUES.BACKEND_URL);
-            expect(global.chrome.storage.local.set).toHaveBeenCalled();
+            expect(memoryStorage.mindful_backend_url).toBe(StorageManager.DEFAULT_VALUES.BACKEND_URL);
+            expect(memoryStorage.mindful_domain_exceptions).toEqual([]);
         });
 
         test('должен использовать saveBackendUrl для сброса', async () => {
@@ -284,19 +333,6 @@ describe('StorageManager', () => {
     describe('Интеграционные тесты', () => {
         test('полный цикл: save -> load -> verify', async () => {
             const testUrl = 'http://integration-test.com/api';
-            
-            let storedValue = null;
-            
-            global.chrome.storage.local.set.mockImplementation((items) => {
-                storedValue = items.mindful_backend_url;
-                return Promise.resolve();
-            });
-            
-            global.chrome.storage.local.get.mockImplementation(() => {
-                return Promise.resolve({
-                    mindful_backend_url: storedValue
-                });
-            });
 
             // Сохраняем
             await storageManager.saveBackendUrl(testUrl);
@@ -308,19 +344,6 @@ describe('StorageManager', () => {
         });
 
         test('reset -> load должен возвращать значение по умолчанию', async () => {
-            let storedValue = 'http://custom.com';
-            
-            global.chrome.storage.local.set.mockImplementation((items) => {
-                storedValue = items.mindful_backend_url;
-                return Promise.resolve();
-            });
-            
-            global.chrome.storage.local.get.mockImplementation(() => {
-                return Promise.resolve({
-                    mindful_backend_url: storedValue
-                });
-            });
-
             await storageManager.resetToDefault();
             const url = await storageManager.loadBackendUrl();
             

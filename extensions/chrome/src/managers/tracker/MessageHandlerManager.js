@@ -1,5 +1,6 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../../config.js');
+const { normalizeDomainList } = require('../../utils/domainUtils.js');
 
 /**
  * @typedef {Object} MessageResponse
@@ -132,6 +133,10 @@ class MessageHandlerManager extends BaseManager {
 
                 case MessageHandlerManager.MESSAGE_TYPES.UPDATE_BACKEND_URL:
                     this._handleUpdateBackendUrl(request, sendResponse);
+                    break;
+
+                case MessageHandlerManager.MESSAGE_TYPES.UPDATE_DOMAIN_EXCEPTIONS:
+                    this._handleUpdateDomainExceptions(request, sendResponse);
                     break;
 
                 default:
@@ -389,6 +394,45 @@ class MessageHandlerManager extends BaseManager {
                     error: error.message 
                 });
             });
+    }
+
+    _handleUpdateDomainExceptions(request, sendResponse) {
+        try {
+            const incoming = Array.isArray(request.domains)
+                ? request.domains
+                : (Array.isArray(request.data?.domains) ? request.data.domains : []);
+
+            const normalized = normalizeDomainList(incoming);
+            this._log('Обновление исключений доменов', { count: normalized.length });
+
+            this.storageManager.saveDomainExceptions(normalized)
+                .then(success => {
+                    if (!success) {
+                        throw new Error('Failed to save domain exceptions');
+                    }
+                    return this.eventQueueManager.setDomainExceptions(normalized);
+                })
+                .then(result => {
+                    sendResponse({
+                        success: true,
+                        count: normalized.length,
+                        removedFromQueue: result?.removedFromQueue || 0
+                    });
+                })
+                .catch(error => {
+                    this._logError('Ошибка обновления исключений доменов', error);
+                    sendResponse({
+                        success: false,
+                        error: error.message
+                    });
+                });
+        } catch (error) {
+            this._logError('Ошибка обработки запроса исключений доменов', error);
+            sendResponse({
+                success: false,
+                error: error.message
+            });
+        }
     }
 
     /**

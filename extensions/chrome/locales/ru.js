@@ -158,7 +158,15 @@ const RU = {
         form: {
             backendUrlLabel: 'URL бэкенда:',
             backendUrlPlaceholder: 'http://localhost:8000/api/v1/events/send',
-            backendUrlHelp: 'Введите URL конечной точки API вашего бэкенда Mindful Web'
+            backendUrlHelp: 'Введите URL конечной точки API вашего бэкенда Mindful Web',
+            domainExceptionsLabel: 'Исключения доменов:',
+            domainExceptionsPlaceholder: 'example.com',
+            domainExceptionsHelp: 'Запросы на сервер не будут отправляться для этих доменов',
+            domainExceptionsAdd: 'Добавить домен',
+            domainExceptionsRemove: 'Удалить из списка исключений',
+            domainExceptionsInvalid: 'Введите корректный домен (например, example.com)',
+            domainExceptionsDuplicate: 'Этот домен уже добавлен в список исключений',
+            domainExceptionsListLabel: 'Список исключённых доменов'
         },
         
         // Тема

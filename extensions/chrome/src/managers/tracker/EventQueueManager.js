@@ -1,5 +1,6 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../../config.js');
+const { normalizeDomain, normalizeDomainList } = require('../../utils/domainUtils.js');
 
 /**
  * @typedef {Object} Event
@@ -98,6 +99,9 @@ class EventQueueManager extends BaseManager {
         
         /** @type {Map<string, number>} */
         this.performanceMetrics = new Map();
+
+        /** @type {Set<string>} */
+        this.domainExceptions = new Set();
         
         this.updateState({
             queueSize: 0,
@@ -111,6 +115,54 @@ class EventQueueManager extends BaseManager {
             batchTimeout: this.batchTimeout,
             maxQueueSize: this.maxQueueSize
         });
+    }
+
+    _isDomainExcluded(domain) {
+        if (!domain) {
+            return false;
+        }
+        const normalized = normalizeDomain(domain);
+        if (!normalized) {
+            return false;
+        }
+        return this.domainExceptions.has(normalized);
+    }
+
+    async setDomainExceptions(domains) {
+        const normalized = normalizeDomainList(domains || []);
+        this.domainExceptions = new Set(normalized);
+        this.updateState({ domainExceptionsCount: this.domainExceptions.size });
+
+        let removedFromQueue = 0;
+
+        if (this.queue.length > 0) {
+            const filteredQueue = this.queue.filter(event => !this._isDomainExcluded(event.domain));
+            removedFromQueue = this.queue.length - filteredQueue.length;
+            if (removedFromQueue > 0) {
+                this.queue = filteredQueue;
+                this.updateState({ queueSize: this.queue.length });
+                this.statisticsManager.updateQueueSize(this.queue.length);
+                try {
+                    await this.storageManager.saveEventQueue(this.queue);
+                } catch (error) {
+                    this._logError('Ошибка сохранения очереди после применения исключений доменов', error);
+                }
+            }
+        }
+
+        this._log('Исключения доменов обновлены', {
+            count: this.domainExceptions.size,
+            removedFromQueue
+        });
+
+        return {
+            count: this.domainExceptions.size,
+            removedFromQueue
+        };
+    }
+
+    getDomainExceptions() {
+        return Array.from(this.domainExceptions);
     }
 
     /**
@@ -129,6 +181,14 @@ class EventQueueManager extends BaseManager {
                 domain: domain,
                 timestamp: new Date().toISOString()
             };
+
+            if (this._isDomainExcluded(domain)) {
+                this._log('Событие пропущено из-за исключения домена', {
+                    domain,
+                    eventType
+                });
+                return;
+            }
 
             if (this.queue.length >= this.maxQueueSize) {
                 this._logError('КРИТИЧЕСКАЯ ОШИБКА: Очередь достигла максимального размера! Удаляем старые события.', {
@@ -235,11 +295,28 @@ class EventQueueManager extends BaseManager {
                 remainingInQueue: this.queue.length 
             });
 
+            const filteredEvents = eventsToSend.filter(event => !this._isDomainExcluded(event.domain));
+            const skippedDueToExclusions = eventsToSend.length - filteredEvents.length;
+
+            if (skippedDueToExclusions > 0) {
+                this._log('События исключены из-за списка доменов', {
+                    skippedDueToExclusions,
+                    remainingToSend: filteredEvents.length
+                });
+            }
+
+            if (filteredEvents.length === 0) {
+                this._log('После применения исключений доменов событий для отправки не осталось');
+                // сохраняем очередь, чтобы исключенные события не вернулись
+                await this.storageManager.saveEventQueue(this.queue);
+                return;
+            }
+
             try {
-                const result = await this.backendManager.sendEvents(eventsToSend);
+                const result = await this.backendManager.sendEvents(filteredEvents);
                 
                 if (result.success) {
-                    this._log('Батч успешно отправлен', { eventsCount: eventsToSend.length });
+                    this._log('Батч успешно отправлен', { eventsCount: filteredEvents.length, skippedDueToExclusions });
                     // Сохраняем обновленную очередь
                     await this.storageManager.saveEventQueue(this.queue);
                 } else {
@@ -249,7 +326,7 @@ class EventQueueManager extends BaseManager {
                 this._logError('Ошибка обработки батча', error);
                 
                 // Возвращаем события в очередь для повторной попытки
-                this.queue.unshift(...eventsToSend);
+                this.queue.unshift(...filteredEvents);
                 this.updateState({ queueSize: this.queue.length });
                 this.statisticsManager.updateQueueSize(this.queue.length);
                 
@@ -353,6 +430,7 @@ class EventQueueManager extends BaseManager {
         this.stopBatchProcessor();
         this.queue = [];
         this.performanceMetrics.clear();
+        this.domainExceptions.clear();
         super.destroy();
         this._log('EventQueueManager уничтожен');
     }

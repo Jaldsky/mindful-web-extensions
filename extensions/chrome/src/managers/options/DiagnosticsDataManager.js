@@ -142,6 +142,12 @@ class DiagnosticsDataManager {
                 currentUrl: this.getCurrentBackendUrl(),
                 defaultUrl: this.getDefaultBackendUrl(),
                 isUrlValid: this.isCurrentUrlValid(),
+                domainExceptions: this.manager.uiManager && typeof this.manager.uiManager.getDomainExceptions === 'function'
+                    ? this.manager.uiManager.getDomainExceptions()
+                    : [],
+                domainExceptionsCount: this.manager.uiManager && typeof this.manager.uiManager.getDomainExceptions === 'function'
+                    ? this.manager.uiManager.getDomainExceptions().length
+                    : 0,
                 timestamp: new Date().toISOString()
             };
         } catch (error) {

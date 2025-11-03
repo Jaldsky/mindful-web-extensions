@@ -211,6 +211,30 @@ describe('MessageHandlerManager', () => {
             expect(eventQueueManager.processQueue).toHaveBeenCalled();
         });
 
+        test('должен обрабатывать updateDomainExceptions сообщение', async () => {
+            const domains = ['Example.com', 'test.com', 'example.com'];
+            let responsePayload = null;
+
+            await new Promise((resolve) => {
+                messageHandlerManager._handleMessage(
+                    { type: 'updateDomainExceptions', domains },
+                    {},
+                    (payload) => {
+                        responsePayload = payload;
+                        resolve();
+                    }
+                );
+            });
+
+            expect(responsePayload).toEqual({
+                success: true,
+                count: 2,
+                removedFromQueue: expect.any(Number)
+            });
+            expect(storageManager.getDomainExceptions()).toEqual(['example.com', 'test.com']);
+            expect(eventQueueManager.getDomainExceptions()).toEqual(['example.com', 'test.com']);
+        });
+
         test('должен обрабатывать updateBackendUrl сообщение', async () => {
             const testUrl = 'http://newtest.com/api';
             jest.spyOn(storageManager, 'saveBackendUrl').mockResolvedValue(true);
