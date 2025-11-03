@@ -40,7 +40,7 @@ class MessageHandlerManager extends BaseManager {
 
         // Проверка зависимостей
         if (!dependencies || !dependencies.statisticsManager || !dependencies.eventQueueManager || 
-            !dependencies.backendManager || !dependencies.storageManager) {
+            !dependencies.backendManager || !dependencies.storageManager || !dependencies.trackingController) {
             throw new Error('MessageHandlerManager требует все менеджеры');
         }
 
@@ -55,6 +55,9 @@ class MessageHandlerManager extends BaseManager {
         
         /** @type {Object} */
         this.storageManager = dependencies.storageManager;
+
+        /** @type {Object} */
+        this.trackingController = dependencies.trackingController;
         
         /** @type {Function|null} */
         this.messageListener = null;
@@ -137,6 +140,10 @@ class MessageHandlerManager extends BaseManager {
 
                 case MessageHandlerManager.MESSAGE_TYPES.UPDATE_DOMAIN_EXCEPTIONS:
                     this._handleUpdateDomainExceptions(request, sendResponse);
+                    break;
+
+                case MessageHandlerManager.MESSAGE_TYPES.SET_TRACKING_ENABLED:
+                    this._handleSetTrackingEnabled(request, sendResponse);
                     break;
 
                 default:
@@ -428,6 +435,46 @@ class MessageHandlerManager extends BaseManager {
                 });
         } catch (error) {
             this._logError('Ошибка обработки запроса исключений доменов', error);
+            sendResponse({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    _handleSetTrackingEnabled(request, sendResponse) {
+        try {
+            const enabled = typeof request.enabled === 'boolean'
+                ? request.enabled
+                : (typeof request.data?.enabled === 'boolean' ? request.data.enabled : null);
+
+            if (enabled === null) {
+                this._log('Поле enabled отсутствует в запросе изменения отслеживания');
+                sendResponse({
+                    success: false,
+                    error: 'enabled flag is required'
+                });
+                return;
+            }
+
+            this._log('Запрос изменения состояния отслеживания', { enabled });
+
+            this.trackingController.setTrackingEnabled(enabled)
+                .then(result => {
+                    sendResponse({
+                        success: Boolean(result?.success),
+                        isTracking: Boolean(result?.isTracking)
+                    });
+                })
+                .catch(error => {
+                    this._logError('Ошибка изменения состояния отслеживания', error);
+                    sendResponse({
+                        success: false,
+                        error: error.message
+                    });
+                });
+        } catch (error) {
+            this._logError('Ошибка обработки запроса изменения отслеживания', error);
             sendResponse({
                 success: false,
                 error: error.message

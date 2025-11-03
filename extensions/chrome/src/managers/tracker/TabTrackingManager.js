@@ -62,13 +62,28 @@ class TabTrackingManager extends BaseManager {
      * @returns {Promise<void>}
      */
     async init() {
-        await this._executeWithTimingAsync('init', async () => {
+        await this.startTracking();
+    }
+
+    /**
+     * Запускает отслеживание вкладок, если оно ещё не активно.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    async startTracking() {
+        if (this.state.isTracking) {
+            this._log('Отслеживание вкладок уже активно');
+            return;
+        }
+
+        await this._executeWithTimingAsync('startTracking', async () => {
             // Настраиваем слушатели событий
             this._setupEventListeners();
-            
+
             // Инициализируем предыдущую активную вкладку
             await this._initializePreviousTab();
-            
+
             this.updateState({ isTracking: true });
             this._log('Отслеживание вкладок запущено');
         });
@@ -346,6 +361,8 @@ class TabTrackingManager extends BaseManager {
             this.updateState({ isTracking: false });
             this._log('Отслеживание вкладок остановлено');
         });
+
+        this.previousActiveTab = null;
     }
 
     /**

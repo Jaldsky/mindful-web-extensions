@@ -53,6 +53,7 @@ const CONFIG = {
         
         // Tracker
         EVENT_QUEUE: 'mindful_event_queue',
+        TRACKING_ENABLED: 'mindful_tracking_enabled',
         
         // Settings
         SETTINGS: 'mindful_settings'
@@ -79,6 +80,7 @@ const CONFIG = {
         GET_TRACKING_STATUS: 'getTrackingStatus',
         GET_TODAY_STATS: 'getTodayStats',
         GET_DETAILED_STATS: 'getDetailedStats',
+        SET_TRACKING_ENABLED: 'setTrackingEnabled',
         
         // Подключение
         TEST_CONNECTION: 'testConnection',

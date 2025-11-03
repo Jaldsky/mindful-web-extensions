@@ -125,6 +125,8 @@ class AppManager extends BaseManager {
 
             const trackingStatus = await this.serviceWorkerManager.getTrackingStatus();
             this.domManager.updateTrackingStatus(trackingStatus.isTracking);
+            this.domManager.updateTrackingToggle(trackingStatus.isTracking);
+            this.updateState({ isTracking: trackingStatus.isTracking });
 
             const stats = await this.serviceWorkerManager.getTodayStats();
             this.domManager.updateCounters(stats);
@@ -163,6 +165,14 @@ class AppManager extends BaseManager {
             };
             this.domManager.elements.testConnection.addEventListener('click', handler);
             this.eventHandlers.set('testConnection', handler);
+        }
+
+        if (this.domManager.elements.toggleTracking) {
+            const handler = async () => {
+                await this.toggleTracking();
+            };
+            this.domManager.elements.toggleTracking.addEventListener('click', handler);
+            this.eventHandlers.set('toggleTracking', handler);
         }
 
         this._log({ key: 'logs.app.handlersCount', params: { count: this.eventHandlers.size } });
@@ -227,6 +237,68 @@ class AppManager extends BaseManager {
                 originalText,
                 false
             );
+        }
+    }
+
+    /**
+     * Переключает состояние отслеживания (включить/отключить).
+     * 
+     * @async
+     * @returns {Promise<boolean>} true если операция завершилась успешно
+     */
+    async toggleTracking() {
+        const currentState = Boolean(this.state.isTracking);
+        const targetState = !currentState;
+        const button = this.domManager.elements.toggleTracking;
+
+        try {
+            this._log('Запрос изменения состояния отслеживания', { targetState });
+
+            this.domManager.setTrackingToggleLoading();
+
+            const response = await this.serviceWorkerManager.setTrackingEnabled(targetState);
+
+            if (!response || response.success !== true) {
+                throw new Error(response?.error || 'Failed to update tracking state');
+            }
+
+            const newIsTracking = Boolean(response.isTracking);
+            this.updateState({ isTracking: newIsTracking });
+            this.domManager.updateTrackingStatus(newIsTracking);
+            this.domManager.updateTrackingToggle(newIsTracking);
+
+            const notificationKey = newIsTracking
+                ? 'app.notifications.trackingEnabled'
+                : 'app.notifications.trackingDisabled';
+            const notificationType = newIsTracking ? 'success' : 'warning';
+
+            this.notificationManager.showNotification(
+                this.localeManager.t(notificationKey),
+                notificationType
+            );
+
+            this._log('Состояние отслеживания обновлено', { isTracking: newIsTracking });
+
+            return true;
+        } catch (error) {
+            this._logError('Ошибка переключения состояния отслеживания', error);
+
+            if (this.notificationManager && this.localeManager) {
+                this.notificationManager.showNotification(
+                    this.localeManager.t('app.notifications.trackingToggleError'),
+                    'error'
+                );
+            }
+
+            this.domManager.updateTrackingToggle(currentState);
+
+            return false;
+        } finally {
+            const finalState = Boolean(this.state.isTracking);
+            this.domManager.updateTrackingToggle(finalState, { disabled: false });
+            if (button) {
+                button.blur();
+            }
         }
     }
 

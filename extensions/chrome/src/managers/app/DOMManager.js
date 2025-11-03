@@ -9,6 +9,7 @@ const BaseManager = require('../../base/BaseManager.js');
  * @property {HTMLElement|null} queueSize - Элемент размера очереди
  * @property {HTMLElement|null} openSettings - Кнопка открытия настроек
  * @property {HTMLElement|null} testConnection - Кнопка тестирования подключения
+ * @property {HTMLElement|null} toggleTracking - Кнопка переключения отслеживания
  * @property {HTMLElement|null} reloadExtension - Кнопка перезагрузки расширения
  * @property {HTMLElement|null} runDiagnostics - Кнопка запуска диагностики
  */
@@ -54,6 +55,7 @@ class DOMManager extends BaseManager {
         QUEUE_SIZE: 'queueSize',
         OPEN_SETTINGS: 'openSettings',
         TEST_CONNECTION: 'testConnection',
+        TOGGLE_TRACKING: 'toggleTracking',
         RELOAD_EXTENSION: 'reloadExtension',
         RUN_DIAGNOSTICS: 'runDiagnostics'
     };
@@ -148,6 +150,7 @@ class DOMManager extends BaseManager {
             queueSize: getElement(DOMManager.ELEMENT_IDS.QUEUE_SIZE),
             openSettings: getElement(DOMManager.ELEMENT_IDS.OPEN_SETTINGS),
             testConnection: getElement(DOMManager.ELEMENT_IDS.TEST_CONNECTION),
+            toggleTracking: getElement(DOMManager.ELEMENT_IDS.TOGGLE_TRACKING),
             reloadExtension: getElement(DOMManager.ELEMENT_IDS.RELOAD_EXTENSION),
             runDiagnostics: getElement(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS)
         };
@@ -275,6 +278,52 @@ class DOMManager extends BaseManager {
             this._logError('Ошибка обновления статуса отслеживания', error);
             return false;
         }
+    }
+
+    /**
+     * Обновляет отображение кнопки переключения отслеживания.
+     * 
+     * @param {boolean} isTracking - Активно ли отслеживание в данный момент
+     * @param {Object} [options={}]
+     * @param {boolean} [options.disabled=false] - Заблокирована ли кнопка
+     * @returns {boolean} true если обновление успешно
+     */
+    updateTrackingToggle(isTracking, options = {}) {
+        if (typeof isTracking !== 'boolean') {
+            throw new TypeError('isTracking должен быть булевым значением');
+        }
+
+        const disabled = Boolean(options.disabled);
+        const button = this.elements.toggleTracking;
+
+        const labelKey = isTracking ? 'app.buttons.disableTracking' : 'app.buttons.enableTracking';
+        const fallbackLabel = isTracking ? 'Disable Tracking' : 'Enable Tracking';
+        const label = this.translateFn ? this.translateFn(labelKey) : fallbackLabel;
+
+        return this._safeUpdateElement(
+            button,
+            (element) => {
+                element.textContent = label;
+                element.disabled = disabled;
+                element.classList.remove('toggle-btn--disable', 'toggle-btn--enable');
+                element.classList.add(isTracking ? 'toggle-btn--disable' : 'toggle-btn--enable');
+            },
+            'кнопка переключения отслеживания'
+        );
+    }
+
+    /**
+     * Переводит кнопку переключения отслеживания в состояние загрузки.
+     * 
+     * @returns {boolean} true если обновление успешно
+     */
+    setTrackingToggleLoading() {
+        const button = this.elements.toggleTracking;
+        const label = this.translateFn
+            ? this.translateFn('app.buttons.trackingLoading')
+            : 'Updating...';
+
+        return this.setButtonState(button, label, true);
     }
 
     /**
@@ -434,6 +483,7 @@ class DOMManager extends BaseManager {
         }
         if (this.state.isTracking !== undefined) {
             this.updateTrackingStatus(this.state.isTracking);
+            this.updateTrackingToggle(this.state.isTracking);
         }
         this._log('Статусы обновлены с текущей локализацией');
     }

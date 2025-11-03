@@ -9,10 +9,6 @@ describe('DOMManager', () => {
     let domManager;
 
     beforeEach(() => {
-        domManager = new DOMManager();
-    });
-
-    afterEach(() => {
         document.body.innerHTML = `
             <div id="connectionStatus"></div>
             <div id="trackingStatus"></div>
@@ -21,9 +17,16 @@ describe('DOMManager', () => {
             <div id="queueSize"></div>
             <button id="openSettings"></button>
             <button id="testConnection"></button>
+            <button id="toggleTracking"></button>
             <button id="reloadExtension"></button>
             <button id="runDiagnostics"></button>
         `;
+
+        domManager = new DOMManager();
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = '';
     });
 
     describe('constructor', () => {
@@ -41,6 +44,7 @@ describe('DOMManager', () => {
             expect(domManager.elements.queueSize).toBeDefined();
             expect(domManager.elements.openSettings).toBeDefined();
             expect(domManager.elements.testConnection).toBeDefined();
+            expect(domManager.elements.toggleTracking).toBeDefined();
             expect(domManager.elements.reloadExtension).toBeDefined();
             expect(domManager.elements.runDiagnostics).toBeDefined();
         });
@@ -134,6 +138,43 @@ describe('DOMManager', () => {
 
         test('should throw error for invalid parameter', () => {
             expect(() => domManager.updateTrackingStatus('invalid')).toThrow(TypeError);
+        });
+    });
+
+    describe('updateTrackingToggle', () => {
+        test('should set button state for active tracking', () => {
+            const button = domManager.elements.toggleTracking;
+            const result = domManager.updateTrackingToggle(true);
+
+            expect(result).toBe(true);
+            expect(button.textContent).toBe('Disable Tracking');
+            expect(button.classList.contains('toggle-btn--disable')).toBe(true);
+            expect(button.disabled).toBe(false);
+        });
+
+        test('should set button state for inactive tracking', () => {
+            const button = domManager.elements.toggleTracking;
+            const result = domManager.updateTrackingToggle(false);
+
+            expect(result).toBe(true);
+            expect(button.textContent).toBe('Enable Tracking');
+            expect(button.classList.contains('toggle-btn--enable')).toBe(true);
+        });
+
+        test('should throw error for invalid parameter', () => {
+            expect(() => domManager.updateTrackingToggle('invalid')).toThrow(TypeError);
+        });
+    });
+
+    describe('setTrackingToggleLoading', () => {
+        test('should set loading state on toggle button', () => {
+            const button = domManager.elements.toggleTracking;
+
+            const result = domManager.setTrackingToggleLoading();
+
+            expect(result).toBe(true);
+            expect(button.textContent).toBe('Updating...');
+            expect(button.disabled).toBe(true);
         });
     });
 
@@ -350,7 +391,7 @@ describe('DOMManager', () => {
         test('should count total elements correctly', () => {
             const stats = domManager.getElementsStatistics();
             
-            expect(stats.total).toBe(9); // 9 элементов в app_manager
+            expect(stats.total).toBe(10); // 10 элементов в app_manager
             expect(stats.available).toBeGreaterThan(0);
         });
 

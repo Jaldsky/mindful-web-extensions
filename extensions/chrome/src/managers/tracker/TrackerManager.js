@@ -37,6 +37,9 @@ class TrackerManager extends BaseManager {
         /** @type {Map<string, number>} */
         this.performanceMetrics = new Map();
 
+        /** @type {boolean} */
+        this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
+
         // Инициализация базовых менеджеров
         this.storageManager = new StorageManager({ enableLogging });
         this.statisticsManager = new StatisticsManager({ enableLogging });
@@ -70,7 +73,8 @@ class TrackerManager extends BaseManager {
                 statisticsManager: this.statisticsManager,
                 eventQueueManager: this.eventQueueManager,
                 backendManager: this.backendManager,
-                storageManager: this.storageManager
+                storageManager: this.storageManager,
+                trackingController: this
             },
             { enableLogging }
         );
@@ -78,7 +82,8 @@ class TrackerManager extends BaseManager {
         this.updateState({
             isInitialized: false,
             isTracking: false,
-            isOnline: true
+            isOnline: true,
+            trackingEnabled: this.trackingEnabled
         });
 
         this._log('TrackerManager создан');
@@ -123,39 +128,131 @@ class TrackerManager extends BaseManager {
 
                 await this.eventQueueManager.setDomainExceptions(domainExceptions);
 
-                // 4. Настраиваем обработчики сообщений
+                // 4. Загружаем статус отслеживания
+                const trackingEnabled = await this.storageManager.loadTrackingEnabled();
+                this.trackingEnabled = trackingEnabled;
+                this._log('Статус отслеживания восстановлен', { trackingEnabled });
+
+                // 5. Настраиваем обработчики сообщений
                 this.messageHandlerManager.init();
                 this._log('Обработчики сообщений настроены');
 
-                // 5. Инициализируем отслеживание вкладок
-                await this.tabTrackingManager.init();
-                this._log('Отслеживание вкладок инициализировано');
+                // 6. Инициализируем отслеживание вкладок при необходимости
+                if (trackingEnabled) {
+                    await this.tabTrackingManager.init();
+                    this.statisticsManager.enableTracking();
+                    this._log('Отслеживание вкладок инициализировано');
+                } else {
+                    this.statisticsManager.disableTracking();
+                    this._log('Отслеживание отключено, отслеживание вкладок не запускается');
+                }
 
-                // 6. Запускаем периодическую обработку батчей
+                // 7. Запускаем периодическую обработку батчей
                 this.eventQueueManager.startBatchProcessor();
                 this._log('Batch processor запущен');
 
-                // 7. Настраиваем мониторинг онлайн/офлайн статуса
+                // 8. Настраиваем мониторинг онлайн/офлайн статуса
                 this._setupOnlineMonitoring();
                 this._log('Мониторинг онлайн/офлайн настроен');
 
-                // 8. Настраиваем обработчики lifecycle событий
+                // 9. Настраиваем обработчики lifecycle событий
                 this._setupLifecycleHandlers();
                 this._log('Lifecycle handlers настроены');
 
                 this.isInitialized = true;
-                this.updateState({ isInitialized: true, isTracking: true });
+                this.updateState({
+                    isInitialized: true,
+                    isTracking: trackingEnabled,
+                    trackingEnabled
+                });
 
                 this._log('TrackerManager инициализирован успешно', {
                     userId,
                     backendUrl,
-                    queueSize: this.eventQueueManager.getQueueSize()
+                    queueSize: this.eventQueueManager.getQueueSize(),
+                    trackingEnabled
                 });
             } catch (error) {
                 this._logError('Ошибка инициализации TrackerManager', error);
                 throw error;
             }
         });
+    }
+
+    /**
+     * Устанавливает состояние отслеживания согласно запросу.
+     * 
+     * @param {boolean} isEnabled - Требуемое состояние отслеживания
+     * @returns {Promise<{success: boolean, isTracking: boolean}>}
+     */
+    async setTrackingEnabled(isEnabled) {
+        if (typeof isEnabled !== 'boolean') {
+            throw new TypeError('isEnabled должен быть булевым значением');
+        }
+
+        return isEnabled ? await this.enableTracking() : await this.disableTracking();
+    }
+
+    /**
+     * Включает отслеживание, если оно отключено.
+     * 
+     * @returns {Promise<{success: boolean, isTracking: boolean}>}
+     */
+    async enableTracking() {
+        if (this.trackingEnabled) {
+            this._log('Отслеживание уже включено');
+            return { success: true, isTracking: true };
+        }
+
+        try {
+            await this.tabTrackingManager.startTracking();
+            this.statisticsManager.enableTracking();
+
+            const saved = await this.storageManager.saveTrackingEnabled(true);
+            if (!saved) {
+                throw new Error('Не удалось сохранить состояние отслеживания');
+            }
+
+            this.trackingEnabled = true;
+            this.updateState({ isTracking: true, trackingEnabled: true });
+            this._log('Отслеживание включено пользователем');
+
+            return { success: true, isTracking: true };
+        } catch (error) {
+            this._logError('Ошибка включения отслеживания', error);
+            return { success: false, isTracking: this.trackingEnabled };
+        }
+    }
+
+    /**
+     * Выключает отслеживание, если оно включено.
+     * 
+     * @returns {Promise<{success: boolean, isTracking: boolean}>}
+     */
+    async disableTracking() {
+        if (!this.trackingEnabled) {
+            this._log('Отслеживание уже отключено');
+            return { success: true, isTracking: false };
+        }
+
+        try {
+            this.tabTrackingManager.stopTracking();
+            this.statisticsManager.disableTracking();
+
+            const saved = await this.storageManager.saveTrackingEnabled(false);
+            if (!saved) {
+                throw new Error('Не удалось сохранить состояние отслеживания');
+            }
+
+            this.trackingEnabled = false;
+            this.updateState({ isTracking: false, trackingEnabled: false });
+            this._log('Отслеживание отключено пользователем');
+
+            return { success: true, isTracking: false };
+        } catch (error) {
+            this._logError('Ошибка отключения отслеживания', error);
+            return { success: false, isTracking: this.trackingEnabled };
+        }
     }
 
     /**
@@ -245,6 +342,7 @@ class TrackerManager extends BaseManager {
         return {
             isInitialized: this.isInitialized,
             state: this.getState(),
+            trackingEnabled: this.trackingEnabled,
             statistics: this.getStatistics(),
             storageState: this.storageManager.getState(),
             backendState: this.backendManager.getState(),
@@ -302,6 +400,7 @@ class TrackerManager extends BaseManager {
 
         this.performanceMetrics.clear();
         this.isInitialized = false;
+        this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
 
         super.destroy();
         this._log('TrackerManager уничтожен');
