@@ -222,13 +222,59 @@ class ServiceWorkerManager extends BaseManager {
                 };
                 
                 this._log('Получен статус отслеживания', status);
+                this.updateState(status);
                 return status;
             }
             
+            this.updateState(defaultStatus);
             return defaultStatus;
         } catch (error) {
             this._logError('Ошибка получения статуса отслеживания', error);
+            this.updateState(defaultStatus);
             return defaultStatus;
+        }
+    }
+
+    /**
+     * Устанавливает состояние отслеживания.
+     * 
+     * @param {boolean} isEnabled - Требуемое состояние отслеживания
+     * @returns {Promise<{success: boolean, isTracking: boolean}>} Результат операции
+     */
+    async setTrackingEnabled(isEnabled) {
+        if (typeof isEnabled !== 'boolean') {
+            throw new TypeError('isEnabled должен быть булевым значением');
+        }
+
+        try {
+            const response = await this.sendMessage(
+                ServiceWorkerManager.MESSAGE_TYPES.SET_TRACKING_ENABLED,
+                { enabled: isEnabled }
+            );
+
+            const success = Boolean(response?.success);
+            const isTracking = response?.isTracking !== undefined
+                ? Boolean(response.isTracking)
+                : isEnabled;
+
+            if (success) {
+                this.updateState({ isTracking });
+            }
+
+            return {
+                success,
+                isTracking
+            };
+        } catch (error) {
+            this._logError('Ошибка обновления состояния отслеживания', error);
+            const fallbackState = this.state?.isTracking !== undefined
+                ? Boolean(this.state.isTracking)
+                : !isEnabled;
+
+            return {
+                success: false,
+                isTracking: fallbackState
+            };
         }
     }
 

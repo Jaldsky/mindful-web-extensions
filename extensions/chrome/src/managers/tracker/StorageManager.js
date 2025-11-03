@@ -32,6 +32,13 @@ class StorageManager extends BaseManager {
     static DEFAULT_BACKEND_URL = CONFIG.BACKEND.DEFAULT_URL;
 
     /**
+     * Статус отслеживания по умолчанию
+     * @readonly
+     * @static
+     */
+    static DEFAULT_TRACKING_ENABLED = true;
+
+    /**
      * Создает экземпляр StorageManager.
      * 
      * @param {Object} [options={}] - Опции конфигурации
@@ -48,6 +55,9 @@ class StorageManager extends BaseManager {
 
         /** @type {Array<string>} */
         this.domainExceptions = [];
+
+        /** @type {boolean} */
+        this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
         
         /** @type {Map<string, number>} */
         this.performanceMetrics = new Map();
@@ -147,6 +157,27 @@ class StorageManager extends BaseManager {
         });
     }
 
+    async loadTrackingEnabled() {
+        return await this._executeWithTimingAsync('loadTrackingEnabled', async () => {
+            try {
+                const result = await chrome.storage.local.get([StorageManager.STORAGE_KEYS.TRACKING_ENABLED]);
+                const storedValue = result[StorageManager.STORAGE_KEYS.TRACKING_ENABLED];
+
+                this.trackingEnabled = typeof storedValue === 'boolean'
+                    ? storedValue
+                    : StorageManager.DEFAULT_TRACKING_ENABLED;
+
+                this.updateState({ trackingEnabled: this.trackingEnabled });
+                this._log('Статус отслеживания загружен', { trackingEnabled: this.trackingEnabled });
+                return this.trackingEnabled;
+            } catch (error) {
+                this._logError('Ошибка загрузки статуса отслеживания', error);
+                this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
+                return this.trackingEnabled;
+            }
+        });
+    }
+
     /**
      * Сохраняет URL backend в хранилище.
      * 
@@ -184,6 +215,27 @@ class StorageManager extends BaseManager {
                 return true;
             } catch (error) {
                 this._logError('Ошибка сохранения исключений доменов', error);
+                return false;
+            }
+        });
+    }
+
+    async saveTrackingEnabled(isEnabled) {
+        if (typeof isEnabled !== 'boolean') {
+            throw new TypeError('isEnabled должен быть булевым значением');
+        }
+
+        return await this._executeWithTimingAsync('saveTrackingEnabled', async () => {
+            try {
+                await chrome.storage.local.set({
+                    [StorageManager.STORAGE_KEYS.TRACKING_ENABLED]: isEnabled
+                });
+                this.trackingEnabled = isEnabled;
+                this.updateState({ trackingEnabled: this.trackingEnabled });
+                this._log('Статус отслеживания сохранен', { trackingEnabled: this.trackingEnabled });
+                return true;
+            } catch (error) {
+                this._logError('Ошибка сохранения статуса отслеживания', error);
                 return false;
             }
         });
@@ -259,6 +311,10 @@ class StorageManager extends BaseManager {
         return [...this.domainExceptions];
     }
 
+    getTrackingEnabled() {
+        return this.trackingEnabled;
+    }
+
     /**
      * Очищает все данные из хранилища.
      * 
@@ -272,12 +328,14 @@ class StorageManager extends BaseManager {
                     StorageManager.STORAGE_KEYS.USER_ID,
                     StorageManager.STORAGE_KEYS.BACKEND_URL,
                     StorageManager.STORAGE_KEYS.EVENT_QUEUE,
-                    StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS
+                    StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS,
+                    StorageManager.STORAGE_KEYS.TRACKING_ENABLED
                 ]);
                 
                 this.userId = null;
                 this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
                 this.domainExceptions = [];
+                this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
                 this.updateState({
                     domainExceptionsCount: 0
                 });
@@ -301,6 +359,7 @@ class StorageManager extends BaseManager {
         this.userId = null;
         this.backendUrl = null;
         this.domainExceptions = [];
+        this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
         super.destroy();
         this._log('StorageManager уничтожен');
     }

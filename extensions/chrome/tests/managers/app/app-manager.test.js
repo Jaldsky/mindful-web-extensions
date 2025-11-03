@@ -39,22 +39,34 @@ describe('AppManager', () => {
         consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
         consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-        const testConnectionEl = document.getElementById('testConnection');
-        
-        if (testConnectionEl) {
-            testConnectionEl.textContent = 'Test Connection';
-            testConnectionEl.innerHTML = 'Test Connection';
+        let testConnectionEl = document.getElementById('testConnection');
+        if (!testConnectionEl) {
+            testConnectionEl = document.createElement('button');
+            testConnectionEl.id = 'testConnection';
+            document.body.appendChild(testConnectionEl);
         }
+        testConnectionEl.textContent = 'Test Connection';
+
+        let toggleTrackingEl = document.getElementById('toggleTracking');
+        if (!toggleTrackingEl) {
+            toggleTrackingEl = document.createElement('button');
+            toggleTrackingEl.id = 'toggleTracking';
+            document.body.appendChild(toggleTrackingEl);
+        }
+        toggleTrackingEl.textContent = 'Disable Tracking';
         
         mockDOMManager = {
             elements: {
                 openSettings: document.getElementById('openSettings'),
-                testConnection: testConnectionEl
+                testConnection: testConnectionEl,
+                toggleTracking: toggleTrackingEl
             },
             updateConnectionStatus: jest.fn(),
             updateTrackingStatus: jest.fn(),
+            updateTrackingToggle: jest.fn(),
             updateCounters: jest.fn(),
             setButtonState: jest.fn(),
+            setTrackingToggleLoading: jest.fn(),
             setTranslateFn: jest.fn(),
             refreshStatuses: jest.fn(),
             destroy: jest.fn()
@@ -68,13 +80,15 @@ describe('AppManager', () => {
         mockServiceWorkerManager = {
             checkConnection: jest.fn().mockResolvedValue(true),
             getTrackingStatus: jest.fn().mockResolvedValue({
-                isTracking: true
+                isTracking: true,
+                isOnline: true
             }),
             getTodayStats: jest.fn().mockResolvedValue({
                 events: 10,
                 domains: 5,
                 queue: 2
             }),
+        setTrackingEnabled: jest.fn().mockResolvedValue({ success: true, isTracking: false }),
             destroy: jest.fn()
         };
 
@@ -93,7 +107,13 @@ describe('AppManager', () => {
             'app.notifications.connectionSuccess': 'Connection Successful!',
             'app.notifications.connectionFailed': 'Connection Failed',
             'app.notifications.connectionError': 'Connection Failed',
-            'app.notifications.checkFailed': 'Connection check failed'
+            'app.notifications.checkFailed': 'Connection check failed',
+            'app.notifications.trackingEnabled': 'Tracking enabled',
+            'app.notifications.trackingDisabled': 'Tracking disabled',
+            'app.notifications.trackingToggleError': 'Tracking toggle failed',
+            'app.buttons.trackingLoading': 'Updating...',
+            'app.buttons.enableTracking': 'Enable Tracking',
+            'app.buttons.disableTracking': 'Disable Tracking'
         };
 
         mockLocaleManager = {
@@ -273,6 +293,7 @@ describe('AppManager', () => {
             
             expect(mockServiceWorkerManager.getTrackingStatus).toHaveBeenCalled();
             expect(mockDOMManager.updateTrackingStatus).toHaveBeenCalledWith(true);
+            expect(mockDOMManager.updateTrackingToggle).toHaveBeenCalledWith(true);
         });
 
         test('should get today stats', async () => {
@@ -280,6 +301,12 @@ describe('AppManager', () => {
             
             expect(mockServiceWorkerManager.getTodayStats).toHaveBeenCalled();
             expect(mockDOMManager.updateCounters).toHaveBeenCalled();
+        });
+
+        test('should update internal tracking state', async () => {
+            await appManager.loadInitialStatus();
+
+            expect(appManager.state.isTracking).toBe(true);
         });
 
         test('should handle connection error', async () => {
@@ -305,6 +332,12 @@ describe('AppManager', () => {
         test('should setup event handler for testConnection button', () => {
             const handler = appManager.eventHandlers.get('testConnection');
             
+            expect(handler).toBeDefined();
+        });
+
+        test('should setup event handler for toggleTracking button', () => {
+            const handler = appManager.eventHandlers.get('toggleTracking');
+
             expect(handler).toBeDefined();
         });
 
@@ -407,6 +440,35 @@ describe('AppManager', () => {
             
             // Проверяем что setButtonState вызывался как минимум дважды (loading и restore)
             expect(mockDOMManager.setButtonState).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    describe('toggleTracking', () => {
+        beforeEach(() => {
+            appManager = new AppManager({ enableLogging: false });
+        });
+
+        test('should disable tracking when currently enabled', async () => {
+            appManager.state.isTracking = true;
+
+            const result = await appManager.toggleTracking();
+
+            expect(result).toBe(true);
+            expect(mockDOMManager.setTrackingToggleLoading).toHaveBeenCalled();
+            expect(mockServiceWorkerManager.setTrackingEnabled).toHaveBeenCalledWith(false);
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Tracking disabled', 'warning');
+            expect(mockDOMManager.updateTrackingStatus).toHaveBeenCalledWith(false);
+        });
+
+        test('should handle errors from service worker', async () => {
+            appManager.state.isTracking = true;
+            mockServiceWorkerManager.setTrackingEnabled.mockRejectedValue(new Error('Failed'));
+
+            const result = await appManager.toggleTracking();
+
+            expect(result).toBe(false);
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Tracking toggle failed', 'error');
+            expect(mockDOMManager.updateTrackingToggle).toHaveBeenCalledWith(true);
         });
     });
 

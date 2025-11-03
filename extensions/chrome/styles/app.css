@@ -120,6 +120,26 @@ body {
                 opacity var(--transition-normal);
 }
 
+.toggle-btn {
+    color: white;
+}
+
+.toggle-btn--disable {
+    background-color: var(--color-danger);
+}
+
+.toggle-btn--disable:hover:not(:disabled) {
+    background-color: var(--color-danger-hover);
+}
+
+.toggle-btn--enable {
+    background-color: var(--color-primary);
+}
+
+.toggle-btn--enable:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+}
+
 /* Settings button */
 .settings-btn {
     background-color: var(--color-primary);

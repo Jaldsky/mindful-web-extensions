@@ -44,6 +44,7 @@ describe('ServiceWorkerManager', () => {
             expect(ServiceWorkerManager.MESSAGE_TYPES.CHECK_CONNECTION).toBe('checkConnection');
             expect(ServiceWorkerManager.MESSAGE_TYPES.GET_TRACKING_STATUS).toBe('getTrackingStatus');
             expect(ServiceWorkerManager.MESSAGE_TYPES.GET_TODAY_STATS).toBe('getTodayStats');
+            expect(ServiceWorkerManager.MESSAGE_TYPES.SET_TRACKING_ENABLED).toBe('setTrackingEnabled');
         });
     });
 
@@ -378,6 +379,41 @@ describe('ServiceWorkerManager', () => {
                 isTracking: false,
                 isOnline: false
             });
+        });
+    });
+
+    describe('setTrackingEnabled', () => {
+        test('should throw TypeError for invalid argument', async () => {
+            await expect(serviceWorkerManager.setTrackingEnabled('yes')).rejects.toThrow(TypeError);
+        });
+
+        test('should send message to enable tracking', async () => {
+            mockChromeRuntime.sendMessage.mockResolvedValue({ success: true, isTracking: true });
+
+            const result = await serviceWorkerManager.setTrackingEnabled(true);
+
+            expect(mockChromeRuntime.sendMessage).toHaveBeenCalledWith({
+                type: 'setTrackingEnabled',
+                data: { enabled: true }
+            });
+            expect(result).toEqual({ success: true, isTracking: true });
+        });
+
+        test('should handle unsuccessful response', async () => {
+            mockChromeRuntime.sendMessage.mockResolvedValue({ success: false, isTracking: false });
+
+            const result = await serviceWorkerManager.setTrackingEnabled(false);
+
+            expect(result).toEqual({ success: false, isTracking: false });
+        });
+
+        test('should handle error and return previous state', async () => {
+            mockChromeRuntime.sendMessage.mockRejectedValue(new Error('Failed'));
+            serviceWorkerManager.updateState({ isTracking: true });
+
+            const result = await serviceWorkerManager.setTrackingEnabled(false);
+
+            expect(result).toEqual({ success: false, isTracking: true });
         });
     });
 

@@ -14,6 +14,7 @@ describe('MessageHandlerManager', () => {
     let backendManager;
     let statisticsManager;
     let storageManager;
+    let trackingController;
 
     beforeEach(() => {
         // Настраиваем chrome API
@@ -48,9 +49,13 @@ describe('MessageHandlerManager', () => {
             { enableLogging: false }
         );
 
+        trackingController = {
+            setTrackingEnabled: jest.fn().mockResolvedValue({ success: true, isTracking: true })
+        };
+
         // Создаем MessageHandlerManager
         messageHandlerManager = new MessageHandlerManager(
-            { eventQueueManager, backendManager, statisticsManager, storageManager },
+            { eventQueueManager, backendManager, statisticsManager, storageManager, trackingController },
             { enableLogging: false }
         );
     });
@@ -209,6 +214,53 @@ describe('MessageHandlerManager', () => {
 
             expect(eventQueueManager.getQueueSize).toHaveBeenCalled();
             expect(eventQueueManager.processQueue).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать setTrackingEnabled сообщение', async () => {
+            trackingController.setTrackingEnabled.mockResolvedValue({ success: true, isTracking: false });
+
+            messageHandlerManager._handleMessage(
+                { type: 'setTrackingEnabled', enabled: false },
+                {},
+                sendResponse
+            );
+
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(trackingController.setTrackingEnabled).toHaveBeenCalledWith(false);
+            expect(sendResponse).toHaveBeenCalledWith({ success: true, isTracking: false });
+        });
+
+        test('должен возвращать ошибку, если не передан enabled', () => {
+            messageHandlerManager._handleMessage(
+                { type: 'setTrackingEnabled' },
+                {},
+                sendResponse
+            );
+
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: false,
+                error: 'enabled flag is required'
+            });
+        });
+
+        test('должен обрабатывать ошибку при изменении отслеживания', async () => {
+            trackingController.setTrackingEnabled.mockRejectedValue(new Error('Failed'));
+
+            messageHandlerManager._handleMessage(
+                { type: 'setTrackingEnabled', enabled: true },
+                {},
+                sendResponse
+            );
+
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: false,
+                error: 'Failed'
+            });
         });
 
         test('должен обрабатывать updateDomainExceptions сообщение', async () => {

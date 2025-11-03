@@ -137,7 +137,10 @@ const EN = {
         buttons: {
             settings: 'Settings',
             testConnection: 'Test Connection',
-            testConnectionLoading: 'Checking...'
+            testConnectionLoading: 'Checking...',
+            enableTracking: '▶️ Enable Tracking',
+            disableTracking: '🛑 Disable Tracking',
+            trackingLoading: 'Updating...'
         },
         
         // Notifications
@@ -145,7 +148,10 @@ const EN = {
             connectionSuccess: 'Connection Successful!',
             connectionFailed: 'Connection Failed',
             connectionError: 'Connection Test Error',
-            initError: 'Initialization Error'
+            initError: 'Initialization Error',
+            trackingEnabled: 'Tracking enabled',
+            trackingDisabled: 'Tracking disabled',
+            trackingToggleError: 'Failed to update tracking state'
         }
     },
 

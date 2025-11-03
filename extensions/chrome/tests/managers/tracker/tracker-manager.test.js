@@ -172,6 +172,7 @@ describe('TrackerManager', () => {
 
             expect(diagnostics).toHaveProperty('isInitialized');
             expect(diagnostics).toHaveProperty('state');
+            expect(diagnostics).toHaveProperty('trackingEnabled');
             expect(diagnostics).toHaveProperty('statistics');
             expect(diagnostics).toHaveProperty('storageState');
             expect(diagnostics).toHaveProperty('backendState');
@@ -196,6 +197,40 @@ describe('TrackerManager', () => {
             expect(metrics).toHaveProperty('eventQueue');
             expect(metrics).toHaveProperty('tabTracking');
             expect(metrics).toHaveProperty('messageHandler');
+        });
+    });
+
+    describe('tracking controls', () => {
+        beforeEach(async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+        });
+
+        test('должен отключать отслеживание и сохранять состояние', async () => {
+            const stopSpy = jest.spyOn(trackerManager.tabTrackingManager, 'stopTracking');
+
+            const result = await trackerManager.disableTracking();
+
+            expect(result).toEqual({ success: true, isTracking: false });
+            expect(trackerManager.trackingEnabled).toBe(false);
+            expect(stopSpy).toHaveBeenCalled();
+
+            const savedStates = global.chrome.storage.local.set.mock.calls.map(args => args[0]);
+            expect(savedStates.some(entry => entry && entry.mindful_tracking_enabled === false)).toBe(true);
+        });
+
+        test('должен включать отслеживание и сохранять состояние', async () => {
+            jest.spyOn(trackerManager.tabTrackingManager, 'startTracking').mockResolvedValue();
+            await trackerManager.disableTracking();
+            global.chrome.storage.local.set.mockClear();
+
+            const result = await trackerManager.enableTracking();
+
+            expect(result).toEqual({ success: true, isTracking: true });
+            expect(trackerManager.trackingEnabled).toBe(true);
+
+            const savedStates = global.chrome.storage.local.set.mock.calls.map(args => args[0]);
+            expect(savedStates.some(entry => entry && entry.mindful_tracking_enabled === true)).toBe(true);
         });
     });
 
