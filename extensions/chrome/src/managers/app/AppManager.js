@@ -197,39 +197,29 @@ class AppManager extends BaseManager {
                 true
             );
 
-            // Минимальная задержка для визуальной обратной связи (500ms)
             const minDelay = new Promise(resolve => setTimeout(resolve, 500));
             const connectionCheck = this.serviceWorkerManager.checkConnection();
             
             const [isOnline] = await Promise.all([connectionCheck, minDelay]);
 
-            if (isOnline) {
-                this.notificationManager.showNotification(
-                    this.localeManager.t('app.notifications.connectionSuccess'), 
-                    'success'
-                );
-                this.domManager.updateConnectionStatus(true);
-                this.updateState({ isOnline: true });
-                this._log({ key: 'logs.app.testConnection.success' });
-            } else {
-                this.notificationManager.showNotification(
-                    this.localeManager.t('app.notifications.connectionFailed'), 
-                    'error'
-                );
-                this.domManager.updateConnectionStatus(false);
-                this.updateState({ isOnline: false });
-                this._log({ key: 'logs.app.testConnection.fail' });
-            }
+            this.updateState({ isOnline });
+            this.domManager.updateConnectionStatus(isOnline);
+
+            const message = isOnline
+                ? this.localeManager.t('app.status.connectionSuccess')
+                : this.localeManager.t('app.status.connectionFailed');
+            this.domManager.showConnectionStatusMessage(message, isOnline ? 'success' : 'error');
+            this._log({ key: isOnline ? 'logs.app.testConnection.success' : 'logs.app.testConnection.fail' });
 
             return isOnline;
         } catch (error) {
             this._logError({ key: 'logs.app.testConnection.error' }, error);
-            this.notificationManager.showNotification(
-                this.localeManager.t('app.notifications.connectionError'), 
-                'error'
-            );
             this.domManager.updateConnectionStatus(false);
             this.updateState({ isOnline: false });
+            this.domManager.showConnectionStatusMessage(
+                this.localeManager.t('app.status.connectionError'),
+                'error'
+            );
             return false;
         } finally {
             this.domManager.setButtonState(
@@ -254,9 +244,18 @@ class AppManager extends BaseManager {
         try {
             this._log('Запрос изменения состояния отслеживания', { targetState });
 
-            this.domManager.setTrackingToggleLoading();
+            this.domManager.setTrackingToggleLoading(targetState);
 
-            const response = await this.serviceWorkerManager.setTrackingEnabled(targetState);
+            const toggleRequest = this.serviceWorkerManager.setTrackingEnabled(targetState);
+            const minDelay = new Promise((resolve) => setTimeout(resolve, 500));
+
+            const [toggleResult] = await Promise.allSettled([toggleRequest, minDelay]);
+
+            if (toggleResult.status !== 'fulfilled') {
+                throw toggleResult.reason || new Error('Failed to update tracking state');
+            }
+
+            const response = toggleResult.value;
 
             if (!response || response.success !== true) {
                 throw new Error(response?.error || 'Failed to update tracking state');
@@ -267,28 +266,11 @@ class AppManager extends BaseManager {
             this.domManager.updateTrackingStatus(newIsTracking);
             this.domManager.updateTrackingToggle(newIsTracking);
 
-            const notificationKey = newIsTracking
-                ? 'app.notifications.trackingEnabled'
-                : 'app.notifications.trackingDisabled';
-            const notificationType = newIsTracking ? 'success' : 'warning';
-
-            this.notificationManager.showNotification(
-                this.localeManager.t(notificationKey),
-                notificationType
-            );
-
             this._log('Состояние отслеживания обновлено', { isTracking: newIsTracking });
 
             return true;
         } catch (error) {
             this._logError('Ошибка переключения состояния отслеживания', error);
-
-            if (this.notificationManager && this.localeManager) {
-                this.notificationManager.showNotification(
-                    this.localeManager.t('app.notifications.trackingToggleError'),
-                    'error'
-                );
-            }
 
             this.domManager.updateTrackingToggle(currentState);
 

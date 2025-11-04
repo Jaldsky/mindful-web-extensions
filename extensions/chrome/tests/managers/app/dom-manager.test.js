@@ -14,7 +14,6 @@ describe('DOMManager', () => {
             <div id="trackingStatus"></div>
             <div id="eventsCount"></div>
             <div id="domainsCount"></div>
-            <div id="queueSize"></div>
             <button id="openSettings"></button>
             <button id="testConnection"></button>
             <button id="toggleTracking"></button>
@@ -41,7 +40,6 @@ describe('DOMManager', () => {
             expect(domManager.elements.trackingStatus).toBeDefined();
             expect(domManager.elements.eventsCount).toBeDefined();
             expect(domManager.elements.domainsCount).toBeDefined();
-            expect(domManager.elements.queueSize).toBeDefined();
             expect(domManager.elements.openSettings).toBeDefined();
             expect(domManager.elements.testConnection).toBeDefined();
             expect(domManager.elements.toggleTracking).toBeDefined();
@@ -167,19 +165,33 @@ describe('DOMManager', () => {
     });
 
     describe('setTrackingToggleLoading', () => {
-        test('should set loading state on toggle button', () => {
+        test('should show enabling state when target is tracking', () => {
             const button = domManager.elements.toggleTracking;
 
-            const result = domManager.setTrackingToggleLoading();
+            const result = domManager.setTrackingToggleLoading(true);
 
             expect(result).toBe(true);
-            expect(button.textContent).toBe('Updating...');
+            expect(button.textContent).toBe('Enabling...');
             expect(button.disabled).toBe(true);
+        });
+
+        test('should show disabling state when target is not tracking', () => {
+            const button = domManager.elements.toggleTracking;
+
+            const result = domManager.setTrackingToggleLoading(false);
+
+            expect(result).toBe(true);
+            expect(button.textContent).toBe('Disabling...');
+            expect(button.disabled).toBe(true);
+        });
+
+        test('should throw error for invalid parameter', () => {
+            expect(() => domManager.setTrackingToggleLoading('invalid')).toThrow(TypeError);
         });
     });
 
     describe('updateCounters', () => {
-        test('should update all counter elements', () => {
+        test('should update counter elements for events and domains', () => {
             const counters = {
                 events: 10,
                 domains: 5,
@@ -190,10 +202,8 @@ describe('DOMManager', () => {
 
             expect(results.events).toBe(true);
             expect(results.domains).toBe(true);
-            expect(results.queue).toBe(true);
             expect(domManager.elements.eventsCount.textContent).toBe('10');
             expect(domManager.elements.domainsCount.textContent).toBe('5');
-            expect(domManager.elements.queueSize.textContent).toBe('3');
         });
 
         test('should handle missing counter values', () => {
@@ -205,7 +215,6 @@ describe('DOMManager', () => {
 
             expect(domManager.elements.eventsCount.textContent).toBe('10');
             expect(domManager.elements.domainsCount.textContent).toBe('0');
-            expect(domManager.elements.queueSize.textContent).toBe('0');
         });
 
         test('should handle empty counters object', () => {
@@ -213,7 +222,6 @@ describe('DOMManager', () => {
 
             expect(domManager.elements.eventsCount.textContent).toBe('0');
             expect(domManager.elements.domainsCount.textContent).toBe('0');
-            expect(domManager.elements.queueSize.textContent).toBe('0');
         });
 
         test('should handle negative values', () => {
@@ -221,7 +229,6 @@ describe('DOMManager', () => {
 
             expect(domManager.elements.eventsCount.textContent).toBe('0');
             expect(domManager.elements.domainsCount.textContent).toBe('0');
-            expect(domManager.elements.queueSize.textContent).toBe('0');
         });
 
         test('should throw error for invalid parameter', () => {
@@ -579,7 +586,7 @@ describe('DOMManager', () => {
             const result = manager.updateCounters({
                 eventsCount: null,
                 domainsCount: undefined,
-                queueSize: 0
+                queue: 0
             });
 
             // Должен обработать null/undefined корректно

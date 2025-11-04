@@ -82,7 +82,10 @@ class DOMManager extends BaseManager {
         
         /** @type {Function|null} Функция для получения переводов */
         this.translateFn = options.translateFn || null;
-        
+ 
+        this.CONSTANTS.CONNECTION_MESSAGE_TIMEOUT = this.CONSTANTS.CONNECTION_MESSAGE_TIMEOUT || 2000;
+        this.connectionMessageTimer = null;
+ 
         this._validateDOMAvailability();
         this._initializeElements();
     }
@@ -218,17 +221,17 @@ class DOMManager extends BaseManager {
 
         try {
             this.updateState({ isOnline });
+            this._clearConnectionMessageTimer();
             
             return this._safeUpdateElement(
                 this.elements.connectionStatus,
                 (element) => {
-                    // Используем локализацию если доступна, иначе английский
                     const statusText = isOnline 
                         ? (this.translateFn ? this.translateFn('app.status.online') : 'Connected')
                         : (this.translateFn ? this.translateFn('app.status.offline') : 'Disconnected');
                     
                     element.textContent = statusText;
-                    // Очищаем предыдущие классы и применяем новые
+                    element.dataset.originalText = statusText;
                     element.className = '';
                     element.className = isOnline 
                         ? DOMManager.CSS_CLASSES.STATUS_ONLINE 
@@ -239,6 +242,41 @@ class DOMManager extends BaseManager {
         } catch (error) {
             this._logError('Ошибка обновления статуса подключения', error);
             return false;
+        }
+    }
+
+    showConnectionStatusMessage(message, type = 'info') {
+        if (!message || typeof message !== 'string') {
+            return;
+        }
+
+        const element = this.elements.connectionStatus;
+        if (!element) {
+            return;
+        }
+
+        const className = type === 'success'
+            ? DOMManager.CSS_CLASSES.STATUS_ONLINE
+            : type === 'error'
+                ? DOMManager.CSS_CLASSES.STATUS_OFFLINE
+                : DOMManager.CSS_CLASSES.STATUS_INACTIVE;
+
+        element.textContent = message;
+        element.className = '';
+        element.className = className;
+
+        this._clearConnectionMessageTimer();
+        this.connectionMessageTimer = setTimeout(() => {
+            this._clearConnectionMessageTimer();
+            const isOnline = Boolean(this.state?.isOnline);
+            this.updateConnectionStatus(isOnline);
+        }, this.CONSTANTS.CONNECTION_MESSAGE_TIMEOUT || 2000);
+    }
+
+    _clearConnectionMessageTimer() {
+        if (this.connectionMessageTimer) {
+            clearTimeout(this.connectionMessageTimer);
+            this.connectionMessageTimer = null;
         }
     }
 
@@ -317,11 +355,17 @@ class DOMManager extends BaseManager {
      * 
      * @returns {boolean} true если обновление успешно
      */
-    setTrackingToggleLoading() {
+    setTrackingToggleLoading(targetIsTracking) {
+        if (typeof targetIsTracking !== 'boolean') {
+            throw new TypeError('targetIsTracking должен быть булевым значением');
+        }
+
         const button = this.elements.toggleTracking;
-        const label = this.translateFn
-            ? this.translateFn('app.buttons.trackingLoading')
-            : 'Updating...';
+        const labelKey = targetIsTracking
+            ? 'app.buttons.trackingEnableLoading'
+            : 'app.buttons.trackingDisableLoading';
+        const fallbackLabel = targetIsTracking ? 'Enabling...' : 'Disabling...';
+        const label = this.translateFn ? this.translateFn(labelKey) : fallbackLabel;
 
         return this.setButtonState(button, label, true);
     }
@@ -495,6 +539,7 @@ class DOMManager extends BaseManager {
      */
     destroy() {
         this._log('Очистка ресурсов DOMManager');
+        this._clearConnectionMessageTimer();
         this.elements = {};
         this.performanceMetrics.clear();
         this.translateFn = null;

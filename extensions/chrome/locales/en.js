@@ -122,7 +122,10 @@ const EN = {
             online: 'Online',
             offline: 'Offline',
             active: 'Active',
-            inactive: 'Inactive'
+            inactive: 'Inactive',
+            connectionSuccess: 'Connection successful',
+            connectionFailed: 'Connection failed',
+            connectionError: 'Connection error'
         },
         
         // Stats section
@@ -138,9 +141,10 @@ const EN = {
             settings: 'Settings',
             testConnection: 'Test Connection',
             testConnectionLoading: 'Checking...',
-            enableTracking: '▶️ Enable Tracking',
-            disableTracking: '🛑 Disable Tracking',
-            trackingLoading: 'Updating...'
+            enableTracking: 'Enable Tracking',
+            disableTracking: 'Disable Tracking',
+            trackingEnableLoading: 'Enabling...',
+            trackingDisableLoading: 'Disabling...'
         },
         
         // Notifications
