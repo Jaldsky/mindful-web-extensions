@@ -9,42 +9,50 @@
     <link rel="stylesheet" href="styles/app.css">
 </head>
 <body>
-    <div class="header">
-        <div class="logo">🧘 Mindful Web</div>
-        <div class="subtitle" data-i18n="app.subtitle">Track your attention</div>
-    </div>
-    
-    <div class="status">
-        <div class="status-item">
-            <span class="status-label" data-i18n="app.status.connection">Connection:</span>
-            <span class="status-value" id="connectionStatus" data-i18n="app.status.checking">Checking...</span>
+    <div class="app-container">
+        <div class="app-header">
+            <div class="logo">🧘 Mindful Web</div>
+            <div class="subtitle" data-i18n="app.subtitle">Track your attention</div>
         </div>
-        <div class="status-item">
-            <span class="status-label" data-i18n="app.status.tracking">Tracking:</span>
-            <span class="status-value" id="trackingStatus" data-i18n="app.status.active">Active</span>
+
+        <div class="app-section-card status-card">
+            <div class="status">
+                <div class="status-item">
+                    <span class="status-label" data-i18n="app.status.tracking">Tracking:</span>
+                    <span class="status-value" id="trackingStatus" data-i18n="app.status.active">Active</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label" data-i18n="app.status.connection">Connection:</span>
+                    <span class="status-value" id="connectionStatus" data-i18n="app.status.checking">Checking...</span>
+                </div>
+            </div>
         </div>
-    </div>
-    
-    <div class="stats">
-        <div class="stats-title" data-i18n="app.stats.title">Today's Activity</div>
-        <div class="stats-item">
-            <span data-i18n="app.stats.eventsTracked">Events tracked:</span>
-            <span id="eventsCount">0</span>
+
+        <div class="app-section-card stats-card">
+            <div class="stats">
+                <div class="stats-header">
+                    <span class="stats-title" data-i18n="app.stats.title">Today's Activity</span>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-item">
+                        <span data-i18n="app.stats.domainsVisited">Domains visited:</span>
+                        <span id="domainsCount">0</span>
+                    </div>
+                    <div class="stats-item">
+                        <span data-i18n="app.stats.eventsTracked">Events tracked:</span>
+                        <span id="eventsCount">0</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="stats-item">
-            <span data-i18n="app.stats.domainsVisited">Domains visited:</span>
-            <span id="domainsCount">0</span>
+
+        <div class="app-section-card actions-card">
+            <div class="actions">
+                <button class="app-action-btn toggle-btn toggle-btn--disable" id="toggleTracking" data-i18n="app.buttons.disableTracking">Disable Tracking</button>
+                <button class="app-action-btn test-btn" id="testConnection" data-i18n="app.buttons.testConnection">Test Connection</button>
+                <button class="app-action-btn settings-btn" id="openSettings" data-i18n="app.buttons.settings">Settings</button>
+            </div>
         </div>
-        <div class="stats-item">
-            <span data-i18n="app.stats.queueSize">Queue size:</span>
-            <span id="queueSize">0</span>
-        </div>
-    </div>
-    
-    <div class="actions">
-        <button class="toggle-btn toggle-btn--disable" id="toggleTracking" data-i18n="app.buttons.disableTracking">🛑 Disable Tracking</button>
-        <button class="settings-btn" id="openSettings" data-i18n="app.buttons.settings">Settings</button>
-        <button class="test-btn" id="testConnection" data-i18n="app.buttons.testConnection">Test Connection</button>
     </div>
     
     <!--suppress HtmlUnresolvedFile -->
