@@ -46,6 +46,14 @@ class EventQueueManager extends BaseManager {
     static DEFAULT_MAX_QUEUE_SIZE = CONFIG.TRACKER.MAX_QUEUE_SIZE;
 
     /**
+     * Максимальное количество последовательных неудачных отправок,
+     * после которого трекер будет автоматически отключен
+     * @readonly
+     * @static
+     */
+    static DEFAULT_MAX_FAILURES_BEFORE_DISABLE = CONFIG.TRACKER.FAILURE_DISABLE_THRESHOLD || 5;
+
+    /**
      * Создает экземпляр EventQueueManager.
      * 
      * @param {Object} dependencies - Зависимости менеджера
@@ -76,6 +84,9 @@ class EventQueueManager extends BaseManager {
         /** @type {Object} */
         this.storageManager = dependencies.storageManager;
         
+        /** @type {Object|null} */
+        this.trackingController = dependencies.trackingController || null;
+
         /** @type {Array<Event>} */
         this.queue = [];
         
@@ -96,18 +107,35 @@ class EventQueueManager extends BaseManager {
         
         /** @type {number|null} */
         this.batchInterval = null;
+
+        /** @type {number|null} */
+        this.retryTimeoutId = null;
         
         /** @type {Map<string, number>} */
         this.performanceMetrics = new Map();
 
         /** @type {Set<string>} */
         this.domainExceptions = new Set();
+
+        /** @type {number} */
+        this.consecutiveFailures = 0;
+
+        /** @type {boolean} */
+        this.failureThresholdReached = false;
+
+        /** @type {boolean} */
+        this.disableInProgress = false;
+
+        /** @type {number} */
+        this.maxFailuresBeforeDisable = options.maxFailuresBeforeDisable || EventQueueManager.DEFAULT_MAX_FAILURES_BEFORE_DISABLE;
         
         this.updateState({
             queueSize: 0,
             batchSize: this.batchSize,
             maxQueueSize: this.maxQueueSize,
-            isOnline: this.isOnline
+            isOnline: this.isOnline,
+            consecutiveFailures: this.consecutiveFailures,
+            failureThresholdReached: this.failureThresholdReached
         });
         
         this._log('EventQueueManager инициализирован', { 
@@ -283,6 +311,7 @@ class EventQueueManager extends BaseManager {
 
             if (!this.isOnline) {
                 this._log('Нет подключения, обработка отложена');
+                await this._registerSendFailure({ reason: 'offline' });
                 return;
             }
 
@@ -319,6 +348,7 @@ class EventQueueManager extends BaseManager {
                     this._log('Батч успешно отправлен', { eventsCount: filteredEvents.length, skippedDueToExclusions });
                     // Сохраняем обновленную очередь
                     await this.storageManager.saveEventQueue(this.queue);
+                    this._resetFailureCounters();
                 } else {
                     throw new Error(result.error || 'Неизвестная ошибка отправки');
                 }
@@ -332,13 +362,119 @@ class EventQueueManager extends BaseManager {
                 
                 this._log('События возвращены в очередь', { queueSize: this.queue.length });
                 
-                // Планируем повторную попытку
-                setTimeout(() => {
-                    this._log('Повторная попытка обработки очереди');
-                    this.processQueue();
-                }, this.retryDelay);
+                // Планируем повторную попытку, если не достигнут лимит неудач
+                await this._registerSendFailure({
+                    reason: 'sendError',
+                    error: error instanceof Error ? error.message : String(error)
+                });
+
+                if (!this.failureThresholdReached) {
+                    if (this.retryTimeoutId) {
+                        clearTimeout(this.retryTimeoutId);
+                    }
+                    this.retryTimeoutId = setTimeout(() => {
+                        this.retryTimeoutId = null;
+                        this._log('Повторная попытка обработки очереди');
+                        this.processQueue();
+                    }, this.retryDelay);
+                } else {
+                    this._log('Повторная попытка не запланирована: трекер отключен из-за повторных ошибок');
+                }
             }
         });
+    }
+
+    /**
+     * Сбрасывает счетчик неудачных отправок.
+     * 
+     * @private
+     * @returns {void}
+     */
+    _resetFailureCounters() {
+        if (this.consecutiveFailures === 0 && !this.failureThresholdReached) {
+            return;
+        }
+
+        this.consecutiveFailures = 0;
+        this.failureThresholdReached = false;
+        this.updateState({
+            consecutiveFailures: this.consecutiveFailures,
+            failureThresholdReached: this.failureThresholdReached
+        });
+    }
+
+    /**
+     * Сбрасывает состояние неудачных отправок (публичный метод).
+     * 
+     * @returns {void}
+     */
+    resetFailureState() {
+        this._resetFailureCounters();
+    }
+
+    /**
+     * Регистрирует неудачную попытку отправки событий.
+     * 
+     * @private
+     * @param {Object} context - Контекст ошибки
+     * @returns {Promise<void>}
+     */
+    async _registerSendFailure(context = {}) {
+        this.consecutiveFailures += 1;
+        this.updateState({ consecutiveFailures: this.consecutiveFailures });
+
+        this._log('Неудачная попытка отправки событий', {
+            consecutiveFailures: this.consecutiveFailures,
+            threshold: this.maxFailuresBeforeDisable,
+            ...context
+        });
+
+        if (this.consecutiveFailures >= this.maxFailuresBeforeDisable && !this.failureThresholdReached) {
+            this.failureThresholdReached = true;
+            this.updateState({ failureThresholdReached: true });
+            await this._disableTrackingDueToFailures(context);
+        }
+    }
+
+    /**
+     * Отключает трекер после превышения порога ошибок.
+     * 
+     * @private
+     * @param {Object} context - Дополнительная информация для логирования
+     * @returns {Promise<void>}
+     */
+    async _disableTrackingDueToFailures(context = {}) {
+        if (!this.trackingController) {
+            this._log('Трекер не может быть отключен автоматически: отсутствует trackingController', context);
+            return;
+        }
+
+        if (this.disableInProgress) {
+            this._log('Отключение трекера уже выполняется, пропуск повторного вызова');
+            return;
+        }
+
+        this.disableInProgress = true;
+
+        if (this.retryTimeoutId) {
+            clearTimeout(this.retryTimeoutId);
+            this.retryTimeoutId = null;
+        }
+
+        this.stopBatchProcessor();
+
+        try {
+            this._log('Отключение трекера из-за повторных ошибок отправки', {
+                consecutiveFailures: this.consecutiveFailures,
+                ...context
+            });
+            await this.trackingController.disableTracking();
+            await this.storageManager.saveEventQueue(this.queue);
+        } catch (error) {
+            this._logError('Ошибка при автоматическом отключении трекера', error);
+        } finally {
+            this.disableInProgress = false;
+        }
     }
 
     /**
@@ -428,9 +564,16 @@ class EventQueueManager extends BaseManager {
      */
     destroy() {
         this.stopBatchProcessor();
+        if (this.retryTimeoutId) {
+            clearTimeout(this.retryTimeoutId);
+            this.retryTimeoutId = null;
+        }
         this.queue = [];
         this.performanceMetrics.clear();
         this.domainExceptions.clear();
+        this.trackingController = null;
+        this.consecutiveFailures = 0;
+        this.failureThresholdReached = false;
         super.destroy();
         this._log('EventQueueManager уничтожен');
     }

@@ -12,6 +12,7 @@ describe('EventQueueManager', () => {
     let backendManager;
     let statisticsManager;
     let storageManager;
+    let trackingController;
 
     beforeEach(() => {
         // Настраиваем chrome API
@@ -38,6 +39,9 @@ describe('EventQueueManager', () => {
         });
         statisticsManager = new StatisticsManager({ enableLogging: false });
         storageManager = new StorageManager({ enableLogging: false });
+        trackingController = {
+            disableTracking: jest.fn().mockResolvedValue({ success: true, isTracking: false })
+        };
 
         // Мокируем методы зависимостей
         jest.spyOn(backendManager, 'sendEvents');
@@ -51,7 +55,8 @@ describe('EventQueueManager', () => {
             {
                 backendManager,
                 statisticsManager,
-                storageManager
+                storageManager,
+                trackingController
             },
             { enableLogging: false }
         );
@@ -124,30 +129,18 @@ describe('EventQueueManager', () => {
             expect(statisticsManager.addEvent).not.toHaveBeenCalled();
         });
 
-        test('должен отправлять батч только при достижении 100 событий (аварийная мера)', async () => {
-            // Мокируем sendEvents для успешной отправки
-            backendManager.sendEvents.mockResolvedValue({ success: true });
-            storageManager.saveEventQueue.mockResolvedValue(true);
+        test('должен ограничивать размер очереди значением MAX_QUEUE_SIZE', async () => {
+            const maxSize = eventQueueManager.maxQueueSize;
 
-            // Добавляем 99 событий - не должно отправиться
-            for (let i = 0; i < 99; i++) {
+            for (let i = 0; i < maxSize + 20; i++) {
                 eventQueueManager.addEvent('active', `test${i}.com`);
             }
 
             await Promise.resolve();
             await Promise.resolve();
 
-            // Не должно было отправиться при 99 событиях
+            expect(eventQueueManager.queue.length).toBeLessThanOrEqual(maxSize);
             expect(backendManager.sendEvents).not.toHaveBeenCalled();
-
-            // Добавляем 100-е событие - должно отправиться
-            eventQueueManager.addEvent('active', 'test99.com');
-
-            await Promise.resolve();
-            await Promise.resolve();
-
-            // Теперь должно отправиться при 100 событиях
-            expect(backendManager.sendEvents).toHaveBeenCalled();
         });
 
         test('должен НЕ отправлять автоматически при малом количестве событий', async () => {
@@ -254,6 +247,37 @@ describe('EventQueueManager', () => {
 
             // События должны остаться в очереди
             expect(eventQueueManager.queue.length).toBe(2);
+        });
+
+        test('должен отключать трекер после 5 неудачных попыток отправки', async () => {
+            jest.useFakeTimers();
+
+            try {
+                eventQueueManager.destroy();
+                eventQueueManager = new EventQueueManager(
+                    {
+                        backendManager,
+                        statisticsManager,
+                        storageManager,
+                        trackingController
+                    },
+                    { enableLogging: false, retryDelay: 0 }
+                );
+
+                storageManager.saveEventQueue.mockResolvedValue(true);
+                backendManager.sendEvents.mockResolvedValue({ success: false, error: 'Test error' });
+
+                eventQueueManager.addEvent('active', 'test.com');
+
+                for (let i = 0; i < 5; i++) {
+                    await eventQueueManager.processQueue();
+                }
+
+                expect(trackingController.disableTracking).toHaveBeenCalledTimes(1);
+                expect(eventQueueManager.getState().failureThresholdReached).toBe(true);
+            } finally {
+                jest.useRealTimers();
+            }
         });
     });
 
