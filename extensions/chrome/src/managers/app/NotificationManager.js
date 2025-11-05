@@ -23,6 +23,7 @@ class NotificationManager extends BaseManager {
      * @param {boolean} options.autoClear - Автоматически очищать предыдущие уведомления
      * @param {number} options.maxNotifications - Максимальное количество уведомлений
      * @param {string} options.position - Позиция уведомлений ('top-right', 'top-left', 'bottom-right', 'bottom-left')
+     * @param {Function} [options.translateFn] - Функция для получения переводов
      */
     constructor(options = {}) {
         super(options);
@@ -54,7 +55,10 @@ class NotificationManager extends BaseManager {
             ['info', 0]
         ]);
 
-        this._log('NotificationManager инициализирован', {
+        /** @type {Function} Функция для получения переводов */
+        this.translateFn = options.translateFn || (() => '');
+
+        this._log({ key: 'logs.notification.created' }, {
             autoClear: this.autoClear,
             maxNotifications: this.maxNotifications,
             position: this.position
@@ -97,16 +101,15 @@ class NotificationManager extends BaseManager {
             this._addNotificationToDOM(notification);
             this._animateIn(notification);
             this._scheduleRemoval(notification, options.duration);
-            
-            // Обновляем статистику
+
             this.notificationStats.set('total', this.notificationStats.get('total') + 1);
             this.notificationStats.set(type, (this.notificationStats.get(type) || 0) + 1);
 
-            this._log(`Уведомление создано: ${type}`, { message, options });
+            this._log({ key: 'logs.notification.notificationCreated', params: { type } }, { message, options });
 
             return notification;
         } catch (error) {
-            this._logError('Ошибка создания уведомления', error);
+            this._logError({ key: 'logs.notification.creationError' }, error);
             return null;
         }
     }
@@ -158,7 +161,8 @@ class NotificationManager extends BaseManager {
      */
     _addNotificationToDOM(notification) {
         if (!document.body) {
-            throw new Error('document.body недоступен');
+            const t = this._getTemporaryTranslateFn();
+            throw new Error(t('logs.notification.documentBodyUnavailable'));
         }
         
         document.body.appendChild(notification);
@@ -206,7 +210,7 @@ class NotificationManager extends BaseManager {
      */
     removeNotification(notification) {
         if (!notification || !this.notifications.has(notification)) {
-            this._log('Уведомление не найдено или уже удалено');
+            this._log({ key: 'logs.notification.notificationNotFound' });
             return false;
         }
 
@@ -227,15 +231,15 @@ class NotificationManager extends BaseManager {
                     if (notification.parentNode) {
                         notification.parentNode.removeChild(notification);
                     }
-                    this._log('Уведомление удалено из DOM');
+                    this._log({ key: 'logs.notification.notificationRemoved' });
                 } catch (error) {
-                    this._logError('Ошибка при удалении уведомления из DOM', error);
+                    this._logError({ key: 'logs.notification.removalError' }, error);
                 }
             }, 300);
 
             return true;
         } catch (error) {
-            this._logError('Ошибка удаления уведомления', error);
+            this._logError({ key: 'logs.notification.removeError' }, error);
             return false;
         }
     }
@@ -259,137 +263,18 @@ class NotificationManager extends BaseManager {
                         notification.parentNode.removeChild(notification);
                     }
                 } catch (error) {
-                    this._logError('Ошибка удаления уведомления', error);
+                    this._logError({ key: 'logs.notification.removeError' }, error);
                 }
             });
 
             this.notifications.clear();
-            this._log(`Очищено уведомлений: ${count}`);
+            this._log({ key: 'logs.notification.cleared', params: { count } });
             
             return count;
         } catch (error) {
-            this._logError('Ошибка очистки уведомлений', error);
+            this._logError({ key: 'logs.notification.clearError' }, error);
             return 0;
         }
-    }
-
-    /**
-     * Получает количество активных уведомлений.
-     * 
-     * @returns {number} Количество активных уведомлений
-     */
-    getActiveNotificationsCount() {
-        return this.notifications.size;
-    }
-
-    /**
-     * Проверяет, есть ли активные уведомления.
-     * 
-     * @returns {boolean} Есть ли активные уведомления
-     */
-    hasActiveNotifications() {
-        return this.notifications.size > 0;
-    }
-
-    /**
-     * Получает все активные уведомления.
-     * 
-     * @returns {Array<HTMLElement>} Массив активных уведомлений
-     */
-    getActiveNotifications() {
-        return Array.from(this.notifications);
-    }
-
-    /**
-     * Получает уведомления по типу.
-     * 
-     * @param {string} type - Тип уведомления
-     * @returns {Array<HTMLElement>} Массив уведомлений указанного типа
-     */
-    getNotificationsByType(type) {
-        return Array.from(this.notifications).filter(
-            notification => notification.getAttribute('data-type') === type
-        );
-    }
-
-    /**
-     * Обновляет настройки менеджера.
-     * 
-     * @param {Object} options - Новые настройки
-     * @param {boolean} [options.autoClear] - Автоматически очищать предыдущие уведомления
-     * @param {number} [options.maxNotifications] - Максимальное количество уведомлений
-     * @param {string} [options.position] - Позиция уведомлений
-     * @throws {TypeError} Если options не является объектом
-     * @returns {void}
-     */
-    updateSettings(options) {
-        if (!options || typeof options !== 'object') {
-            throw new TypeError('options должен быть объектом');
-        }
-
-        try {
-            if (typeof options.autoClear === 'boolean') {
-                this.autoClear = options.autoClear;
-                this._log(`autoClear обновлен: ${this.autoClear}`);
-            }
-            
-            if (typeof options.maxNotifications === 'number' && options.maxNotifications > 0) {
-                this.maxNotifications = Math.max(1, Math.floor(options.maxNotifications));
-                this._log(`maxNotifications обновлен: ${this.maxNotifications}`);
-            }
-            
-            if (typeof options.position === 'string') {
-                this.position = options.position;
-                this._log(`position обновлен: ${this.position}`);
-            }
-        } catch (error) {
-            this._logError('Ошибка обновления настроек', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Показывает уведомление об успехе.
-     * 
-     * @param {string} message - Текст уведомления
-     * @param {Object} options - Дополнительные опции
-     * @returns {HTMLElement} Созданный элемент уведомления
-     */
-    showSuccess(message, options = {}) {
-        return this.showNotification(message, NotificationManager.NOTIFICATION_TYPES.SUCCESS, options);
-    }
-
-    /**
-     * Показывает уведомление об ошибке.
-     * 
-     * @param {string} message - Текст уведомления
-     * @param {Object} options - Дополнительные опции
-     * @returns {HTMLElement} Созданный элемент уведомления
-     */
-    showError(message, options = {}) {
-        return this.showNotification(message, NotificationManager.NOTIFICATION_TYPES.ERROR, options);
-    }
-
-    /**
-     * Показывает предупреждение.
-     * 
-     * @param {string} message - Текст уведомления
-     * @param {Object} options - Дополнительные опции
-     * @returns {HTMLElement} Созданный элемент уведомления
-     */
-    showWarning(message, options = {}) {
-        return this.showNotification(message, NotificationManager.NOTIFICATION_TYPES.WARNING, options);
-    }
-
-    /**
-     * Показывает информационное уведомление.
-     * 
-     * @param {string} message - Текст уведомления
-     * @param {Object} options - Дополнительные опции
-     * @returns {HTMLElement} Созданный элемент уведомления
-     */
-    showInfo(message, options = {}) {
-        return this.showNotification(message, NotificationManager.NOTIFICATION_TYPES.INFO, options);
     }
 
     /**
@@ -425,7 +310,7 @@ class NotificationManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов NotificationManager');
+        this._log({ key: 'logs.notification.cleanupStart' });
         
         try {
             this.clearNotifications();
@@ -434,9 +319,9 @@ class NotificationManager extends BaseManager {
             this.performanceMetrics.clear();
             this.notificationStats.clear();
             
-            this._log('NotificationManager уничтожен');
+            this._log({ key: 'logs.notification.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении NotificationManager', error);
+            this._logError({ key: 'logs.notification.destroyError' }, error);
         }
         
         super.destroy();

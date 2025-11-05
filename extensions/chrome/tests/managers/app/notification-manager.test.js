@@ -118,16 +118,16 @@ describe('NotificationManager', () => {
             
             try {
                 manager.showNotification('First', 'success');
-                expect(manager.getActiveNotificationsCount()).toBe(1);
+                expect(manager.notifications.size).toBe(1);
                 
                 manager.showNotification('Second', 'error');
-                expect(manager.getActiveNotificationsCount()).toBe(2);
+                expect(manager.notifications.size).toBe(2);
 
                 manager.showNotification('Third', 'info');
 
-                expect(manager.getActiveNotificationsCount()).toBe(2);
+                expect(manager.notifications.size).toBe(2);
 
-                const active = manager.getActiveNotifications();
+                const active = Array.from(manager.notifications);
                 expect(active).toHaveLength(2);
             } finally {
                 manager.destroy();
@@ -188,40 +188,6 @@ describe('NotificationManager', () => {
         });
     });
 
-    describe('convenience methods', () => {
-        test('should show success notification', () => {
-            const notification = notificationManager.showSuccess('Success message');
-            
-            expect(notification).toBeDefined();
-            expect(notification.getAttribute('data-type')).toBe('success');
-            expect(notification.textContent).toBe('Success message');
-        });
-
-        test('should show error notification', () => {
-            const notification = notificationManager.showError('Error message');
-            
-            expect(notification).toBeDefined();
-            expect(notification.getAttribute('data-type')).toBe('error');
-            expect(notification.textContent).toBe('Error message');
-        });
-
-        test('should show warning notification', () => {
-            const notification = notificationManager.showWarning('Warning message');
-            
-            expect(notification).toBeDefined();
-            expect(notification.getAttribute('data-type')).toBe('warning');
-            expect(notification.textContent).toBe('Warning message');
-        });
-
-        test('should show info notification', () => {
-            const notification = notificationManager.showInfo('Info message');
-            
-            expect(notification).toBeDefined();
-            expect(notification.getAttribute('data-type')).toBe('info');
-            expect(notification.textContent).toBe('Info message');
-        });
-    });
-
     describe('clearNotifications', () => {
         test('should remove all notifications from DOM', () => {
             notificationManager.showNotification('First', 'success');
@@ -233,7 +199,7 @@ describe('NotificationManager', () => {
             
             expect(count).toBe(1);
             expect(document.querySelectorAll('.notification')).toHaveLength(0);
-            expect(notificationManager.getActiveNotificationsCount()).toBe(0);
+            expect(notificationManager.notifications.size).toBe(0);
         });
 
         test('should clear timeouts when clearing notifications', () => {
@@ -256,14 +222,14 @@ describe('NotificationManager', () => {
         test('should remove specific notification with animation', () => {
             const notification = notificationManager.showNotification('Test message', 'success');
             
-            expect(notificationManager.getActiveNotificationsCount()).toBe(1);
+            expect(notificationManager.notifications.size).toBe(1);
             
             const result = notificationManager.removeNotification(notification);
             
             expect(result).toBe(true);
             expect(notification.classList.contains('show')).toBe(false);
 
-            expect(notificationManager.getActiveNotificationsCount()).toBe(0);
+            expect(notificationManager.notifications.size).toBe(0);
 
             expect(document.querySelectorAll('.notification')).toHaveLength(1);
 
@@ -297,84 +263,6 @@ describe('NotificationManager', () => {
 
             const result = notificationManager.removeNotification(notification);
             expect(result).toBe(false);
-        });
-    });
-
-    describe('notification management methods', () => {
-        test('should get active notifications count', () => {
-            expect(notificationManager.getActiveNotificationsCount()).toBe(0);
-            
-            notificationManager.showNotification('Test', 'success');
-            expect(notificationManager.getActiveNotificationsCount()).toBe(1);
-        });
-
-        test('should check if has active notifications', () => {
-            expect(notificationManager.hasActiveNotifications()).toBe(false);
-            
-            notificationManager.showNotification('Test', 'success');
-            expect(notificationManager.hasActiveNotifications()).toBe(true);
-        });
-
-        test('should get active notifications array', () => {
-            notificationManager.showNotification('First', 'success');
-            const notification2 = notificationManager.showNotification('Second', 'error');
-            
-            const activeNotifications = notificationManager.getActiveNotifications();
-            expect(activeNotifications).toHaveLength(1); // autoClear is true
-            expect(activeNotifications).toContain(notification2);
-        });
-
-        test('should get notifications by type', () => {
-            const manager = new NotificationManager({ autoClear: false });
-            
-            try {
-                manager.showNotification('Success 1', 'success');
-                manager.showNotification('Error 1', 'error');
-                manager.showNotification('Success 2', 'success');
-                
-                const successNotifications = manager.getNotificationsByType('success');
-                const errorNotifications = manager.getNotificationsByType('error');
-                
-                expect(successNotifications).toHaveLength(2);
-                expect(errorNotifications).toHaveLength(1);
-            } finally {
-                manager.destroy();
-            }
-        });
-    });
-
-    describe('settings management', () => {
-        test('should update settings', () => {
-            notificationManager.updateSettings({
-                autoClear: false,
-                maxNotifications: 5,
-                position: 'bottom-left'
-            });
-            
-            expect(notificationManager.autoClear).toBe(false);
-            expect(notificationManager.maxNotifications).toBe(5);
-            expect(notificationManager.position).toBe('bottom-left');
-        });
-
-        test('should validate settings on update', () => {
-            const originalAutoClear = notificationManager.autoClear;
-            const originalMaxNotifications = notificationManager.maxNotifications;
-            const originalPosition = notificationManager.position;
-            
-            notificationManager.updateSettings({
-                autoClear: 'invalid',
-                maxNotifications: -1,
-                position: 123
-            });
-
-            expect(notificationManager.autoClear).toBe(originalAutoClear);
-            expect(notificationManager.maxNotifications).toBe(originalMaxNotifications);
-            expect(notificationManager.position).toBe(originalPosition);
-        });
-
-        test('should throw error for invalid settings parameter', () => {
-            expect(() => notificationManager.updateSettings(null)).toThrow(TypeError);
-            expect(() => notificationManager.updateSettings('invalid')).toThrow(TypeError);
         });
     });
 
@@ -435,11 +323,11 @@ describe('NotificationManager', () => {
         test('should clean up all resources', () => {
             notificationManager.showNotification('Test', 'success');
             
-            expect(notificationManager.getActiveNotificationsCount()).toBe(1);
+            expect(notificationManager.notifications.size).toBe(1);
             
             notificationManager.destroy();
             
-            expect(notificationManager.getActiveNotificationsCount()).toBe(0);
+            expect(notificationManager.notifications.size).toBe(0);
             expect(notificationManager.notifications.size).toBe(0);
             expect(notificationManager.timeouts.size).toBe(0);
         });
@@ -537,9 +425,9 @@ describe('NotificationManager', () => {
         });
 
         test('should update statistics when showing notifications', () => {
-            notificationManager.showSuccess('Success message');
-            notificationManager.showError('Error message');
-            notificationManager.showWarning('Warning message');
+            notificationManager.showNotification('Success message', 'success');
+            notificationManager.showNotification('Error message', 'error');
+            notificationManager.showNotification('Warning message', 'warning');
             
             const stats = notificationManager.getNotificationStatistics();
             
@@ -553,8 +441,8 @@ describe('NotificationManager', () => {
             // Создаем менеджер без autoClear чтобы уведомления накапливались
             const managerWithoutAutoClear = new NotificationManager({ autoClear: false });
             
-            managerWithoutAutoClear.showSuccess('Message 1');
-            managerWithoutAutoClear.showSuccess('Message 2');
+            managerWithoutAutoClear.showNotification('Message 1', 'success');
+            managerWithoutAutoClear.showNotification('Message 2', 'success');
             
             const stats = managerWithoutAutoClear.getNotificationStatistics();
             
@@ -564,7 +452,7 @@ describe('NotificationManager', () => {
         });
 
         test('should clear notification stats on destroy', () => {
-            notificationManager.showSuccess('Test');
+            notificationManager.showNotification('Test', 'success');
             
             notificationManager.destroy();
             
