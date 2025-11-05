@@ -43,6 +43,32 @@ const CONFIG = {
     },
 
     /**
+     * Настройки диагностики
+     */
+    DIAGNOSTICS: {
+        // Статусы проверок
+        CHECK_STATUS: {
+            OK: 'ok',
+            WARNING: 'warning',
+            ERROR: 'error'
+        },
+        // Названия проверок (технические ключи)
+        CHECK_NAMES: {
+            SERVICE_WORKER: 'serviceWorker',
+            CONNECTION: 'connection',
+            TRACKING: 'tracking',
+            STATS: 'stats'
+        },
+        // Эмодзи для статусов
+        STATUS_EMOJI: {
+            ok: '✅',
+            warning: '⚠️',
+            error: '❌',
+            unknown: '❓'
+        }
+    },
+
+    /**
      * Ключи для Chrome Storage
      */
     STORAGE_KEYS: {

@@ -4,6 +4,28 @@
  */
 
 const DiagnosticsManager = require('../../../src/managers/app/DiagnosticsManager.js');
+const RU = require('../../../locales/ru.js');
+
+// Создаем mock функцию локализации, которая возвращает русские строки
+const createMockTranslateFn = () => {
+    const getNestedValue = (obj, path) => {
+        return path.split('.').reduce((current, key) => current?.[key], obj);
+    };
+    
+    return (key, params = {}, fallback = '') => {
+        const value = getNestedValue(RU, key);
+        if (!value) return fallback;
+        
+        // Простая подстановка параметров
+        if (typeof value === 'string' && params) {
+            return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+                return params[paramKey] !== undefined ? params[paramKey] : match;
+            });
+        }
+        
+        return value || fallback;
+    };
+};
 
 describe('DiagnosticsManager', () => {
     let diagnosticsManager;
@@ -38,9 +60,12 @@ describe('DiagnosticsManager', () => {
             showNotification: jest.fn()
         };
 
+        const mockTranslateFn = createMockTranslateFn();
+
         diagnosticsManager = new DiagnosticsManager(
             mockServiceWorkerManager,
-            mockNotificationManager
+            mockNotificationManager,
+            { translateFn: mockTranslateFn }
         );
     });
 
@@ -88,6 +113,8 @@ describe('DiagnosticsManager', () => {
         });
 
         test('should throw error if serviceWorkerManager is missing', () => {
+            // Устанавливаем язык для временной функции локализации в конструкторе
+            global.navigator.language = 'ru';
             expect(() => {
                 new DiagnosticsManager(null, mockNotificationManager);
             }).toThrow(TypeError);
@@ -97,6 +124,8 @@ describe('DiagnosticsManager', () => {
         });
 
         test('should throw error if notificationManager is missing', () => {
+            // Устанавливаем язык для временной функции локализации в конструкторе
+            global.navigator.language = 'ru';
             expect(() => {
                 new DiagnosticsManager(mockServiceWorkerManager, null);
             }).toThrow(TypeError);
@@ -110,10 +139,11 @@ describe('DiagnosticsManager', () => {
         });
 
         test('should accept custom parallelExecution option', () => {
+            const mockTranslateFn = createMockTranslateFn();
             const manager = new DiagnosticsManager(
                 mockServiceWorkerManager,
                 mockNotificationManager,
-                { parallelExecution: false }
+                { parallelExecution: false, translateFn: mockTranslateFn }
             );
 
             expect(manager.parallelExecution).toBe(false);
@@ -142,10 +172,11 @@ describe('DiagnosticsManager', () => {
         });
 
         test('should run diagnostics sequentially when parallel is false', async () => {
+            const mockTranslateFn = createMockTranslateFn();
             const manager = new DiagnosticsManager(
                 mockServiceWorkerManager,
                 mockNotificationManager,
-                { parallelExecution: false }
+                { parallelExecution: false, translateFn: mockTranslateFn }
             );
 
             const results = await manager.runDiagnostics();
@@ -196,9 +227,11 @@ describe('DiagnosticsManager', () => {
         });
 
         test('should handle errors and return error status', async () => {
+            const mockTranslateFn = createMockTranslateFn();
             const errorManager = new DiagnosticsManager(
                 mockServiceWorkerManager,
-                mockNotificationManager
+                mockNotificationManager,
+                { translateFn: mockTranslateFn }
             );
 
             errorManager.checkServiceWorker = jest.fn().mockRejectedValue(new Error('Test error'));
@@ -591,9 +624,11 @@ describe('DiagnosticsManager', () => {
 
     describe('error handling', () => {
         test('should handle errors in check execution', async () => {
+            const mockTranslateFn = createMockTranslateFn();
             const manager = new DiagnosticsManager(
                 mockServiceWorkerManager,
-                mockNotificationManager
+                mockNotificationManager,
+                { translateFn: mockTranslateFn }
             );
 
             manager.checkServiceWorker = jest.fn(() => {
@@ -610,9 +645,11 @@ describe('DiagnosticsManager', () => {
         });
 
         test('should handle critical errors gracefully', async () => {
+            const mockTranslateFn = createMockTranslateFn();
             const manager = new DiagnosticsManager(
                 mockServiceWorkerManager,
-                mockNotificationManager
+                mockNotificationManager,
+                { translateFn: mockTranslateFn }
             );
 
             manager.calculateOverallStatus = jest.fn(() => {

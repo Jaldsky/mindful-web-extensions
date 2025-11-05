@@ -1,4 +1,6 @@
 const CONFIG = require('../../config.js');
+const EN = require('../../locales/en.js');
+const RU = require('../../locales/ru.js');
 
 /**
  * @typedef {Object} ManagerState
@@ -58,6 +60,29 @@ class BaseManager {
         
         /** @type {Map<string, number>} */
         this.performanceMetrics = new Map();
+    }
+
+    /**
+     * Получает временную функцию локализации на основе языка браузера.
+     * Используется в конструкторе до того, как translateFn будет доступен.
+     * 
+     * @protected
+     * @returns {Function} Функция перевода: (key: string, params?: Object) => string
+     */
+    _getTemporaryTranslateFn() {
+        const defaultLocale = typeof navigator !== 'undefined' && navigator.language?.startsWith('ru') ? 'ru' : 'en';
+        const translations = defaultLocale === 'ru' ? RU : EN;
+        
+        return (key, params = {}) => {
+            const keys = key.split('.');
+            let value = translations;
+            for (const k of keys) {
+                value = value?.[k];
+            }
+            if (typeof value !== 'string') return key;
+            return Object.keys(params).reduce((str, paramKey) => 
+                str.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), params[paramKey]), value);
+        };
     }
 
     /**
