@@ -36,7 +36,6 @@ class AppManager extends BaseManager {
 
         const enableLogging = this.enableLogging;
 
-        // Инициализация менеджеров с общим настройками логирования
         this.localeManager = new LocaleManager({ enableLogging });
         const translateFn = (key, params) => this.localeManager.t(key, params);
         this.domManager = new DOMManager({ enableLogging, translateFn });
@@ -49,14 +48,10 @@ class AppManager extends BaseManager {
         );
 
         this.updateInterval = null;
-
         this.eventHandlers = new Map();
-
         this.isInitialized = false;
-        
-        // Store original button texts
         this.originalButtonTexts = new Map();
-        
+
         this.init();
     }
 
@@ -75,27 +70,21 @@ class AppManager extends BaseManager {
      */
     async init() {
         if (this.isInitialized) {
-            this._log('AppManager уже инициализирован');
+            this._log({ key: 'logs.app.alreadyInitialized' });
             return;
         }
 
         try {
-            this._log('Начало инициализации AppManager');
+            this._log({ key: 'logs.app.initStart' });
 
-            // Инициализируем LocaleManager
             await this.localeManager.init();
-            
-            // Устанавливаем функцию локализации в DOMManager
+
             this.domManager.setTranslateFn((key) => this.localeManager.t(key));
-            
-            // Применяем локализацию к DOM
             this.localeManager.localizeDOM();
 
             await this.loadInitialStatus();
 
             this.setupEventHandlers();
-
-            // Слушаем изменения локали
             this.localeManager.addLocaleChangeListener(() => {
                 this.onLocaleChange();
             });
@@ -242,7 +231,7 @@ class AppManager extends BaseManager {
         const button = this.domManager.elements.toggleTracking;
 
         try {
-            this._log('Запрос изменения состояния отслеживания', { targetState });
+            this._log({ key: 'logs.app.trackingToggleRequest', params: { targetState } });
 
             this.domManager.setTrackingToggleLoading(targetState);
 
@@ -252,13 +241,21 @@ class AppManager extends BaseManager {
             const [toggleResult] = await Promise.allSettled([toggleRequest, minDelay]);
 
             if (toggleResult.status !== 'fulfilled') {
-                throw toggleResult.reason || new Error('Failed to update tracking state');
+                const errorMessage = toggleResult.reason?.message || this.localeManager.t('app.notifications.trackingToggleError');
+                this._logError({ key: 'logs.app.trackingToggleError' }, toggleResult.reason || new Error(errorMessage));
+                this.domManager.updateTrackingToggle(currentState);
+                return false;
             }
 
             const response = toggleResult.value;
 
-            if (!response || response.success !== true) {
-                throw new Error(response?.error || 'Failed to update tracking state');
+            if (!response || typeof response !== 'object' || !('success' in response) || response.success !== true) {
+                const errorMessage = (response && typeof response === 'object' && 'error' in response)
+                    ? response.error
+                    : this.localeManager.t('app.notifications.trackingToggleError');
+                this._logError({ key: 'logs.app.trackingToggleError' }, new Error(errorMessage));
+                this.domManager.updateTrackingToggle(currentState);
+                return false;
             }
 
             const newIsTracking = Boolean(response.isTracking);
@@ -266,14 +263,12 @@ class AppManager extends BaseManager {
             this.domManager.updateTrackingStatus(newIsTracking);
             this.domManager.updateTrackingToggle(newIsTracking);
 
-            this._log('Состояние отслеживания обновлено', { isTracking: newIsTracking });
+            this._log({ key: 'logs.app.trackingStateUpdated', params: { isTracking: newIsTracking } });
 
             return true;
         } catch (error) {
-            this._logError('Ошибка переключения состояния отслеживания', error);
-
+            this._logError({ key: 'logs.app.trackingToggleError' }, error);
             this.domManager.updateTrackingToggle(currentState);
-
             return false;
         } finally {
             const finalState = Boolean(this.state.isTracking);
@@ -291,17 +286,14 @@ class AppManager extends BaseManager {
      */
     onLocaleChange() {
         try {
-            // Применяем локализацию к DOM
             this.localeManager.localizeDOM();
-            
-            // Обновляем статусы с новой локализацией
             this.domManager.refreshStatuses();
             
             this._log({ key: 'logs.app.localeChanged' }, {
                 locale: this.localeManager.getCurrentLocale()
             });
         } catch (error) {
-            this._logError('Ошибка при изменении локали', error);
+            this._logError({ key: 'logs.app.localeChangeError' }, error);
         }
     }
 
@@ -312,17 +304,17 @@ class AppManager extends BaseManager {
      */
     startPeriodicUpdates() {
         if (this.updateInterval) {
-            this._log('Периодические обновления уже запущены');
+            this._log({ key: 'logs.app.periodicUpdatesAlreadyStarted' });
             return;
         }
 
-        this._log('Запуск периодических обновлений');
+        this._log({ key: 'logs.app.periodicUpdatesStart' });
         
         this.updateInterval = setInterval(async () => {
             try {
                 await this.loadInitialStatus();
             } catch (error) {
-                this._logError('Ошибка периодического обновления', error);
+                this._logError({ key: 'logs.app.periodicUpdatesError' }, error);
             }
         }, this.CONSTANTS.UPDATE_INTERVAL);
     }
@@ -337,7 +329,7 @@ class AppManager extends BaseManager {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
-            this._log('Периодические обновления остановлены');
+            this._log({ key: 'logs.app.periodicUpdatesStopped' });
         }
     }
 
@@ -348,11 +340,11 @@ class AppManager extends BaseManager {
      */
     destroy() {
         if (!this.isInitialized) {
-            this._log('AppManager уже был уничтожен');
+            this._log({ key: 'logs.app.alreadyDestroyed' });
             return;
         }
 
-        this._log('Очистка ресурсов AppManager');
+        this._log({ key: 'logs.app.destroyStart' });
 
         try {
             this._stopPeriodicUpdates();
@@ -360,9 +352,9 @@ class AppManager extends BaseManager {
             this._destroyManagers();
 
             this.isInitialized = false;
-            this._log('AppManager уничтожен');
+            this._log({ key: 'logs.app.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении AppManager', error);
+            this._logError({ key: 'logs.app.destroyError' }, error);
         }
 
         super.destroy();
@@ -384,9 +376,9 @@ class AppManager extends BaseManager {
             });
 
             this.eventHandlers.clear();
-            this._log('Обработчики событий удалены');
+            this._log({ key: 'logs.app.eventHandlersRemoved' });
         } catch (error) {
-            this._logError('Ошибка удаления обработчиков событий', error);
+            this._logError({ key: 'logs.app.eventHandlersRemoveError' }, error);
         }
     }
 
@@ -423,9 +415,9 @@ class AppManager extends BaseManager {
                 this.localeManager = null;
             }
 
-            this._log('Все менеджеры уничтожены');
+            this._log({ key: 'logs.app.managersDestroyed' });
         } catch (error) {
-            this._logError('Ошибка уничтожения менеджеров', error);
+            this._logError({ key: 'logs.app.managersDestroyError' }, error);
         }
     }
 }

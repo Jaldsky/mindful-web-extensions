@@ -23,6 +23,7 @@ const EN = {
             initStart: 'Starting AppManager initialization',
             initSuccess: 'AppManager initialized (no periodic updates)',
             initError: 'AppManager initialization error',
+            alreadyInitialized: 'AppManager already initialized',
             initialStatusLoaded: 'Initial status loaded',
             initialStatusError: 'Initial status loading error',
             handlersSetup: 'Setting up event handlers',
@@ -34,7 +35,24 @@ const EN = {
                 fail: 'Test connection: fail',
                 error: 'Test connection error'
             },
-            localeChanged: 'Locale changed'
+            localeChanged: 'Locale changed',
+            localeChangeError: 'Error changing locale',
+            trackingToggleRequest: 'Request to change tracking state',
+            trackingToggleError: 'Error toggling tracking state',
+            trackingStateUpdated: 'Tracking state updated',
+            trackingStateUpdateFailed: 'Failed to update tracking state',
+            periodicUpdatesAlreadyStarted: 'Periodic updates already started',
+            periodicUpdatesStart: 'Starting periodic updates',
+            periodicUpdatesError: 'Periodic update error',
+            periodicUpdatesStopped: 'Periodic updates stopped',
+            alreadyDestroyed: 'AppManager already destroyed',
+            destroyStart: 'Cleaning up AppManager resources',
+            destroyed: 'AppManager destroyed',
+            destroyError: 'Error destroying AppManager',
+            eventHandlersRemoved: 'Event handlers removed',
+            eventHandlersRemoveError: 'Error removing event handlers',
+            managersDestroyed: 'All managers destroyed',
+            managersDestroyError: 'Error destroying managers'
         },
         diagnostics: {
             resultsHeader: 'Diagnostics results',

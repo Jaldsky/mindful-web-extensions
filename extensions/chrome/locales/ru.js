@@ -23,6 +23,7 @@ const RU = {
             initStart: 'Начало инициализации AppManager',
             initSuccess: 'AppManager инициализирован (без периодических обновлений)',
             initError: 'Ошибка инициализации AppManager',
+            alreadyInitialized: 'AppManager уже инициализирован',
             initialStatusLoaded: 'Начальный статус загружен',
             initialStatusError: 'Ошибка загрузки начального статуса',
             handlersSetup: 'Настройка обработчиков событий',
@@ -34,7 +35,24 @@ const RU = {
                 fail: 'Тест подключения: неудача',
                 error: 'Ошибка тестирования подключения'
             },
-            localeChanged: 'Локаль изменена'
+            localeChanged: 'Локаль изменена',
+            localeChangeError: 'Ошибка при изменении локали',
+            trackingToggleRequest: 'Запрос изменения состояния отслеживания',
+            trackingToggleError: 'Ошибка переключения состояния отслеживания',
+            trackingStateUpdated: 'Состояние отслеживания обновлено',
+            trackingStateUpdateFailed: 'Не удалось обновить состояние отслеживания',
+            periodicUpdatesAlreadyStarted: 'Периодические обновления уже запущены',
+            periodicUpdatesStart: 'Запуск периодических обновлений',
+            periodicUpdatesError: 'Ошибка периодического обновления',
+            periodicUpdatesStopped: 'Периодические обновления остановлены',
+            alreadyDestroyed: 'AppManager уже был уничтожен',
+            destroyStart: 'Очистка ресурсов AppManager',
+            destroyed: 'AppManager уничтожен',
+            destroyError: 'Ошибка при уничтожении AppManager',
+            eventHandlersRemoved: 'Обработчики событий удалены',
+            eventHandlersRemoveError: 'Ошибка удаления обработчиков событий',
+            managersDestroyed: 'Все менеджеры уничтожены',
+            managersDestroyError: 'Ошибка уничтожения менеджеров'
         },
         diagnostics: {
             resultsHeader: 'Результаты диагностики',
