@@ -87,9 +87,6 @@ class DiagnosticsManager extends BaseManager {
         /** @type {boolean} */
         this.parallelExecution = options.parallelExecution !== false;
         
-        /** @type {DiagnosticResults|null} */
-        this.lastResults = null;
-        
         this._log({ key: 'logs.diagnostics.created' }, { 
             parallelExecution: this.parallelExecution 
         });
@@ -202,8 +199,6 @@ class DiagnosticsManager extends BaseManager {
             results.overall = this.calculateOverallStatus(results.checks);
 
             results.totalDuration = Math.round(performance.now() - startTime);
-
-            this.lastResults = results;
             
             this._log({ key: 'logs.diagnostics.diagnosticsCompleted' }, {
                 overall: results.overall,
@@ -217,8 +212,6 @@ class DiagnosticsManager extends BaseManager {
             results.error = error.message;
             results.overall = DiagnosticsManager.CHECK_STATUS.ERROR;
             results.totalDuration = Math.round(performance.now() - startTime);
-            
-            this.lastResults = results;
             
             return results;
         }
@@ -414,72 +407,6 @@ class DiagnosticsManager extends BaseManager {
     }
 
     /**
-     * Отображает результаты диагностики пользователю.
-     * 
-     * @param {DiagnosticResults} results - Результаты диагностики
-     * @returns {void}
-     */
-    displayDiagnosticResults(results) {
-        if (!results) {
-            this._logError({ key: 'logs.diagnostics.noResults' });
-            return;
-        }
-
-        const emoji = DiagnosticsManager.STATUS_EMOJI[results.overall] ||
-            DiagnosticsManager.STATUS_EMOJI.unknown;
-
-        const checksCount = Object.keys(results.checks).length;
-        const errorCount = Object.values(results.checks)
-            .filter(c => c.status === DiagnosticsManager.CHECK_STATUS.ERROR).length;
-        const warningCount = Object.values(results.checks)
-            .filter(c => c.status === DiagnosticsManager.CHECK_STATUS.WARNING).length;
-
-        const baseMessage = this.translateFn('logs.diagnostics.diagnosticsCompletedMessage', { duration: results.totalDuration });
-        
-        let message = `${emoji} ${baseMessage}`;
-        
-        if (errorCount > 0) {
-            const errorsText = this.translateFn('logs.diagnostics.errorsCount', { count: errorCount, total: checksCount });
-            message += ` | ${errorsText}`;
-        } else if (warningCount > 0) {
-            const warningsText = this.translateFn('logs.diagnostics.warningsCount', { count: warningCount, total: checksCount });
-            message += ` | ${warningsText}`;
-        } else {
-            const allPassedText = this.translateFn('logs.diagnostics.allChecksPassed');
-            message += ` | ${allPassedText}`;
-        }
-
-        const notificationType = results.overall === DiagnosticsManager.CHECK_STATUS.OK 
-            ? 'success' 
-            : 'error';
-
-        this.notificationManager.showNotification(message, notificationType);
-
-        this._log({ key: 'logs.diagnostics.resultsHeader' });
-        this._log({ key: 'logs.diagnostics.overall' }, { overall: results.overall });
-        this._log({ key: 'logs.diagnostics.duration' }, { durationMs: results.totalDuration });
-        this._log({ key: 'logs.diagnostics.startedAt' }, { timestamp: results.timestamp });
-        
-        if (results.error) {
-            this._logError({ key: 'logs.diagnostics.generalError' }, results.error);
-        }
-        
-        Object.entries(results.checks).forEach(([name, check]) => {
-            const checkEmoji = DiagnosticsManager.STATUS_EMOJI[check.status] ||
-                DiagnosticsManager.STATUS_EMOJI.unknown;
-            const localizedName = this.translateFn(`logs.diagnostics.checkNames.${name}`, {}, name);
-            this._log({ key: 'logs.diagnostics.checkLine', params: { name: localizedName, emoji: checkEmoji } }, {
-                message: check.message,
-                durationMs: check.duration,
-                data: check.data || null
-            });
-            if (check.error) {
-                this._logError({ key: 'logs.diagnostics.checkError', params: { name } }, check.error);
-            }
-        });
-    }
-
-    /**
      * Очищает ресурсы при уничтожении менеджера.
      * 
      * @returns {void}
@@ -488,7 +415,6 @@ class DiagnosticsManager extends BaseManager {
         this._log({ key: 'logs.diagnostics.cleanupStart' });
         
         try {
-            this.lastResults = null;
             this._log({ key: 'logs.diagnostics.destroyed' });
         } catch (error) {
             this._logError({ key: 'logs.diagnostics.destroyError' }, error);

@@ -185,12 +185,6 @@ describe('AppManager', () => {
             expect(appManager.eventHandlers.size).toBeGreaterThanOrEqual(0);
         });
 
-        test('should initialize originalButtonTexts Map', () => {
-            appManager = new AppManager({ enableLogging: false });
-            
-            expect(appManager.originalButtonTexts).toBeInstanceOf(Map);
-        });
-
         test('should pass enableLogging to child managers', () => {
             appManager = new AppManager({ enableLogging: false });
             

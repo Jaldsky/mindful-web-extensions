@@ -88,8 +88,7 @@ const CONFIG = {
             QUEUE_SIZE: 'queueSize',
             OPEN_SETTINGS: 'openSettings',
             TEST_CONNECTION: 'testConnection',
-            TOGGLE_TRACKING: 'toggleTracking',
-            RUN_DIAGNOSTICS: 'runDiagnostics'
+            TOGGLE_TRACKING: 'toggleTracking'
         }
     },
 
