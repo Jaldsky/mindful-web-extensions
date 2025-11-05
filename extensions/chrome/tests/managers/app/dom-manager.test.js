@@ -4,6 +4,28 @@
  */
 
 const DOMManager = require('../../../src/managers/app/DOMManager.js');
+const EN = require('../../../locales/en.js');
+
+// Создаем mock функцию локализации, которая возвращает английские строки
+const createMockTranslateFn = () => {
+    const getNestedValue = (obj, path) => {
+        return path.split('.').reduce((current, key) => current?.[key], obj);
+    };
+    
+    return (key, params = {}, fallback = '') => {
+        const value = getNestedValue(EN, key);
+        if (!value) return fallback;
+        
+        // Простая подстановка параметров
+        if (typeof value === 'string' && params) {
+            return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+                return params[paramKey] !== undefined ? params[paramKey] : match;
+            });
+        }
+        
+        return value || fallback;
+    };
+};
 
 describe('DOMManager', () => {
     let domManager;
@@ -17,15 +39,17 @@ describe('DOMManager', () => {
             <button id="openSettings"></button>
             <button id="testConnection"></button>
             <button id="toggleTracking"></button>
-            <button id="reloadExtension"></button>
             <button id="runDiagnostics"></button>
         `;
 
-        domManager = new DOMManager();
+        const mockTranslateFn = createMockTranslateFn();
+        domManager = new DOMManager({ translateFn: mockTranslateFn });
     });
 
     afterEach(() => {
-        document.body.innerHTML = '';
+        if (document && document.body) {
+            document.body.innerHTML = '';
+        }
     });
 
     describe('constructor', () => {
@@ -43,7 +67,6 @@ describe('DOMManager', () => {
             expect(domManager.elements.openSettings).toBeDefined();
             expect(domManager.elements.testConnection).toBeDefined();
             expect(domManager.elements.toggleTracking).toBeDefined();
-            expect(domManager.elements.reloadExtension).toBeDefined();
             expect(domManager.elements.runDiagnostics).toBeDefined();
         });
     });
@@ -70,7 +93,7 @@ describe('DOMManager', () => {
 
             expect(result).toBe(true);
             const statusElement = domManager.elements.connectionStatus;
-            expect(statusElement.textContent).toContain('Connected');
+            expect(statusElement.textContent).toBe('Online');
             expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_ONLINE);
         });
 
@@ -79,7 +102,7 @@ describe('DOMManager', () => {
             
             expect(result).toBe(true);
             const statusElement = domManager.elements.connectionStatus;
-            expect(statusElement.textContent).toContain('Disconnected');
+            expect(statusElement.textContent).toBe('Offline');
             expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_OFFLINE);
         });
 
@@ -113,7 +136,7 @@ describe('DOMManager', () => {
             
             expect(result).toBe(true);
             const statusElement = domManager.elements.trackingStatus;
-            expect(statusElement.textContent).toContain('Active');
+            expect(statusElement.textContent).toBe('Active');
             expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_ACTIVE);
         });
 
@@ -122,7 +145,7 @@ describe('DOMManager', () => {
             
             expect(result).toBe(true);
             const statusElement = domManager.elements.trackingStatus;
-            expect(statusElement.textContent).toContain('Inactive');
+            expect(statusElement.textContent).toBe('Inactive');
             expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_INACTIVE);
         });
 
@@ -398,7 +421,7 @@ describe('DOMManager', () => {
         test('should count total elements correctly', () => {
             const stats = domManager.getElementsStatistics();
             
-            expect(stats.total).toBe(10); // 10 элементов в app_manager
+            expect(stats.total).toBe(9); // 9 элементов в app_manager (удалили reloadExtension)
             expect(stats.available).toBeGreaterThan(0);
         });
 
@@ -429,9 +452,31 @@ describe('DOMManager', () => {
     });
 
     describe('DOM Availability Validation', () => {
+        beforeEach(() => {
+            document.body.innerHTML = `
+                <div id="connectionStatus"></div>
+                <div id="trackingStatus"></div>
+                <div id="eventsCount"></div>
+                <div id="domainsCount"></div>
+                <button id="openSettings"></button>
+                <button id="testConnection"></button>
+                <button id="toggleTracking"></button>
+                <button id="runDiagnostics"></button>
+            `;
+        });
+
+        afterEach(() => {
+            if (document && document.body) {
+                document.body.innerHTML = '';
+            }
+        });
+
         test('should validate document availability on construction', () => {
             expect(() => {
-                new DOMManager({ enableLogging: false });
+                new DOMManager({ 
+                    enableLogging: false,
+                    translateFn: createMockTranslateFn()
+                });
             }).not.toThrow();
         });
 
@@ -439,25 +484,46 @@ describe('DOMManager', () => {
             const originalDocument = global.document;
             const originalDescriptor = Object.getOwnPropertyDescriptor(global, 'document');
             
-            Object.defineProperty(global, 'document', {
-                get: () => undefined,
-                configurable: true
-            });
+            try {
+                Object.defineProperty(global, 'document', {
+                    get: () => undefined,
+                    configurable: true
+                });
 
-            expect(() => {
-                new DOMManager();
-            }).toThrow('document API недоступен');
-
-            // Восстанавливаем document
-            if (originalDescriptor) {
-                Object.defineProperty(global, 'document', originalDescriptor);
-            } else {
-                global.document = originalDocument;
+                expect(() => {
+                    new DOMManager({ translateFn: createMockTranslateFn() });
+                }).toThrow('document API недоступен');
+            } finally {
+                // Восстанавливаем document в finally, чтобы гарантировать восстановление даже при ошибках
+                if (originalDescriptor) {
+                    Object.defineProperty(global, 'document', originalDescriptor);
+                } else {
+                    global.document = originalDocument;
+                }
             }
         });
     });
 
     describe('Branch Coverage - Дополнительные ветки', () => {
+        beforeEach(() => {
+            document.body.innerHTML = `
+                <div id="connectionStatus"></div>
+                <div id="trackingStatus"></div>
+                <div id="eventsCount"></div>
+                <div id="domainsCount"></div>
+                <button id="openSettings"></button>
+                <button id="testConnection"></button>
+                <button id="toggleTracking"></button>
+                <button id="runDiagnostics"></button>
+            `;
+        });
+
+        afterEach(() => {
+            if (document && document.body) {
+                document.body.innerHTML = '';
+            }
+        });
+
         test('updateConnectionStatus - с translateFn', () => {
             const translateFn = jest.fn((key) => {
                 const translations = {
@@ -482,19 +548,23 @@ describe('DOMManager', () => {
 
         test('updateConnectionStatus - без translateFn используя fallback', () => {
             const manager = new DOMManager({ 
-                enableLogging: false
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
             });
 
             const result = manager.updateConnectionStatus(false);
 
             expect(result).toBe(true);
-            expect(manager.elements.connectionStatus.textContent).toBe('Disconnected');
+            expect(manager.elements.connectionStatus.textContent).toBe('Offline');
             
             manager.destroy();
         });
 
         test('updateConnectionStatus - обработка ошибок при обновлении', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
             
             // Мокируем ошибку в _safeUpdateElement
             jest.spyOn(manager, '_safeUpdateElement').mockImplementation(() => {
@@ -509,7 +579,10 @@ describe('DOMManager', () => {
         });
 
         test('_safeUpdateElement - с элементом не найденным', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
             
             const result = manager._safeUpdateElement(
                 null, 
@@ -523,7 +596,10 @@ describe('DOMManager', () => {
         });
 
         test('_safeUpdateElement - обработка ошибок в updateFn', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
             
             const element = document.createElement('div');
             const updateFn = jest.fn(() => {
@@ -566,7 +642,10 @@ describe('DOMManager', () => {
         });
 
         test('updateTrackingStatus - обработка ошибок', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
             
             // Мокируем ошибку
             jest.spyOn(manager, '_safeUpdateElement').mockImplementation(() => {
@@ -581,7 +660,10 @@ describe('DOMManager', () => {
         });
 
         test('updateCounters - обработка null/undefined значений', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
 
             const result = manager.updateCounters({
                 eventsCount: null,
@@ -596,7 +678,10 @@ describe('DOMManager', () => {
         });
 
         test('updateCounters - с только некоторыми полями', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
 
             const result = manager.updateCounters({
                 eventsCount: 5
@@ -610,7 +695,10 @@ describe('DOMManager', () => {
         });
 
         test('setButtonState - с несуществующим элементом', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
             
             // Удаляем элемент из DOM
             const button = manager.elements.openSettings;
@@ -628,7 +716,10 @@ describe('DOMManager', () => {
         });
 
         test('destroy - должен корректно сбрасывать элементы', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
             
             manager.destroy();
 
@@ -640,7 +731,10 @@ describe('DOMManager', () => {
         });
 
         test('getElementStatistics - с null элементами', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
             
             // Обнуляем некоторые элементы
             manager.elements.connectionStatus = null;
@@ -669,7 +763,10 @@ describe('DOMManager', () => {
         });
 
         test('reloadElements - должен перезагружать все элементы', () => {
-            const manager = new DOMManager({ enableLogging: false });
+            const manager = new DOMManager({ 
+                enableLogging: false,
+                translateFn: createMockTranslateFn()
+            });
             
             const oldElements = { ...manager.elements };
             

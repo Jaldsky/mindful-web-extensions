@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * @typedef {Object} DOMElements
@@ -10,7 +11,6 @@ const BaseManager = require('../../base/BaseManager.js');
  * @property {HTMLElement|null} openSettings - Кнопка открытия настроек
  * @property {HTMLElement|null} testConnection - Кнопка тестирования подключения
  * @property {HTMLElement|null} toggleTracking - Кнопка переключения отслеживания
- * @property {HTMLElement|null} reloadExtension - Кнопка перезагрузки расширения
  * @property {HTMLElement|null} runDiagnostics - Кнопка запуска диагностики
  */
 
@@ -33,32 +33,16 @@ class DOMManager extends BaseManager {
      * CSS классы для статусов
      * Эти классы определены в styles/common.css
      * @readonly
-     * @enum {string}
+     * @static
      */
-    static CSS_CLASSES = {
-        STATUS_ONLINE: 'status-value status-online',
-        STATUS_OFFLINE: 'status-value status-offline',
-        STATUS_ACTIVE: 'status-value status-active',
-        STATUS_INACTIVE: 'status-value status-inactive'
-    };
+    static CSS_CLASSES = CONFIG.APP_DOM.CSS_CLASSES;
 
     /**
      * ID элементов DOM
      * @readonly
-     * @enum {string}
+     * @static
      */
-    static ELEMENT_IDS = {
-        CONNECTION_STATUS: 'connectionStatus',
-        TRACKING_STATUS: 'trackingStatus',
-        EVENTS_COUNT: 'eventsCount',
-        DOMAINS_COUNT: 'domainsCount',
-        QUEUE_SIZE: 'queueSize',
-        OPEN_SETTINGS: 'openSettings',
-        TEST_CONNECTION: 'testConnection',
-        TOGGLE_TRACKING: 'toggleTracking',
-        RELOAD_EXTENSION: 'reloadExtension',
-        RUN_DIAGNOSTICS: 'runDiagnostics'
-    };
+    static ELEMENT_IDS = CONFIG.APP_DOM.ELEMENT_IDS;
 
     /**
      * Создает экземпляр DOMManager.
@@ -71,25 +55,33 @@ class DOMManager extends BaseManager {
     constructor(options = {}) {
         super(options);
         
+        const t = this._getTemporaryTranslateFn();
+        
         /** @type {boolean} */
         this.strictMode = options.strictMode || false;
         
         /** @type {DOMElements} */
         this.elements = {};
         
-        /** @type {Map<string, number>} */
-        this.performanceMetrics = new Map();
+        /** @type {Function} Функция для получения переводов */
+        this.translateFn = options.translateFn || (() => '');
         
-        /** @type {Function|null} Функция для получения переводов */
-        this.translateFn = options.translateFn || null;
+        if (!this.translateFn || typeof this.translateFn !== 'function') {
+            throw new TypeError(t('logs.dom.validation.translateFnMustBeFunction'));
+        }
  
         this.CONSTANTS.CONNECTION_MESSAGE_TIMEOUT = this.CONSTANTS.CONNECTION_MESSAGE_TIMEOUT || 2000;
         this.connectionMessageTimer = null;
  
-        this._validateDOMAvailability();
-        this._initializeElements();
+        try {
+            this._validateDOMAvailability();
+            this._initializeElements();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : t('logs.dom.initializationError');
+            throw new Error(errorMessage);
+        }
     }
-    
+
     /**
      * Проверяет доступность DOM API.
      * 
@@ -98,12 +90,14 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     _validateDOMAvailability() {
+        const t = this._getTemporaryTranslateFn();
+        
         if (typeof document === 'undefined') {
-            throw new Error('document API недоступен');
+            throw new Error(t('logs.dom.documentApiUnavailable'));
         }
         
         if (typeof document.getElementById !== 'function') {
-            throw new Error('document.getElementById недоступен');
+            throw new Error(t('logs.dom.getElementByIdUnavailable'));
         }
     }
 
@@ -116,14 +110,13 @@ class DOMManager extends BaseManager {
     _initializeElements() {
         try {
             this.elements = this._cacheDOMElements();
-            this._log('DOM элементы инициализированы', this.elements);
-            
-            // Проверка в строгом режиме
+            this._log({ key: 'logs.dom.elementsInitialized' }, this.elements);
+
             if (this.strictMode) {
                 this._validateElements();
             }
         } catch (error) {
-            this._logError('Ошибка инициализации DOM элементов', error);
+            this._logError({ key: 'logs.dom.initializationError' }, error);
             if (this.strictMode) {
                 throw error;
             }
@@ -140,7 +133,7 @@ class DOMManager extends BaseManager {
         const getElement = (id) => {
             const element = document.getElementById(id);
             if (!element) {
-                this._log(`Элемент с ID "${id}" не найден`);
+                this._log({ key: 'logs.dom.elementNotFound', params: { id } });
             }
             return element;
         };
@@ -154,7 +147,6 @@ class DOMManager extends BaseManager {
             openSettings: getElement(DOMManager.ELEMENT_IDS.OPEN_SETTINGS),
             testConnection: getElement(DOMManager.ELEMENT_IDS.TEST_CONNECTION),
             toggleTracking: getElement(DOMManager.ELEMENT_IDS.TOGGLE_TRACKING),
-            reloadExtension: getElement(DOMManager.ELEMENT_IDS.RELOAD_EXTENSION),
             runDiagnostics: getElement(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS)
         };
     }
@@ -176,9 +168,8 @@ class DOMManager extends BaseManager {
         });
         
         if (missingElements.length > 0) {
-            throw new Error(
-                `Отсутствуют критичные DOM элементы: ${missingElements.join(', ')}`
-            );
+            const elements = missingElements.join(', ');
+            throw new Error(this.translateFn('logs.dom.criticalElementsMissing', { elements }));
         }
     }
 
@@ -193,16 +184,16 @@ class DOMManager extends BaseManager {
      */
     _safeUpdateElement(element, updateFn, elementName = 'element') {
         if (!element) {
-            this._log(`Невозможно обновить ${elementName}: элемент не найден`);
+            this._log({ key: 'logs.dom.updateImpossible', params: { elementName } });
             return false;
         }
 
         try {
             updateFn(element);
-            this._log(`${elementName} обновлен успешно`);
+            this._log({ key: 'logs.dom.elementUpdated', params: { elementName } });
             return true;
         } catch (error) {
-            this._logError(`Ошибка обновления ${elementName}`, error);
+            this._logError({ key: 'logs.dom.elementUpdateError', params: { elementName } }, error);
             return false;
         }
     }
@@ -216,19 +207,21 @@ class DOMManager extends BaseManager {
      */
     updateConnectionStatus(isOnline) {
         if (typeof isOnline !== 'boolean') {
-            throw new TypeError('isOnline должен быть булевым значением');
+            throw new TypeError(this.translateFn('logs.dom.validation.isOnlineMustBeBoolean'));
         }
 
         try {
             this.updateState({ isOnline });
             this._clearConnectionMessageTimer();
             
+            const elementName = this.translateFn('logs.dom.elementNames.connectionStatus');
+            
             return this._safeUpdateElement(
                 this.elements.connectionStatus,
                 (element) => {
                     const statusText = isOnline 
-                        ? (this.translateFn ? this.translateFn('app.status.online') : 'Connected')
-                        : (this.translateFn ? this.translateFn('app.status.offline') : 'Disconnected');
+                        ? this.translateFn('app.status.online')
+                        : this.translateFn('app.status.offline');
                     
                     element.textContent = statusText;
                     element.dataset.originalText = statusText;
@@ -237,10 +230,10 @@ class DOMManager extends BaseManager {
                         ? DOMManager.CSS_CLASSES.STATUS_ONLINE 
                         : DOMManager.CSS_CLASSES.STATUS_OFFLINE;
                 },
-                'статус подключения'
+                elementName
             );
         } catch (error) {
-            this._logError('Ошибка обновления статуса подключения', error);
+            this._logError({ key: 'logs.dom.connectionStatusUpdateError' }, error);
             return false;
         }
     }
@@ -289,31 +282,31 @@ class DOMManager extends BaseManager {
      */
     updateTrackingStatus(isTracking) {
         if (typeof isTracking !== 'boolean') {
-            throw new TypeError('isTracking должен быть булевым значением');
+            throw new TypeError(this.translateFn('logs.dom.validation.isTrackingMustBeBoolean'));
         }
 
         try {
             this.updateState({ isTracking });
             
+            const elementName = this.translateFn('logs.dom.elementNames.trackingStatus');
+            
             return this._safeUpdateElement(
                 this.elements.trackingStatus,
                 (element) => {
-                    // Используем локализацию если доступна, иначе английский
                     const statusText = isTracking 
-                        ? (this.translateFn ? this.translateFn('app.status.active') : 'Active')
-                        : (this.translateFn ? this.translateFn('app.status.inactive') : 'Inactive');
+                        ? this.translateFn('app.status.active')
+                        : this.translateFn('app.status.inactive');
                     
                     element.textContent = statusText;
-                    // Очищаем предыдущие классы и применяем новые
                     element.className = '';
                     element.className = isTracking 
                         ? DOMManager.CSS_CLASSES.STATUS_ACTIVE 
                         : DOMManager.CSS_CLASSES.STATUS_INACTIVE;
                 },
-                'статус отслеживания'
+                elementName
             );
         } catch (error) {
-            this._logError('Ошибка обновления статуса отслеживания', error);
+            this._logError({ key: 'logs.dom.trackingStatusUpdateError' }, error);
             return false;
         }
     }
@@ -328,15 +321,16 @@ class DOMManager extends BaseManager {
      */
     updateTrackingToggle(isTracking, options = {}) {
         if (typeof isTracking !== 'boolean') {
-            throw new TypeError('isTracking должен быть булевым значением');
+            throw new TypeError(this.translateFn('logs.dom.validation.isTrackingMustBeBoolean'));
         }
 
         const disabled = Boolean(options.disabled);
         const button = this.elements.toggleTracking;
 
         const labelKey = isTracking ? 'app.buttons.disableTracking' : 'app.buttons.enableTracking';
-        const fallbackLabel = isTracking ? 'Disable Tracking' : 'Enable Tracking';
-        const label = this.translateFn ? this.translateFn(labelKey) : fallbackLabel;
+        const label = this.translateFn(labelKey);
+
+        const elementName = this.translateFn('logs.dom.elementNames.trackingToggle');
 
         return this._safeUpdateElement(
             button,
@@ -346,7 +340,7 @@ class DOMManager extends BaseManager {
                 element.classList.remove('toggle-btn--disable', 'toggle-btn--enable');
                 element.classList.add(isTracking ? 'toggle-btn--disable' : 'toggle-btn--enable');
             },
-            'кнопка переключения отслеживания'
+            elementName
         );
     }
 
@@ -357,15 +351,14 @@ class DOMManager extends BaseManager {
      */
     setTrackingToggleLoading(targetIsTracking) {
         if (typeof targetIsTracking !== 'boolean') {
-            throw new TypeError('targetIsTracking должен быть булевым значением');
+            throw new TypeError(this.translateFn('logs.dom.validation.targetIsTrackingMustBeBoolean'));
         }
 
         const button = this.elements.toggleTracking;
         const labelKey = targetIsTracking
             ? 'app.buttons.trackingEnableLoading'
             : 'app.buttons.trackingDisableLoading';
-        const fallbackLabel = targetIsTracking ? 'Enabling...' : 'Disabling...';
-        const label = this.translateFn ? this.translateFn(labelKey) : fallbackLabel;
+        const label = this.translateFn(labelKey);
 
         return this.setButtonState(button, label, true);
     }
@@ -379,7 +372,7 @@ class DOMManager extends BaseManager {
      */
     updateCounters(counters) {
         if (!counters || typeof counters !== 'object') {
-            throw new TypeError('counters должен быть объектом');
+            throw new TypeError(this.translateFn('logs.dom.validation.countersMustBeObject'));
         }
 
         const { events = 0, domains = 0, queue = 0 } = counters;
@@ -392,21 +385,21 @@ class DOMManager extends BaseManager {
             events: this._safeUpdateElement(
                 this.elements.eventsCount,
                 (element) => { element.textContent = validEvents.toString(); },
-                'счетчик событий'
+                this.translateFn('logs.dom.elementNames.eventsCounter')
             ),
             domains: this._safeUpdateElement(
                 this.elements.domainsCount,
                 (element) => { element.textContent = validDomains.toString(); },
-                'счетчик доменов'
+                this.translateFn('logs.dom.elementNames.domainsCounter')
             ),
             queue: this._safeUpdateElement(
                 this.elements.queueSize,
                 (element) => { element.textContent = validQueue.toString(); },
-                'размер очереди'
+                this.translateFn('logs.dom.elementNames.queueSize')
             )
         };
 
-        this._log('Счетчики обновлены', { events: validEvents, domains: validDomains, queue: validQueue });
+        this._log({ key: 'logs.dom.countersUpdated' }, { events: validEvents, domains: validDomains, queue: validQueue });
         
         return results;
     }
@@ -422,11 +415,11 @@ class DOMManager extends BaseManager {
      */
     setButtonState(button, text, disabled) {
         if (typeof text !== 'string') {
-            throw new TypeError('text должен быть строкой');
+            throw new TypeError(this.translateFn('logs.dom.validation.textMustBeString'));
         }
         
         if (typeof disabled !== 'boolean') {
-            throw new TypeError('disabled должен быть булевым значением');
+            throw new TypeError(this.translateFn('logs.dom.validation.disabledMustBeBoolean'));
         }
 
         return this._safeUpdateElement(
@@ -435,7 +428,7 @@ class DOMManager extends BaseManager {
                 element.textContent = text;
                 element.disabled = disabled;
             },
-            'кнопка'
+            this.translateFn('logs.dom.elementNames.button')
         );
     }
 
@@ -446,21 +439,8 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     reloadElements() {
-        this._log('Перезагрузка DOM элементов');
+        this._log({ key: 'logs.dom.elementsReload' });
         this._initializeElements();
-    }
-    
-    /**
-     * Получает метрики производительности.
-     * 
-     * @returns {Object} Метрики производительности
-     */
-    getPerformanceMetrics() {
-        const metrics = {};
-        this.performanceMetrics.forEach((value, key) => {
-            metrics[key] = value;
-        });
-        return metrics;
     }
     
     /**
@@ -496,7 +476,7 @@ class DOMManager extends BaseManager {
 
             return stats;
         } catch (error) {
-            this._logError('Ошибка получения статистики элементов', error);
+            this._logError({ key: 'logs.dom.elementsStatisticsError' }, error);
             return {};
         }
     }
@@ -508,11 +488,13 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     setTranslateFn(translateFn) {
+        const t = this._getTemporaryTranslateFn();
+        
         if (typeof translateFn !== 'function') {
-            throw new TypeError('translateFn должен быть функцией');
+            throw new TypeError(t('logs.dom.validation.translateFnMustBeFunction'));
         }
         this.translateFn = translateFn;
-        this._log('Функция локализации установлена');
+        this._log({ key: 'logs.dom.translateFnSet' });
     }
 
     /**
@@ -529,7 +511,7 @@ class DOMManager extends BaseManager {
             this.updateTrackingStatus(this.state.isTracking);
             this.updateTrackingToggle(this.state.isTracking);
         }
-        this._log('Статусы обновлены с текущей локализацией');
+        this._log({ key: 'logs.dom.statusesRefreshed' });
     }
 
     /**
@@ -538,10 +520,9 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов DOMManager');
+        this._log({ key: 'logs.dom.cleanupStart' });
         this._clearConnectionMessageTimer();
         this.elements = {};
-        this.performanceMetrics.clear();
         this.translateFn = null;
         super.destroy();
     }

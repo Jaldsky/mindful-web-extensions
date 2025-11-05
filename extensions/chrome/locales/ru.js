@@ -107,6 +107,48 @@ const RU = {
             destroyed: 'DiagnosticsManager уничтожен',
             destroyError: 'Ошибка при уничтожении DiagnosticsManager'
         },
+        dom: {
+            created: 'DOMManager инициализирован',
+            documentApiUnavailable: 'document API недоступен',
+            getElementByIdUnavailable: 'document.getElementById недоступен',
+            elementsInitialized: 'DOM элементы инициализированы',
+            initializationError: 'Ошибка инициализации DOM элементов',
+            elementNotFound: 'Элемент с ID "{id}" не найден',
+            criticalElementsMissing: 'Отсутствуют критичные DOM элементы: {elements}',
+            updateImpossible: 'Невозможно обновить {elementName}: элемент не найден',
+            elementUpdated: '{elementName} обновлен успешно',
+            elementUpdateError: 'Ошибка обновления {elementName}',
+            connectionStatusUpdateError: 'Ошибка обновления статуса подключения',
+            trackingStatusUpdateError: 'Ошибка обновления статуса отслеживания',
+            countersUpdated: 'Счетчики обновлены',
+            elementsReload: 'Перезагрузка DOM элементов',
+            elementsStatisticsError: 'Ошибка получения статистики элементов',
+            translateFnSet: 'Функция локализации установлена',
+            statusesRefreshed: 'Статусы обновлены с текущей локализацией',
+            cleanupStart: 'Очистка ресурсов DOMManager',
+            destroyed: 'DOMManager уничтожен',
+            destroyError: 'Ошибка при уничтожении DOMManager',
+            // Названия элементов для логирования
+            elementNames: {
+                connectionStatus: 'статус подключения',
+                trackingStatus: 'статус отслеживания',
+                trackingToggle: 'кнопка переключения отслеживания',
+                eventsCounter: 'счетчик событий',
+                domainsCounter: 'счетчик доменов',
+                queueSize: 'размер очереди',
+                button: 'кнопка'
+            },
+            // Ошибки валидации
+            validation: {
+                isOnlineMustBeBoolean: 'isOnline должен быть булевым значением',
+                isTrackingMustBeBoolean: 'isTracking должен быть булевым значением',
+                targetIsTrackingMustBeBoolean: 'targetIsTracking должен быть булевым значением',
+                countersMustBeObject: 'counters должен быть объектом',
+                textMustBeString: 'text должен быть строкой',
+                disabledMustBeBoolean: 'disabled должен быть булевым значением',
+                translateFnMustBeFunction: 'translateFn должен быть функцией'
+            }
+        },
         notification: {
             warnMessageRequired: 'message обязателен и должен быть строкой',
             warnInvalidType: 'Неверный тип "{type}", используется INFO'
