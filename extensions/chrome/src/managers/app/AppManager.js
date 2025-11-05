@@ -50,7 +50,6 @@ class AppManager extends BaseManager {
         this.updateInterval = null;
         this.eventHandlers = new Map();
         this.isInitialized = false;
-        this.originalButtonTexts = new Map();
 
         this.init();
     }

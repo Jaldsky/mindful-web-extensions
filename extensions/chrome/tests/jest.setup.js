@@ -23,7 +23,6 @@ const dom = new JSDOM(`
     <div id="domainsCount"></div>
     <button id="openSettings"></button>
     <button id="testConnection"></button>
-    <button id="runDiagnostics"></button>
     
     <!-- Options Manager elements -->
     <form id="settingsForm">

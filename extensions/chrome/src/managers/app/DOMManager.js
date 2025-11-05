@@ -11,7 +11,6 @@ const CONFIG = require('../../../config.js');
  * @property {HTMLElement|null} openSettings - Кнопка открытия настроек
  * @property {HTMLElement|null} testConnection - Кнопка тестирования подключения
  * @property {HTMLElement|null} toggleTracking - Кнопка переключения отслеживания
- * @property {HTMLElement|null} runDiagnostics - Кнопка запуска диагностики
  */
 
 /**
@@ -146,8 +145,7 @@ class DOMManager extends BaseManager {
             queueSize: getElement(DOMManager.ELEMENT_IDS.QUEUE_SIZE),
             openSettings: getElement(DOMManager.ELEMENT_IDS.OPEN_SETTINGS),
             testConnection: getElement(DOMManager.ELEMENT_IDS.TEST_CONNECTION),
-            toggleTracking: getElement(DOMManager.ELEMENT_IDS.TOGGLE_TRACKING),
-            runDiagnostics: getElement(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS)
+            toggleTracking: getElement(DOMManager.ELEMENT_IDS.TOGGLE_TRACKING)
         };
     }
 
@@ -293,11 +291,9 @@ class DOMManager extends BaseManager {
             return this._safeUpdateElement(
                 this.elements.trackingStatus,
                 (element) => {
-                    const statusText = isTracking 
+                    element.textContent = isTracking 
                         ? this.translateFn('app.status.active')
                         : this.translateFn('app.status.inactive');
-                    
-                    element.textContent = statusText;
                     element.className = '';
                     element.className = isTracking 
                         ? DOMManager.CSS_CLASSES.STATUS_ACTIVE 

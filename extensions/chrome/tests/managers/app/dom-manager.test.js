@@ -39,7 +39,6 @@ describe('DOMManager', () => {
             <button id="openSettings"></button>
             <button id="testConnection"></button>
             <button id="toggleTracking"></button>
-            <button id="runDiagnostics"></button>
         `;
 
         const mockTranslateFn = createMockTranslateFn();
@@ -67,7 +66,6 @@ describe('DOMManager', () => {
             expect(domManager.elements.openSettings).toBeDefined();
             expect(domManager.elements.testConnection).toBeDefined();
             expect(domManager.elements.toggleTracking).toBeDefined();
-            expect(domManager.elements.runDiagnostics).toBeDefined();
         });
     });
 
@@ -421,7 +419,7 @@ describe('DOMManager', () => {
         test('should count total elements correctly', () => {
             const stats = domManager.getElementsStatistics();
             
-            expect(stats.total).toBe(9); // 9 элементов в app_manager (удалили reloadExtension)
+            expect(stats.total).toBe(8); // 8 элементов в app_manager (удалили reloadExtension и runDiagnostics)
             expect(stats.available).toBeGreaterThan(0);
         });
 

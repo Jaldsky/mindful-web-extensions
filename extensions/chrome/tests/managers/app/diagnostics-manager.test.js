@@ -150,9 +150,6 @@ describe('DiagnosticsManager', () => {
             manager.destroy();
         });
 
-        test('should initialize lastResults as null', () => {
-            expect(diagnosticsManager.lastResults).toBeNull();
-        });
     });
 
     describe('runDiagnostics', () => {
@@ -188,12 +185,6 @@ describe('DiagnosticsManager', () => {
             expect(results.checks.stats).toBeDefined();
 
             manager.destroy();
-        });
-
-        test('should store results in lastResults', async () => {
-            const results = await diagnosticsManager.runDiagnostics();
-
-            expect(diagnosticsManager.lastResults).toBe(results);
         });
 
         test('should include duration for each check', async () => {
@@ -480,120 +471,7 @@ describe('DiagnosticsManager', () => {
         });
     });
 
-    describe('displayDiagnosticResults', () => {
-        test('should display results with notification', () => {
-            const results = {
-                overall: 'ok',
-                totalDuration: 100,
-                timestamp: new Date().toISOString(),
-                checks: {
-                    test: { status: 'ok', message: 'Test OK', duration: 50 }
-                }
-            };
-
-            diagnosticsManager.displayDiagnosticResults(results);
-
-            expect(mockNotificationManager.showNotification).toHaveBeenCalled();
-        });
-
-        test('should show success notification for OK status', () => {
-            const results = {
-                overall: 'ok',
-                totalDuration: 100,
-                timestamp: new Date().toISOString(),
-                checks: {
-                    test: { status: 'ok', message: 'Test', duration: 50 }
-                }
-            };
-
-            diagnosticsManager.displayDiagnosticResults(results);
-
-            const call = mockNotificationManager.showNotification.mock.calls[0];
-            expect(call[0]).toContain('✅');
-            expect(call[1]).toBe('success');
-        });
-
-        test('should show error notification for ERROR status', () => {
-            const results = {
-                overall: 'error',
-                totalDuration: 100,
-                timestamp: new Date().toISOString(),
-                checks: {
-                    test: { status: 'error', message: 'Test failed', duration: 50 }
-                }
-            };
-
-            diagnosticsManager.displayDiagnosticResults(results);
-
-            const call = mockNotificationManager.showNotification.mock.calls[0];
-            expect(call[0]).toContain('❌');
-            expect(call[1]).toBe('error');
-        });
-
-        test('should display error count in message', () => {
-            const results = {
-                overall: 'error',
-                totalDuration: 100,
-                timestamp: new Date().toISOString(),
-                checks: {
-                    test1: { status: 'error', message: 'Failed', duration: 50 },
-                    test2: { status: 'ok', message: 'OK', duration: 50 }
-                }
-            };
-
-            diagnosticsManager.displayDiagnosticResults(results);
-
-            const message = mockNotificationManager.showNotification.mock.calls[0][0];
-            expect(message).toContain('Ошибки: 1/2');
-        });
-
-        test('should display warning count in message', () => {
-            const results = {
-                overall: 'warning',
-                totalDuration: 100,
-                timestamp: new Date().toISOString(),
-                checks: {
-                    test1: { status: 'warning', message: 'Warning', duration: 50 },
-                    test2: { status: 'ok', message: 'OK', duration: 50 }
-                }
-            };
-
-            diagnosticsManager.displayDiagnosticResults(results);
-
-            const message = mockNotificationManager.showNotification.mock.calls[0][0];
-            expect(message).toContain('Предупреждения: 1/2');
-        });
-
-        test('should handle null results gracefully', () => {
-            diagnosticsManager.displayDiagnosticResults(null);
-
-            expect(mockNotificationManager.showNotification).not.toHaveBeenCalled();
-        });
-
-        test('should log errors to console', () => {
-            const results = {
-                overall: 'error',
-                totalDuration: 100,
-                timestamp: new Date().toISOString(),
-                error: 'General error',
-                checks: {
-                    test: { status: 'error', message: 'Failed', error: 'Specific error', duration: 50 }
-                }
-            };
-
-            diagnosticsManager.displayDiagnosticResults(results);
-
-            expect(consoleErrorSpy).toHaveBeenCalled();
-        });
-    });
-
     describe('destroy', () => {
-        test('should clear lastResults', () => {
-            diagnosticsManager.lastResults = { overall: 'ok', checks: {} };
-            diagnosticsManager.destroy();
-
-            expect(diagnosticsManager.lastResults).toBeNull();
-        });
 
         test('should not throw errors', () => {
             expect(() => diagnosticsManager.destroy()).not.toThrow();
@@ -673,11 +551,6 @@ describe('DiagnosticsManager', () => {
             expect(results.totalDuration).toBeGreaterThanOrEqual(0);
             expect(results.checks).toBeDefined();
             expect(results.overall).toBeDefined();
-
-            diagnosticsManager.displayDiagnosticResults(results);
-
-            expect(mockNotificationManager.showNotification).toHaveBeenCalled();
-            expect(diagnosticsManager.lastResults).toBe(results);
         });
 
         test('should handle mixed check results', async () => {
