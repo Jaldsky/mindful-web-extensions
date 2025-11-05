@@ -107,6 +107,48 @@ const EN = {
             destroyed: 'DiagnosticsManager destroyed',
             destroyError: 'Error destroying DiagnosticsManager'
         },
+        dom: {
+            created: 'DOMManager initialized',
+            documentApiUnavailable: 'document API is unavailable',
+            getElementByIdUnavailable: 'document.getElementById is unavailable',
+            elementsInitialized: 'DOM elements initialized',
+            initializationError: 'DOM elements initialization error',
+            elementNotFound: 'Element with ID "{id}" not found',
+            criticalElementsMissing: 'Critical DOM elements missing: {elements}',
+            updateImpossible: 'Cannot update {elementName}: element not found',
+            elementUpdated: '{elementName} updated successfully',
+            elementUpdateError: 'Error updating {elementName}',
+            connectionStatusUpdateError: 'Error updating connection status',
+            trackingStatusUpdateError: 'Error updating tracking status',
+            countersUpdated: 'Counters updated',
+            elementsReload: 'Reloading DOM elements',
+            elementsStatisticsError: 'Error getting elements statistics',
+            translateFnSet: 'Localization function set',
+            statusesRefreshed: 'Statuses updated with current localization',
+            cleanupStart: 'Cleaning up DOMManager resources',
+            destroyed: 'DOMManager destroyed',
+            destroyError: 'Error destroying DOMManager',
+            // Element names for logging
+            elementNames: {
+                connectionStatus: 'connection status',
+                trackingStatus: 'tracking status',
+                trackingToggle: 'tracking toggle button',
+                eventsCounter: 'events counter',
+                domainsCounter: 'domains counter',
+                queueSize: 'queue size',
+                button: 'button'
+            },
+            // Validation errors
+            validation: {
+                isOnlineMustBeBoolean: 'isOnline must be a boolean',
+                isTrackingMustBeBoolean: 'isTracking must be a boolean',
+                targetIsTrackingMustBeBoolean: 'targetIsTracking must be a boolean',
+                countersMustBeObject: 'counters must be an object',
+                textMustBeString: 'text must be a string',
+                disabledMustBeBoolean: 'disabled must be a boolean',
+                translateFnMustBeFunction: 'translateFn must be a function'
+            }
+        },
         notification: {
             warnMessageRequired: 'message is required and must be a string',
             warnInvalidType: 'Invalid type "{type}", INFO will be used'

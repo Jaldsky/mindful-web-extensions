@@ -69,6 +69,31 @@ const CONFIG = {
     },
 
     /**
+     * Настройки DOM менеджера для app страницы
+     */
+    APP_DOM: {
+        // CSS классы для статусов
+        CSS_CLASSES: {
+            STATUS_ONLINE: 'status-value status-online',
+            STATUS_OFFLINE: 'status-value status-offline',
+            STATUS_ACTIVE: 'status-value status-active',
+            STATUS_INACTIVE: 'status-value status-inactive'
+        },
+        // ID элементов DOM
+        ELEMENT_IDS: {
+            CONNECTION_STATUS: 'connectionStatus',
+            TRACKING_STATUS: 'trackingStatus',
+            EVENTS_COUNT: 'eventsCount',
+            DOMAINS_COUNT: 'domainsCount',
+            QUEUE_SIZE: 'queueSize',
+            OPEN_SETTINGS: 'openSettings',
+            TEST_CONNECTION: 'testConnection',
+            TOGGLE_TRACKING: 'toggleTracking',
+            RUN_DIAGNOSTICS: 'runDiagnostics'
+        }
+    },
+
+    /**
      * Ключи для Chrome Storage
      */
     STORAGE_KEYS: {
