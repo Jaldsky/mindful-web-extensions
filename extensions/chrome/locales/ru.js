@@ -150,8 +150,21 @@ const RU = {
             }
         },
         notification: {
+            created: 'NotificationManager создан',
             warnMessageRequired: 'message обязателен и должен быть строкой',
-            warnInvalidType: 'Неверный тип "{type}", используется INFO'
+            warnInvalidType: 'Неверный тип "{type}", используется INFO',
+            notificationCreated: 'Уведомление создано: {type}',
+            creationError: 'Ошибка создания уведомления',
+            documentBodyUnavailable: 'document.body недоступен',
+            notificationNotFound: 'Уведомление не найдено или уже удалено',
+            notificationRemoved: 'Уведомление удалено из DOM',
+            removalError: 'Ошибка при удалении уведомления из DOM',
+            removeError: 'Ошибка удаления уведомления',
+            cleared: 'Очищено уведомлений: {count}',
+            clearError: 'Ошибка очистки уведомлений',
+            cleanupStart: 'Очистка ресурсов NotificationManager',
+            destroyed: 'NotificationManager уничтожен',
+            destroyError: 'Ошибка при уничтожении NotificationManager'
         },
         locale: {
             created: 'LocaleManager создан',

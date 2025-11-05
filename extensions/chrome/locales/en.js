@@ -150,8 +150,21 @@ const EN = {
             }
         },
         notification: {
+            created: 'NotificationManager created',
             warnMessageRequired: 'message is required and must be a string',
-            warnInvalidType: 'Invalid type "{type}", INFO will be used'
+            warnInvalidType: 'Invalid type "{type}", using INFO',
+            notificationCreated: 'Notification created: {type}',
+            creationError: 'Error creating notification',
+            documentBodyUnavailable: 'document.body is unavailable',
+            notificationNotFound: 'Notification not found or already removed',
+            notificationRemoved: 'Notification removed from DOM',
+            removalError: 'Error removing notification from DOM',
+            removeError: 'Error removing notification',
+            cleared: 'Cleared notifications: {count}',
+            clearError: 'Error clearing notifications',
+            cleanupStart: 'Cleaning up NotificationManager resources',
+            destroyed: 'NotificationManager destroyed',
+            destroyError: 'Error destroying NotificationManager'
         },
         locale: {
             created: 'LocaleManager created',
