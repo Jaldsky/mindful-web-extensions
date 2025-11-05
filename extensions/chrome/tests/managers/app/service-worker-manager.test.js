@@ -51,7 +51,6 @@ describe('ServiceWorkerManager', () => {
     describe('constructor', () => {
         test('should initialize with default options', () => {
             expect(serviceWorkerManager).toBeDefined();
-            expect(serviceWorkerManager.messageHandlers).toBeInstanceOf(Map);
             expect(serviceWorkerManager.messageListener).not.toBeNull();
         });
 
@@ -67,10 +66,6 @@ describe('ServiceWorkerManager', () => {
 
         test('should setup message listener', () => {
             expect(mockChromeRuntime.onMessage.addListener).toHaveBeenCalled();
-        });
-
-        test('should initialize empty message handlers', () => {
-            expect(serviceWorkerManager.messageHandlers.size).toBe(0);
         });
     });
 
@@ -101,116 +96,12 @@ describe('ServiceWorkerManager', () => {
             expect(result3).toBe(false);
         });
 
-        test('should call registered handler for message type', () => {
-            const mockHandler = jest.fn();
-            const sendResponse = jest.fn();
-
-            serviceWorkerManager.onMessage('testType', mockHandler);
-
-            const listener = serviceWorkerManager.messageListener;
-            listener({ type: 'testType', data: { test: 'data' } }, {}, sendResponse);
-
-            expect(mockHandler).toHaveBeenCalledWith({ test: 'data' }, sendResponse);
-        });
-
-        test('should handle async handlers', async () => {
-            const mockAsyncHandler = jest.fn().mockResolvedValue({ success: true });
-            const sendResponse = jest.fn();
-
-            serviceWorkerManager.onMessage('asyncType', mockAsyncHandler);
-
-            const listener = serviceWorkerManager.messageListener;
-            const result = listener({ type: 'asyncType', data: {} }, {}, sendResponse);
-
-            expect(result).toBe(true);
-
-            await Promise.resolve();
-            await Promise.resolve();
-            
-            expect(sendResponse).toHaveBeenCalledWith({ success: true });
-        }, 1000);
-
-        test('should handle errors in async handlers', async () => {
-            const mockAsyncHandler = jest.fn().mockRejectedValue(new Error('Handler error'));
-            const sendResponse = jest.fn();
-
-            serviceWorkerManager.onMessage('errorType', mockAsyncHandler);
-
-            const listener = serviceWorkerManager.messageListener;
-            listener({ type: 'errorType', data: {} }, {}, sendResponse);
-
-            await Promise.resolve();
-            await Promise.resolve();
-            
-            expect(sendResponse).toHaveBeenCalledWith({
-                success: false,
-                error: 'Handler error'
-            });
-        }, 1000);
-
         test('should throw error if chrome.runtime is not available', () => {
             delete global.chrome;
 
             expect(() => {
                 new ServiceWorkerManager();
             }).toThrow();
-        });
-    });
-
-    describe('onMessage', () => {
-        test('should register message handler', () => {
-            const handler = jest.fn();
-            
-            serviceWorkerManager.onMessage('testMessage', handler);
-
-            expect(serviceWorkerManager.messageHandlers.has('testMessage')).toBe(true);
-            expect(serviceWorkerManager.messageHandlers.get('testMessage')).toBe(handler);
-        });
-
-        test('should throw error for invalid type', () => {
-            const handler = jest.fn();
-
-            expect(() => {
-                serviceWorkerManager.onMessage('', handler);
-            }).toThrow(TypeError);
-
-            expect(() => {
-                serviceWorkerManager.onMessage(null, handler);
-            }).toThrow(TypeError);
-
-            expect(() => {
-                serviceWorkerManager.onMessage(123, handler);
-            }).toThrow(TypeError);
-        });
-
-        test('should throw error for invalid handler', () => {
-            expect(() => {
-                serviceWorkerManager.onMessage('test', null);
-            }).toThrow(TypeError);
-
-            expect(() => {
-                serviceWorkerManager.onMessage('test', 'not a function');
-            }).toThrow(TypeError);
-        });
-
-        test('should allow multiple handlers for different types', () => {
-            const handler1 = jest.fn();
-            const handler2 = jest.fn();
-
-            serviceWorkerManager.onMessage('type1', handler1);
-            serviceWorkerManager.onMessage('type2', handler2);
-
-            expect(serviceWorkerManager.messageHandlers.size).toBe(2);
-        });
-
-        test('should overwrite existing handler for same type', () => {
-            const handler1 = jest.fn();
-            const handler2 = jest.fn();
-
-            serviceWorkerManager.onMessage('type1', handler1);
-            serviceWorkerManager.onMessage('type1', handler2);
-
-            expect(serviceWorkerManager.messageHandlers.get('type1')).toBe(handler2);
         });
     });
 
@@ -528,17 +419,6 @@ describe('ServiceWorkerManager', () => {
             expect(serviceWorkerManager.messageListener).toBeNull();
         });
 
-        test('should clear message handlers', () => {
-            serviceWorkerManager.onMessage('test1', jest.fn());
-            serviceWorkerManager.onMessage('test2', jest.fn());
-
-            expect(serviceWorkerManager.messageHandlers.size).toBe(2);
-
-            serviceWorkerManager.destroy();
-
-            expect(serviceWorkerManager.messageHandlers.size).toBe(0);
-        });
-
         test('should not throw errors', () => {
             expect(() => serviceWorkerManager.destroy()).not.toThrow();
         });
@@ -598,39 +478,9 @@ describe('ServiceWorkerManager', () => {
             }).toThrow('Setup failed');
         });
 
-        test('should log errors when handler registration fails', () => {
-            serviceWorkerManager.messageHandlers.set = () => {
-                throw new Error('Bad handler');
-            };
-
-            expect(() => {
-                serviceWorkerManager.onMessage('test', jest.fn());
-            }).toThrow('Bad handler');
-        });
     });
 
     describe('integration', () => {
-        test('should handle complete message flow', async () => {
-            const handler = jest.fn((data, sendResponse) => {
-                sendResponse({ received: data });
-            });
-
-            serviceWorkerManager.onMessage('testFlow', handler);
-
-            const listener = serviceWorkerManager.messageListener;
-            const sendResponse = jest.fn();
-
-            listener(
-                { type: 'testFlow', data: { test: 'data' } },
-                {},
-                sendResponse
-            );
-
-            expect(handler).toHaveBeenCalled();
-            expect(sendResponse).toHaveBeenCalledWith({
-                received: { test: 'data' }
-            });
-        });
 
         test('should handle multiple concurrent messages', async () => {
             mockChromeRuntime.sendMessage
@@ -650,15 +500,12 @@ describe('ServiceWorkerManager', () => {
         });
 
         test('should work after recreation of listener', () => {
-            const handler1 = jest.fn();
-            
-            serviceWorkerManager.onMessage('type1', handler1);
             serviceWorkerManager._setupMessageListener();
 
             const listener = serviceWorkerManager.messageListener;
-            listener({ type: 'type1', data: {} }, {}, jest.fn());
-
-            expect(handler1).toHaveBeenCalled();
+            const result = listener({ type: 'type1', data: {} }, {}, jest.fn());
+            
+            expect(result).toBe(false);
         });
     });
 

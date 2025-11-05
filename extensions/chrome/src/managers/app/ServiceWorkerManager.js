@@ -53,12 +53,10 @@ class ServiceWorkerManager extends BaseManager {
      * @param {Object} [options={}] - Опции конфигурации
      * @param {number} [options.messageTimeout] - Таймаут для отправки сообщений (мс)
      * @param {boolean} [options.enableLogging=false] - Включить детальное логирование
+     * @param {Function} [options.translateFn] - Функция для получения переводов
      */
     constructor(options = {}) {
         super(options);
-        
-        /** @type {Map<string, Function>} */
-        this.messageHandlers = new Map();
         
         /** @type {Function|null} */
         this.messageListener = null;
@@ -69,8 +67,11 @@ class ServiceWorkerManager extends BaseManager {
         /** @type {Map<string, number>} */
         this.performanceMetrics = new Map();
         
+        /** @type {Function} Функция для получения переводов */
+        this.translateFn = options.translateFn || (() => '');
+        
         this._setupMessageListener();
-        this._log('ServiceWorkerManager инициализирован', { messageTimeout: this.messageTimeout });
+        this._log({ key: 'logs.serviceWorker.created' }, { messageTimeout: this.messageTimeout });
     }
 
     /**
@@ -85,60 +86,15 @@ class ServiceWorkerManager extends BaseManager {
             chrome.runtime.onMessage.removeListener(this.messageListener);
         }
 
-        this.messageListener = (message, sender, sendResponse) => {
-            if (!message || typeof message.type !== 'string') {
-                this._log('Получено некорректное сообщение', message);
-                return false;
-            }
-
-            const handler = this.messageHandlers.get(message.type);
-            if (handler) {
-                this._log(`Обработка сообщения типа: ${message.type}`, message.data);
-
-                const result = handler(message.data, sendResponse);
-                if (result instanceof Promise) {
-                    result.then(sendResponse).catch(error => {
-                        this._logError('Ошибка в обработчике сообщения', error);
-                        sendResponse({ success: false, error: error.message });
-                    });
-                    return true;
-                }
-            }
-            
+        this.messageListener = () => {
             return false;
         };
 
         try {
             chrome.runtime.onMessage.addListener(this.messageListener);
-            this._log('Слушатель сообщений настроен');
+            this._log({ key: 'logs.serviceWorker.messageListenerSetup' });
         } catch (error) {
-            this._logError('Ошибка настройки слушателя сообщений', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Регистрирует обработчик сообщений.
-     * 
-     * @param {string} type - Тип сообщения
-     * @param {Function} handler - Обработчик сообщения
-     * @throws {TypeError} Если тип не является строкой или обработчик не является функцией
-     * @returns {void}
-     */
-    onMessage(type, handler) {
-        if (typeof type !== 'string' || !type) {
-            throw new TypeError('Тип сообщения должен быть непустой строкой');
-        }
-        
-        if (typeof handler !== 'function') {
-            throw new TypeError('Обработчик должен быть функцией');
-        }
-
-        try {
-            this.messageHandlers.set(type, handler);
-            this._log(`Зарегистрирован обработчик для типа: ${type}`);
-        } catch (error) {
-            this._logError('Ошибка регистрации обработчика', error);
+            this._logError({ key: 'logs.serviceWorker.messageListenerSetupError' }, error);
             throw error;
         }
     }
@@ -153,18 +109,20 @@ class ServiceWorkerManager extends BaseManager {
      * @throws {Error} Если отправка сообщения не удалась или превышен таймаут
      */
     async sendMessage(type, data = {}, timeout) {
+        const t = this._getTemporaryTranslateFn();
+        
         if (typeof type !== 'string' || !type) {
-            throw new TypeError('Тип сообщения должен быть непустой строкой');
+            throw new TypeError(t('logs.serviceWorker.messageTypeMustBeString'));
         }
 
         const actualTimeout = timeout || this.messageTimeout;
         
-        this._log(`Отправка сообщения типа: ${type}`, { data, timeout: actualTimeout });
+        this._log({ key: 'logs.serviceWorker.messageSending', params: { type } }, { data, timeout: actualTimeout });
 
         try {
             const timeoutPromise = new Promise((_resolve, reject) => {
                 setTimeout(() => {
-                    reject(new Error(`Таймаут при отправке сообщения "${type}" (${actualTimeout}мс)`));
+                    reject(new Error(t('logs.serviceWorker.messageTimeout', { type, timeout: actualTimeout })));
                 }, actualTimeout);
             });
 
@@ -172,11 +130,11 @@ class ServiceWorkerManager extends BaseManager {
 
             const response = await Promise.race([messagePromise, timeoutPromise]);
             
-            this._log(`Получен ответ на сообщение типа: ${type}`, response);
+            this._log({ key: 'logs.serviceWorker.messageReceived', params: { type } }, response);
             
             return response;
         } catch (error) {
-            this._logError(`Ошибка отправки сообщения "${type}"`, error);
+            this._logError({ key: 'logs.serviceWorker.messageSendError', params: { type } }, error);
             throw error;
         }
     }
@@ -193,11 +151,11 @@ class ServiceWorkerManager extends BaseManager {
             );
             
             const isConnected = response?.success || false;
-            this._log(`Статус подключения: ${isConnected}`);
+            this._log({ key: 'logs.serviceWorker.connectionStatus', params: { status: isConnected } });
             
             return isConnected;
         } catch (error) {
-            this._logError('Ошибка проверки подключения', error);
+            this._logError({ key: 'logs.serviceWorker.connectionCheckError' }, error);
             return false;
         }
     }
@@ -221,7 +179,7 @@ class ServiceWorkerManager extends BaseManager {
                     isOnline: Boolean(response.isOnline)
                 };
                 
-                this._log('Получен статус отслеживания', status);
+                this._log({ key: 'logs.serviceWorker.trackingStatusReceived' }, status);
                 this.updateState(status);
                 return status;
             }
@@ -229,7 +187,7 @@ class ServiceWorkerManager extends BaseManager {
             this.updateState(defaultStatus);
             return defaultStatus;
         } catch (error) {
-            this._logError('Ошибка получения статуса отслеживания', error);
+            this._logError({ key: 'logs.serviceWorker.trackingStatusError' }, error);
             this.updateState(defaultStatus);
             return defaultStatus;
         }
@@ -242,8 +200,10 @@ class ServiceWorkerManager extends BaseManager {
      * @returns {Promise<{success: boolean, isTracking: boolean}>} Результат операции
      */
     async setTrackingEnabled(isEnabled) {
+        const t = this._getTemporaryTranslateFn();
+        
         if (typeof isEnabled !== 'boolean') {
-            throw new TypeError('isEnabled должен быть булевым значением');
+            throw new TypeError(t('logs.serviceWorker.isEnabledMustBeBoolean'));
         }
 
         try {
@@ -266,7 +226,7 @@ class ServiceWorkerManager extends BaseManager {
                 isTracking
             };
         } catch (error) {
-            this._logError('Ошибка обновления состояния отслеживания', error);
+            this._logError({ key: 'logs.serviceWorker.trackingStateUpdateError' }, error);
             const fallbackState = this.state?.isTracking !== undefined
                 ? Boolean(this.state.isTracking)
                 : !isEnabled;
@@ -298,13 +258,13 @@ class ServiceWorkerManager extends BaseManager {
                     queue: Number(response.queue) || 0
                 };
                 
-                this._log('Получена статистика', stats);
+                this._log({ key: 'logs.serviceWorker.statsReceived' }, stats);
                 return stats;
             }
             
             return defaultStats;
         } catch (error) {
-            this._logError('Ошибка получения статистики', error);
+            this._logError({ key: 'logs.serviceWorker.statsError' }, error);
             return defaultStats;
         }
     }
@@ -341,13 +301,13 @@ class ServiceWorkerManager extends BaseManager {
                     isTracking: Boolean(response.isTracking)
                 };
 
-                this._log('Получена подробная статистика', stats);
+                this._log({ key: 'logs.serviceWorker.detailedStatsReceived' }, stats);
                 return stats;
             }
 
             return defaultStats;
         } catch (error) {
-            this._logError('Ошибка получения подробной статистики', error);
+            this._logError({ key: 'logs.serviceWorker.detailedStatsError' }, error);
             return defaultStats;
         }
     }
@@ -360,10 +320,10 @@ class ServiceWorkerManager extends BaseManager {
     async ping() {
         try {
             await this.sendMessage(ServiceWorkerManager.MESSAGE_TYPES.PING, {}, 3000);
-            this._log('Ping успешен');
+            this._log({ key: 'logs.serviceWorker.pingSuccess' });
             return true;
         } catch (error) {
-            this._logError('Service Worker недоступен', error);
+            this._logError({ key: 'logs.serviceWorker.serviceWorkerUnavailable' }, error);
             return false;
         }
     }
@@ -389,10 +349,13 @@ class ServiceWorkerManager extends BaseManager {
     async generateRandomDomains(count = 100) {
         try {
             const response = await this.sendMessage(ServiceWorkerManager.MESSAGE_TYPES.GENERATE_RANDOM_DOMAINS, { count });
-            return response;
+            return {
+                success: Boolean(response?.success),
+                generated: Number(response?.generated) || 0
+            };
         } catch (error) {
-            this._logError('Ошибка генерации доменов', error);
-            return { success: false, generated: 0, error: error.message };
+            this._logError({ key: 'logs.serviceWorker.generateDomainsError' }, error);
+            return { success: false, generated: 0 };
         }
     }
 
@@ -403,7 +366,7 @@ class ServiceWorkerManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов ServiceWorkerManager');
+        this._log({ key: 'logs.serviceWorker.cleanupStart' });
         
         try {
             if (this.messageListener) {
@@ -411,12 +374,11 @@ class ServiceWorkerManager extends BaseManager {
                 this.messageListener = null;
             }
             
-            this.messageHandlers.clear();
             this.performanceMetrics.clear();
             
-            this._log('ServiceWorkerManager уничтожен');
+            this._log({ key: 'logs.serviceWorker.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении ServiceWorkerManager', error);
+            this._logError({ key: 'logs.serviceWorker.destroyError' }, error);
         }
         
         super.destroy();
