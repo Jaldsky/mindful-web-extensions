@@ -50,7 +50,8 @@ class TrackerManager extends BaseManager {
             {
                 backendManager: this.backendManager,
                 statisticsManager: this.statisticsManager,
-                storageManager: this.storageManager
+                storageManager: this.storageManager,
+                trackingController: this
             },
             {
                 enableLogging,
@@ -124,6 +125,7 @@ class TrackerManager extends BaseManager {
 
                 // 3. Восстанавливаем очередь событий
                 await this.eventQueueManager.restoreQueue();
+                this.eventQueueManager.resetFailureState();
                 this._log('Очередь событий восстановлена');
 
                 await this.eventQueueManager.setDomainExceptions(domainExceptions);
@@ -207,6 +209,8 @@ class TrackerManager extends BaseManager {
         try {
             await this.tabTrackingManager.startTracking();
             this.statisticsManager.enableTracking();
+            this.eventQueueManager.resetFailureState();
+            this.eventQueueManager.startBatchProcessor();
 
             const saved = await this.storageManager.saveTrackingEnabled(true);
             if (!saved) {
