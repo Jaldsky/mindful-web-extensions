@@ -190,18 +190,21 @@ class DiagnosticsWorkflowManager {
             `;
 
             checks.innerHTML = Object.entries(results.checks)
-                .map(([name, check]) => `
+                .map(([name, check]) => {
+                    const localizedName = manager.localeManager.t(`logs.diagnostics.checkNames.${name}`, {}, name);
+                    return `
                     <div class="diagnostic-check check-${check.status}">
                         <div class="diagnostic-check-header">
                             <div class="diagnostic-check-name">
                                 <span>${statusEmoji[check.status] || '❓'}</span>
-                                <span>${name}</span>
+                                <span>${localizedName}</span>
                             </div>
                             <div class="diagnostic-check-duration">${check.duration}мс</div>
                         </div>
                         <div class="diagnostic-check-message">${check.message}</div>
                     </div>
-                `).join('');
+                `;
+                }).join('');
         } catch (error) {
             manager._logError('Ошибка отрисовки диагностики', error);
         }

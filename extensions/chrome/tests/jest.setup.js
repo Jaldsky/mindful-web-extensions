@@ -44,6 +44,13 @@ const dom = new JSDOM(`
 global.window = dom.window;
 global.document = dom.window.document;
 global.navigator = dom.window.navigator;
+// Устанавливаем язык по умолчанию для временной функции локализации
+// Используем Object.defineProperty, чтобы гарантировать, что язык установлен
+Object.defineProperty(global.navigator, 'language', {
+    value: 'ru',
+    writable: true,
+    configurable: true
+});
 
 global.chrome = {
     runtime: {

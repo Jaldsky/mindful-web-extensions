@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * @typedef {Object} DiagnosticCheck
@@ -29,37 +30,23 @@ class DiagnosticsManager extends BaseManager {
     /**
      * Статусы диагностических проверок
      * @readonly
-     * @enum {string}
+     * @static
      */
-    static CHECK_STATUS = {
-        OK: 'ok',
-        WARNING: 'warning',
-        ERROR: 'error'
-    };
+    static CHECK_STATUS = CONFIG.DIAGNOSTICS.CHECK_STATUS;
 
     /**
      * Названия проверок
      * @readonly
-     * @enum {string}
+     * @static
      */
-    static CHECK_NAMES = {
-        SERVICE_WORKER: 'serviceWorker',
-        CONNECTION: 'connection',
-        TRACKING: 'tracking',
-        STATS: 'stats'
-    };
+    static CHECK_NAMES = CONFIG.DIAGNOSTICS.CHECK_NAMES;
 
     /**
      * Эмодзи для статусов
      * @readonly
-     * @enum {string}
+     * @static
      */
-    static STATUS_EMOJI = {
-        ok: '✅',
-        warning: '⚠️',
-        error: '❌',
-        unknown: '❓'
-    };
+    static STATUS_EMOJI = CONFIG.DIAGNOSTICS.STATUS_EMOJI;
 
     /**
      * Создает экземпляр DiagnosticsManager.
@@ -74,12 +61,14 @@ class DiagnosticsManager extends BaseManager {
     constructor(serviceWorkerManager, notificationManager, options = {}) {
         super(options);
 
+        const t = this._getTemporaryTranslateFn();
+
         if (!serviceWorkerManager) {
-            throw new TypeError('ServiceWorkerManager обязателен');
+            throw new TypeError(t('logs.diagnostics.serviceWorkerRequired'));
         }
 
         if (!notificationManager) {
-            throw new TypeError('NotificationManager обязателен');
+            throw new TypeError(t('logs.diagnostics.notificationManagerRequired'));
         }
         
         /** @type {Object} */
@@ -88,13 +77,20 @@ class DiagnosticsManager extends BaseManager {
         /** @type {Object} */
         this.notificationManager = notificationManager;
         
+        /** @type {Function} */
+        this.translateFn = options.translateFn || (() => '');
+        
+        if (!this.translateFn || typeof this.translateFn !== 'function') {
+            throw new TypeError(t('logs.diagnostics.translateFnRequired'));
+        }
+        
         /** @type {boolean} */
         this.parallelExecution = options.parallelExecution !== false;
         
         /** @type {DiagnosticResults|null} */
         this.lastResults = null;
         
-        this._log('DiagnosticsManager инициализирован', { 
+        this._log({ key: 'logs.diagnostics.created' }, { 
             parallelExecution: this.parallelExecution 
         });
     }
@@ -111,12 +107,12 @@ class DiagnosticsManager extends BaseManager {
         const startTime = performance.now();
         
         try {
-            this._log(`Запуск проверки: ${checkName}`);
+            this._log({ key: 'logs.diagnostics.checkStart', params: { name: checkName } });
             
             const result = await checkFunction.call(this);
             const duration = Math.round(performance.now() - startTime);
             
-            this._log(`Проверка ${checkName} завершена за ${duration}мс`, result);
+            this._log({ key: 'logs.diagnostics.checkCompleted', params: { name: checkName, duration } }, result);
             
             return {
                 ...result,
@@ -125,11 +121,13 @@ class DiagnosticsManager extends BaseManager {
         } catch (error) {
             const duration = Math.round(performance.now() - startTime);
             
-            this._logError(`Ошибка при выполнении проверки ${checkName}`, error);
+            this._logError({ key: 'logs.diagnostics.checkExecutionError', params: { name: checkName } }, error);
+            
+            const message = this.translateFn('logs.diagnostics.checkUnexpectedError', { name: checkName });
             
             return {
                 status: DiagnosticsManager.CHECK_STATUS.ERROR,
-                message: `Неожиданная ошибка при проверке ${checkName}`,
+                message,
                 error: error.message,
                 duration
             };
@@ -148,7 +146,7 @@ class DiagnosticsManager extends BaseManager {
         const startTime = performance.now();
         const timestamp = new Date().toISOString();
         
-        this._log('Запуск диагностики', options);
+        this._log({ key: 'logs.diagnostics.diagnosticsStart' }, options);
 
         /** @type {DiagnosticResults} */
         const results = {
@@ -173,7 +171,7 @@ class DiagnosticsManager extends BaseManager {
             };
 
             if (parallel) {
-                this._log('Выполнение проверок параллельно');
+                this._log({ key: 'logs.diagnostics.parallelExecution' });
                 
                 const checkPromises = checksToRun.map(checkName => 
                     this._executeCheck(checkMap[checkName], checkName)
@@ -187,11 +185,11 @@ class DiagnosticsManager extends BaseManager {
                         const { checkName, result } = settled.value;
                         results.checks[checkName] = result;
                     } else {
-                        this._logError('Проверка завершилась с ошибкой', settled.reason);
+                        this._logError({ key: 'logs.diagnostics.checkFailed' }, settled.reason);
                     }
                 });
             } else {
-                this._log('Выполнение проверок последовательно');
+                this._log({ key: 'logs.diagnostics.sequentialExecution' });
                 
                 for (const checkName of checksToRun) {
                     results.checks[checkName] = await this._executeCheck(
@@ -207,14 +205,14 @@ class DiagnosticsManager extends BaseManager {
 
             this.lastResults = results;
             
-            this._log('Диагностика завершена', {
+            this._log({ key: 'logs.diagnostics.diagnosticsCompleted' }, {
                 overall: results.overall,
                 duration: results.totalDuration
             });
             
             return results;
         } catch (error) {
-            this._logError('Критическая ошибка диагностики', error);
+            this._logError({ key: 'logs.diagnostics.diagnosticsCriticalError' }, error);
             
             results.error = error.message;
             results.overall = DiagnosticsManager.CHECK_STATUS.ERROR;
@@ -236,19 +234,23 @@ class DiagnosticsManager extends BaseManager {
         try {
             const isAvailable = await this.serviceWorkerManager.ping();
             
+            const message = isAvailable 
+                ? this.translateFn('logs.diagnostics.serviceWorkerAvailable')
+                : this.translateFn('logs.diagnostics.serviceWorkerUnavailable');
+            
             return {
                 status: isAvailable 
                     ? DiagnosticsManager.CHECK_STATUS.OK 
                     : DiagnosticsManager.CHECK_STATUS.ERROR,
-                message: isAvailable 
-                    ? 'Service Worker доступен' 
-                    : 'Service Worker недоступен',
+                message,
                 data: { available: isAvailable }
             };
         } catch (error) {
+            const message = this.translateFn('logs.diagnostics.serviceWorkerUnavailable');
+            
             return {
                 status: DiagnosticsManager.CHECK_STATUS.ERROR,
-                message: 'Service Worker недоступен',
+                message,
                 error: error.message
             };
         }
@@ -264,19 +266,23 @@ class DiagnosticsManager extends BaseManager {
         try {
             const isOnline = await this.serviceWorkerManager.checkConnection();
             
+            const message = isOnline 
+                ? this.translateFn('logs.diagnostics.serverAvailable')
+                : this.translateFn('logs.diagnostics.serverUnavailable');
+            
             return {
                 status: isOnline 
                     ? DiagnosticsManager.CHECK_STATUS.OK 
                     : DiagnosticsManager.CHECK_STATUS.ERROR,
-                message: isOnline 
-                    ? 'Сервер доступен' 
-                    : 'Сервер недоступен',
+                message,
                 data: { online: isOnline }
             };
         } catch (error) {
+            const message = this.translateFn('logs.diagnostics.serverConnectionError');
+            
             return {
                 status: DiagnosticsManager.CHECK_STATUS.ERROR,
-                message: 'Ошибка проверки подключения к серверу',
+                message,
                 error: error.message
             };
         }
@@ -293,25 +299,37 @@ class DiagnosticsManager extends BaseManager {
             const status = await this.serviceWorkerManager.getTrackingStatus();
 
             if (!status || typeof status !== 'object') {
+                const message = this.translateFn('logs.diagnostics.trackingStatusInvalid');
+                
                 return {
                     status: DiagnosticsManager.CHECK_STATUS.WARNING,
-                    message: 'Получены некорректные данные о статусе отслеживания',
+                    message,
                     data: status
                 };
             }
             
+            const trackingText = status.isTracking 
+                ? this.translateFn('logs.diagnostics.trackingActive')
+                : this.translateFn('logs.diagnostics.trackingInactive');
+            
+            const trackingLabel = this.translateFn('logs.diagnostics.trackingStatus');
+            
+            const message = `${trackingLabel} ${trackingText}`;
+            
             return {
                 status: DiagnosticsManager.CHECK_STATUS.OK,
-                message: `Отслеживание ${status.isTracking ? 'активно' : 'неактивно'}`,
+                message,
                 data: {
                     tracking: status.isTracking,
                     online: status.isOnline
                 }
             };
         } catch (error) {
+            const message = this.translateFn('logs.diagnostics.trackingStatusError');
+            
             return {
                 status: DiagnosticsManager.CHECK_STATUS.ERROR,
-                message: 'Ошибка получения статуса отслеживания',
+                message,
                 error: error.message
             };
         }
@@ -328,9 +346,11 @@ class DiagnosticsManager extends BaseManager {
             const stats = await this.serviceWorkerManager.getTodayStats();
 
             if (!stats || typeof stats !== 'object') {
+                const message = this.translateFn('logs.diagnostics.statsInvalid');
+                
                 return {
                     status: DiagnosticsManager.CHECK_STATUS.WARNING,
-                    message: 'Получены некорректные данные статистики',
+                    message,
                     data: stats
                 };
             }
@@ -338,12 +358,15 @@ class DiagnosticsManager extends BaseManager {
             const hasData = stats.events > 0 || stats.domains > 0;
             const queueNotEmpty = stats.queue > 0;
             
-            let message = 'Статистика получена';
+            let message = this.translateFn('logs.diagnostics.statsReceived');
+            
             if (hasData) {
-                message += ` (${stats.events} событий, ${stats.domains} доменов)`;
+                const dataText = this.translateFn('logs.diagnostics.statsWithData', { events: stats.events, domains: stats.domains });
+                message += dataText;
             }
             if (queueNotEmpty) {
-                message += ` [Очередь: ${stats.queue}]`;
+                const queueText = this.translateFn('logs.diagnostics.statsQueue', { queue: stats.queue });
+                message += queueText;
             }
             
             return {
@@ -352,9 +375,11 @@ class DiagnosticsManager extends BaseManager {
                 data: stats
             };
         } catch (error) {
+            const message = this.translateFn('logs.diagnostics.statsError');
+            
             return {
                 status: DiagnosticsManager.CHECK_STATUS.ERROR,
-                message: 'Ошибка получения статистики',
+                message,
                 error: error.message
             };
         }
@@ -396,7 +421,7 @@ class DiagnosticsManager extends BaseManager {
      */
     displayDiagnosticResults(results) {
         if (!results) {
-            this._logError('Нет результатов диагностики для отображения');
+            this._logError({ key: 'logs.diagnostics.noResults' });
             return;
         }
 
@@ -409,14 +434,19 @@ class DiagnosticsManager extends BaseManager {
         const warningCount = Object.values(results.checks)
             .filter(c => c.status === DiagnosticsManager.CHECK_STATUS.WARNING).length;
 
-        let message = `${emoji} Диагностика завершена за ${results.totalDuration}мс`;
+        const baseMessage = this.translateFn('logs.diagnostics.diagnosticsCompletedMessage', { duration: results.totalDuration });
+        
+        let message = `${emoji} ${baseMessage}`;
         
         if (errorCount > 0) {
-            message += ` | Ошибки: ${errorCount}/${checksCount}`;
+            const errorsText = this.translateFn('logs.diagnostics.errorsCount', { count: errorCount, total: checksCount });
+            message += ` | ${errorsText}`;
         } else if (warningCount > 0) {
-            message += ` | Предупреждения: ${warningCount}/${checksCount}`;
+            const warningsText = this.translateFn('logs.diagnostics.warningsCount', { count: warningCount, total: checksCount });
+            message += ` | ${warningsText}`;
         } else {
-            message += ' | Все проверки пройдены';
+            const allPassedText = this.translateFn('logs.diagnostics.allChecksPassed');
+            message += ` | ${allPassedText}`;
         }
 
         const notificationType = results.overall === DiagnosticsManager.CHECK_STATUS.OK 
@@ -437,7 +467,8 @@ class DiagnosticsManager extends BaseManager {
         Object.entries(results.checks).forEach(([name, check]) => {
             const checkEmoji = DiagnosticsManager.STATUS_EMOJI[check.status] ||
                 DiagnosticsManager.STATUS_EMOJI.unknown;
-            this._log({ key: 'logs.diagnostics.checkLine', params: { name, emoji: checkEmoji } }, {
+            const localizedName = this.translateFn(`logs.diagnostics.checkNames.${name}`, {}, name);
+            this._log({ key: 'logs.diagnostics.checkLine', params: { name: localizedName, emoji: checkEmoji } }, {
                 message: check.message,
                 durationMs: check.duration,
                 data: check.data || null
@@ -454,13 +485,13 @@ class DiagnosticsManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов DiagnosticsManager');
+        this._log({ key: 'logs.diagnostics.cleanupStart' });
         
         try {
             this.lastResults = null;
-            this._log('DiagnosticsManager уничтожен');
+            this._log({ key: 'logs.diagnostics.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении DiagnosticsManager', error);
+            this._logError({ key: 'logs.diagnostics.destroyError' }, error);
         }
         
         super.destroy();
