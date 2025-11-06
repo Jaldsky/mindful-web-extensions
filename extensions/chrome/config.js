@@ -269,7 +269,15 @@ const CONFIG = {
         DEFAULT_DURATION: 3000, // Длительность по умолчанию (мс)
         MAX_HISTORY_SIZE: 50, // Максимальный размер истории
         MAX_QUEUE_SIZE: 10, // Максимальный размер очереди
-        PROCESSING_DELAY: 100 // Задержка обработки очереди (мс)
+        PROCESSING_DELAY: 100, // Задержка обработки очереди (мс)
+        // CSS классы для статусных сообщений
+        CSS_CLASSES: {
+            BASE: 'status-message',
+            VISIBLE: 'visible',
+            HIDDEN: 'hidden'
+        },
+        // Максимальная длина сообщения для логирования (символов)
+        MAX_LOG_MESSAGE_LENGTH: 50
     },
 
     /**
