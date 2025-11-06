@@ -56,16 +56,6 @@ describe('TranslationManager', () => {
             manager.destroy();
         });
 
-        test('should have LOCALES constant', () => {
-            expect(TranslationManager.LOCALES).toEqual({
-                EN: 'en',
-                RU: 'ru'
-            });
-        });
-
-        test('should have DEFAULT_LOCALE constant', () => {
-            expect(TranslationManager.DEFAULT_LOCALE).toBe('en');
-        });
     });
 
     describe('translate', () => {
@@ -93,23 +83,20 @@ describe('TranslationManager', () => {
             translationManager.translate('app.title');
             translationManager.translate('app.title');
 
-            const stats = translationManager.getStatistics();
-            expect(stats.translationRequests).toBe(2);
+            expect(translationManager.statistics.translationRequests).toBe(2);
         });
 
         test('should track missing translations', () => {
             translationManager.translate('missing.key');
 
-            const stats = translationManager.getStatistics();
-            expect(stats.missingTranslations).toBe(1);
-            expect(stats.missingKeys).toContain('missing.key');
+            expect(translationManager.statistics.missingTranslations).toBe(1);
+            expect(translationManager.statistics.missingKeys.has('missing.key')).toBe(true);
         });
 
         test('should track interpolations', () => {
             translationManager.translate('app.greeting', { name: 'John' });
 
-            const stats = translationManager.getStatistics();
-            expect(stats.interpolations).toBe(1);
+            expect(translationManager.statistics.interpolations).toBe(1);
         });
     });
 
@@ -153,17 +140,6 @@ describe('TranslationManager', () => {
         });
     });
 
-    describe('getAvailableLocales', () => {
-        test('should return array of available locales', () => {
-            const locales = translationManager.getAvailableLocales();
-
-            expect(Array.isArray(locales)).toBe(true);
-            expect(locales.length).toBe(2);
-            expect(locales[0]).toHaveProperty('code');
-            expect(locales[0]).toHaveProperty('name');
-        });
-    });
-
     describe('isLocaleSupported', () => {
         test('should return true for supported locale', () => {
             expect(translationManager.isLocaleSupported('en')).toBe(true);
@@ -190,91 +166,14 @@ describe('TranslationManager', () => {
         });
     });
 
-    describe('getCurrentLocaleInfo', () => {
-        test('should return info about current locale', () => {
-            const info = translationManager.getCurrentLocaleInfo();
-
-            expect(info).toHaveProperty('code');
-            expect(info).toHaveProperty('name');
-            expect(info).toHaveProperty('translations');
-            expect(info.code).toBe('en');
-        });
-    });
-
-    describe('hasTranslation', () => {
-        test('should return true for existing translation', () => {
-            expect(translationManager.hasTranslation('app.title')).toBe(true);
-        });
-
-        test('should return false for non-existing translation', () => {
-            expect(translationManager.hasTranslation('nonexistent.key')).toBe(false);
-        });
-
-        test('should check translation in specific locale', () => {
-            expect(translationManager.hasTranslation('app.title', 'ru')).toBe(true);
-        });
-    });
-
-    describe('getAllKeys', () => {
-        test('should return all translation keys', () => {
-            const keys = translationManager.getAllKeys();
-
-            expect(Array.isArray(keys)).toBe(true);
-            expect(keys.length).toBeGreaterThan(0);
-            expect(keys).toContain('app.title');
-            expect(keys).toContain('app.greeting');
-        });
-
-        test('should return keys for specific locale', () => {
-            const keys = translationManager.getAllKeys('ru');
-
-            expect(Array.isArray(keys)).toBe(true);
-            expect(keys).toContain('app.title');
-        });
-    });
-
-    describe('getStatistics', () => {
-        test('should return correct statistics', () => {
-            translationManager.translate('app.title');
-            translationManager.translate('missing.key');
-            translationManager.translate('app.greeting', { name: 'Test' });
-
-            const stats = translationManager.getStatistics();
-
-            expect(stats.translationRequests).toBe(3);
-            expect(stats.missingTranslations).toBe(1);
-            expect(stats.interpolations).toBe(1);
-            expect(stats.errors).toBe(0);
-            expect(stats.currentLocale).toBe('en');
-            expect(Array.isArray(stats.missingKeys)).toBe(true);
-        });
-    });
-
-    describe('resetStatistics', () => {
-        test('should reset all statistics', () => {
-            translationManager.translate('app.title');
-            translationManager.translate('missing.key');
-
-            translationManager.resetStatistics();
-
-            const stats = translationManager.getStatistics();
-            expect(stats.translationRequests).toBe(0);
-            expect(stats.missingTranslations).toBe(0);
-            expect(stats.interpolations).toBe(0);
-            expect(stats.errors).toBe(0);
-            expect(stats.missingKeys.length).toBe(0);
-        });
-    });
-
     describe('destroy', () => {
         test('should cleanup resources', () => {
             translationManager.translate('missing.key');
 
             translationManager.destroy();
 
-            const stats = translationManager.getStatistics();
-            expect(stats.translationRequests).toBe(0);
-            expect(stats.missingKeys.length).toBe(0);
+            expect(translationManager.statistics.translationRequests).toBe(0);
+            expect(translationManager.statistics.missingKeys.size).toBe(0);
         });
     });
 

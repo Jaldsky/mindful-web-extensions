@@ -10,21 +10,6 @@ const RU = require('../../../locales/ru.js');
  * @extends BaseManager
  */
 class TranslationManager extends BaseManager {
-    /**
-     * Доступные локали
-     * @readonly
-     * @static
-     * @deprecated Используйте BaseManager.SUPPORTED_LOCALES
-     */
-    static LOCALES = BaseManager.SUPPORTED_LOCALES;
-
-    /**
-     * Локаль по умолчанию
-     * @readonly
-     * @static
-     * @deprecated Используйте BaseManager.DEFAULT_LOCALE
-     */
-    static DEFAULT_LOCALE = BaseManager.DEFAULT_LOCALE;
 
     /**
      * Создает экземпляр TranslationManager.
@@ -84,7 +69,6 @@ class TranslationManager extends BaseManager {
                     return key;
                 }
 
-                // Подстановка параметров
                 if (typeof translation === 'string' && Object.keys(params).length > 0) {
                     this.statistics.interpolations++;
                     return this._interpolate(translation, params);
@@ -121,7 +105,7 @@ class TranslationManager extends BaseManager {
      * @returns {string} Строка с подставленными значениями
      */
     _interpolate(str, params) {
-        return str.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+        return str.replace(/\{\{(\w+)}}/g, (match, key) => {
             return params[key] !== undefined ? params[key] : match;
         });
     }
@@ -169,19 +153,6 @@ class TranslationManager extends BaseManager {
     }
 
     /**
-     * Получает список доступных локалей.
-     * 
-     * @returns {Array<Object>} Массив объектов с информацией о локалях
-     */
-    getAvailableLocales() {
-        return Object.values(BaseManager.SUPPORTED_LOCALES).map(locale => ({
-            code: locale,
-            name: this.translations[locale]?.common?.languageName || locale,
-            nativeName: this.translations[locale]?.common?.languageName || locale
-        }));
-    }
-
-    /**
      * Проверяет, поддерживается ли локаль.
      * 
      * @param {string} locale - Код локали
@@ -204,90 +175,6 @@ class TranslationManager extends BaseManager {
 
         this.setLocale(nextLocale);
         return nextLocale;
-    }
-
-    /**
-     * Получает информацию о текущей локали.
-     * 
-     * @returns {Object} Информация о локали
-     */
-    getCurrentLocaleInfo() {
-        const locale = this.currentLocale;
-        return {
-            code: locale,
-            name: this.translations[locale]?.common?.languageName || locale,
-            translations: this.translations[locale] || {}
-        };
-    }
-
-    /**
-     * Получает статистику переводов.
-     * 
-     * @returns {Object} Статистика
-     */
-    getStatistics() {
-        return {
-            ...this.statistics,
-            missingKeys: Array.from(this.statistics.missingKeys),
-            currentLocale: this.currentLocale,
-            availableLocales: Object.keys(this.translations)
-        };
-    }
-
-    /**
-     * Сбрасывает статистику переводов.
-     * 
-     * @returns {void}
-     */
-    resetStatistics() {
-        this.statistics = {
-            translationRequests: 0,
-            missingTranslations: 0,
-            interpolations: 0,
-            errors: 0,
-            missingKeys: new Set()
-        };
-        this._log({ key: 'logs.translation.statsReset' });
-    }
-
-    /**
-     * Проверяет наличие перевода для ключа.
-     * 
-     * @param {string} key - Ключ перевода
-     * @param {string} [locale] - Локаль (по умолчанию текущая)
-     * @returns {boolean} true если перевод существует
-     */
-    hasTranslation(key, locale = this.currentLocale) {
-        const translation = this._getNestedValue(
-            this.translations[locale],
-            key
-        );
-        return translation !== undefined;
-    }
-
-    /**
-     * Получает все ключи переводов для локали.
-     * 
-     * @param {string} [locale] - Локаль (по умолчанию текущая)
-     * @returns {Array<string>} Массив ключей
-     */
-    getAllKeys(locale = this.currentLocale) {
-        const collectKeys = (obj, prefix = '') => {
-            const keys = [];
-            for (const key in obj) {
-                if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                    const fullKey = prefix ? `${prefix}.${key}` : key;
-                    if (typeof obj[key] === 'object' && obj[key] !== null) {
-                        keys.push(...collectKeys(obj[key], fullKey));
-                    } else {
-                        keys.push(fullKey);
-                    }
-                }
-            }
-            return keys;
-        };
-
-        return collectKeys(this.translations[locale]);
     }
 
     /**
