@@ -351,6 +351,16 @@ const EN = {
             domainExceptionsUpdateError: 'Failed to update domain exceptions list in UI',
             storageApiUnavailable: 'Storage API unavailable. Please reload the extension.',
             storageApiUnavailableError: 'chrome.storage API unavailable'
+        },
+        lifecycle: {
+            eventHandlersRemoved: 'Event handlers removed',
+            removeEventHandlersError: 'Error removing event handlers',
+            managersDestroyed: 'All managers destroyed',
+            destroyManagersError: 'Error destroying managers',
+            alreadyDestroyed: 'OptionsManager already destroyed',
+            destroyStart: 'Cleaning up OptionsManager resources',
+            destroyed: 'OptionsManager destroyed',
+            destroyError: 'Error destroying OptionsManager'
         }
     },
 

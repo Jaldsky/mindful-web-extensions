@@ -1,8 +1,24 @@
+/**
+ * Менеджер для управления жизненным циклом OptionsManager.
+ * Отвечает за уничтожение менеджеров, удаление обработчиков событий и очистку ресурсов.
+ * 
+ * @class LifecycleManager
+ */
 class LifecycleManager {
+    /**
+     * Создает экземпляр LifecycleManager.
+     * 
+     * @param {Object} manager - Экземпляр OptionsManager
+     */
     constructor(manager) {
         this.manager = manager;
     }
 
+    /**
+     * Удаляет все обработчики событий.
+     * 
+     * @returns {void}
+     */
     removeEventHandlers() {
         const manager = this.manager;
 
@@ -21,12 +37,17 @@ class LifecycleManager {
             });
 
             manager.eventHandlers.clear();
-            manager._log('Обработчики событий удалены');
+            manager._log({ key: 'logs.lifecycle.eventHandlersRemoved' });
         } catch (error) {
-            manager._logError('Ошибка удаления обработчиков событий', error);
+            manager._logError({ key: 'logs.lifecycle.removeEventHandlersError' }, error);
         }
     }
 
+    /**
+     * Уничтожает все менеджеры.
+     * 
+     * @returns {void}
+     */
     destroyManagers() {
         const manager = this.manager;
 
@@ -71,21 +92,26 @@ class LifecycleManager {
                 manager.localeManager = null;
             }
 
-            manager._log('Все менеджеры уничтожены');
+            manager._log({ key: 'logs.lifecycle.managersDestroyed' });
         } catch (error) {
-            manager._logError('Ошибка уничтожения менеджеров', error);
+            manager._logError({ key: 'logs.lifecycle.destroyManagersError' }, error);
         }
     }
 
+    /**
+     * Уничтожает OptionsManager и очищает все ресурсы.
+     * 
+     * @returns {boolean} true если уничтожение успешно, false если уже было уничтожено
+     */
     destroy() {
         const manager = this.manager;
 
         if (!manager.isInitialized) {
-            manager._log('OptionsManager уже был уничтожен');
+            manager._log({ key: 'logs.lifecycle.alreadyDestroyed' });
             return false;
         }
 
-        manager._log('Очистка ресурсов OptionsManager');
+        manager._log({ key: 'logs.lifecycle.destroyStart' });
 
         try {
             manager.logsManager.stopAutoRefresh();
@@ -94,9 +120,9 @@ class LifecycleManager {
             this.destroyManagers();
 
             manager.isInitialized = false;
-            manager._log('OptionsManager уничтожен');
+            manager._log({ key: 'logs.lifecycle.destroyed' });
         } catch (error) {
-            manager._logError('Ошибка при уничтожении OptionsManager', error);
+            manager._logError({ key: 'logs.lifecycle.destroyError' }, error);
         }
 
         return true;
