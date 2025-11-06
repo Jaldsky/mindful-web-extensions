@@ -284,6 +284,21 @@ const EN = {
             tabSwitched: 'Switched to tab: {tabName}',
             tabNotFound: 'Tab {tabName} not found',
             switchTabError: 'Error switching tabs'
+        },
+        diagnosticsData: {
+            getStatusStatisticsError: 'Error getting status statistics',
+            getStatusHistoryError: 'Error getting status history',
+            getStatusPerformanceMetricsError: 'Error getting performance metrics',
+            statusHistoryCleared: 'Status history cleared: {count} records',
+            clearStatusHistoryError: 'Error clearing status history',
+            getValidationStatisticsError: 'Error getting validation statistics',
+            getValidationHistoryError: 'Error getting validation history',
+            validationHistoryCleared: 'Validation history cleared: {count} records',
+            clearValidationHistoryError: 'Error clearing validation history',
+            getValidationPerformanceMetricsError: 'Error getting validation performance metrics',
+            managersValidationCompleted: 'Managers validation completed',
+            managersValidationError: 'Error validating managers',
+            getDiagnosticsError: 'Error getting diagnostics'
         }
     },
 
