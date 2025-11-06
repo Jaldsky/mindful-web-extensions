@@ -14,7 +14,8 @@ const RU = {
         cancel: 'Отмена',
         ok: 'ОК',
         yes: 'Да',
-        no: 'Нет'
+        no: 'Нет',
+        timeUnitMs: 'мс'
     },
 
     // Логи (для внутреннего логирования, INFO/ERROR)
@@ -333,6 +334,23 @@ const RU = {
             destroyStart: 'Очистка ресурсов DOMManager',
             destroyed: 'DOMManager уничтожен',
             destroyError: 'Ошибка при уничтожении DOMManager'
+        },
+        initialization: {
+            alreadyInitialized: 'OptionsManager уже инициализирован',
+            initStart: 'Начало инициализации OptionsManager',
+            initSuccess: 'OptionsManager инициализирован успешно',
+            initError: 'Ошибка инициализации OptionsManager ({initTime}мс)',
+            initStatusErrorWarning: 'Предупреждение: не удалось отобразить статус ошибки инициализации',
+            loadStart: 'Загрузка настроек',
+            loadSuccess: 'Настройки загружены успешно',
+            loadError: 'Ошибка загрузки настроек ({loadTime}мс)',
+            loadStatusErrorWarning: 'Предупреждение: не удалось отобразить статус ошибки',
+            activityLoadError: 'Ошибка начальной загрузки активности',
+            uiUpdateError: 'Не удалось обновить UI после загрузки настроек',
+            uiUpdateWarning: 'Предупреждение: не удалось отобразить предупреждение о проблеме с UI',
+            domainExceptionsUpdateError: 'Не удалось обновить список исключений доменов в UI',
+            storageApiUnavailable: 'Storage API недоступен. Пожалуйста, перезагрузите расширение.',
+            storageApiUnavailableError: 'chrome.storage API недоступен'
         }
     },
 
