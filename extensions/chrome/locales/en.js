@@ -14,7 +14,8 @@ const EN = {
         cancel: 'Cancel',
         ok: 'OK',
         yes: 'Yes',
-        no: 'No'
+        no: 'No',
+        timeUnitMs: 'ms'
     },
 
     // Logs (for internal logging, INFO/ERROR)
@@ -333,6 +334,23 @@ const EN = {
             destroyStart: 'Cleaning up DOMManager resources',
             destroyed: 'DOMManager destroyed',
             destroyError: 'Error destroying DOMManager'
+        },
+        initialization: {
+            alreadyInitialized: 'OptionsManager already initialized',
+            initStart: 'Starting OptionsManager initialization',
+            initSuccess: 'OptionsManager initialized successfully',
+            initError: 'OptionsManager initialization error ({initTime}ms)',
+            initStatusErrorWarning: 'Warning: failed to display initialization error status',
+            loadStart: 'Loading settings',
+            loadSuccess: 'Settings loaded successfully',
+            loadError: 'Error loading settings ({loadTime}ms)',
+            loadStatusErrorWarning: 'Warning: failed to display error status',
+            activityLoadError: 'Error loading initial activity',
+            uiUpdateError: 'Failed to update UI after loading settings',
+            uiUpdateWarning: 'Warning: failed to display UI update warning',
+            domainExceptionsUpdateError: 'Failed to update domain exceptions list in UI',
+            storageApiUnavailable: 'Storage API unavailable. Please reload the extension.',
+            storageApiUnavailableError: 'chrome.storage API unavailable'
         }
     },
 
