@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * Менеджер для работы с хранилищем локалей.
@@ -12,8 +13,9 @@ class StorageManager extends BaseManager {
      * Ключ для хранения выбранной локали в storage
      * @readonly
      * @static
+     * @deprecated Используйте CONFIG.LOCALE.STORAGE_KEY
      */
-    static STORAGE_KEY = 'mindful_locale';
+    static STORAGE_KEY = CONFIG.LOCALE.STORAGE_KEY;
 
     /**
      * Создает экземпляр StorageManager.
@@ -32,7 +34,7 @@ class StorageManager extends BaseManager {
             lastOperation: null
         };
 
-        this._log('StorageManager создан');
+        this._log({ key: 'logs.localeStorage.created' });
     }
 
     /**
@@ -45,19 +47,19 @@ class StorageManager extends BaseManager {
         return await this._executeWithTimingAsync('loadLocale', async () => {
             try {
                 if (!this._isStorageAvailable()) {
-                    this._log('chrome.storage.local недоступен');
+                    this._log({ key: 'logs.localeStorage.storageUnavailable' });
                     this.statistics.errors++;
                     return null;
                 }
 
                 const result = await new Promise((resolve) => {
-                    chrome.storage.local.get([StorageManager.STORAGE_KEY], (result) => {
+                    chrome.storage.local.get([CONFIG.LOCALE.STORAGE_KEY], (result) => {
                         if (chrome.runtime.lastError) {
                             this.statistics.errors++;
-                            this._logError('Ошибка загрузки локали', chrome.runtime.lastError);
+                            this._logError({ key: 'logs.localeStorage.loadError' }, chrome.runtime.lastError);
                             resolve(null);
                         } else {
-                            resolve(result[StorageManager.STORAGE_KEY] || null);
+                            resolve(result[CONFIG.LOCALE.STORAGE_KEY] || null);
                         }
                     });
                 });
@@ -67,19 +69,22 @@ class StorageManager extends BaseManager {
                     this.statistics.loads++;
                     this.statistics.lastOperation = 'load';
                     this.updateState({ lastLoadTime: Date.now() });
-                    this._log('Сохраненная локаль не найдена');
+                    this._log({ key: 'logs.localeStorage.notFound' });
                 } else if (result !== null) {
                     // Успешная загрузка
                     this.statistics.loads++;
                     this.statistics.lastOperation = 'load';
                     this.updateState({ lastLoadTime: Date.now() });
-                    this._log('Локаль загружена', { locale: result });
+                    // Обновляем кэш локали для синхронного доступа
+                    const BaseManager = require('../../base/BaseManager.js');
+                    BaseManager.updateLocaleCache(result);
+                    this._log({ key: 'logs.localeStorage.loaded' }, { locale: result });
                 }
 
                 return result;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError('Ошибка загрузки локали', error);
+                this._logError({ key: 'logs.localeStorage.loadError' }, error);
                 return null;
             }
         });
@@ -96,24 +101,24 @@ class StorageManager extends BaseManager {
         return await this._executeWithTimingAsync('saveLocale', async () => {
             try {
                 if (!locale || typeof locale !== 'string') {
-                    this._logError('Невалидная локаль для сохранения', { locale });
+                    this._logError({ key: 'logs.localeStorage.invalidLocale' }, { locale });
                     this.statistics.errors++;
                     return false;
                 }
 
                 if (!this._isStorageAvailable()) {
-                    this._log('chrome.storage.local недоступен');
+                    this._log({ key: 'logs.localeStorage.storageUnavailable' });
                     this.statistics.errors++;
                     return false;
                 }
 
                 const result = await new Promise((resolve) => {
                     chrome.storage.local.set(
-                        { [StorageManager.STORAGE_KEY]: locale },
+                        { [CONFIG.LOCALE.STORAGE_KEY]: locale },
                         () => {
                             if (chrome.runtime.lastError) {
                                 this.statistics.errors++;
-                                this._logError('Ошибка сохранения локали', chrome.runtime.lastError);
+                                this._logError({ key: 'logs.localeStorage.saveError' }, chrome.runtime.lastError);
                                 resolve(false);
                             } else {
                                 resolve(true);
@@ -129,13 +134,16 @@ class StorageManager extends BaseManager {
                         lastSaveTime: Date.now(),
                         currentLocale: locale 
                     });
-                    this._log('Локаль сохранена', { locale });
+                    // Обновляем кэш локали для синхронного доступа
+                    const BaseManager = require('../../base/BaseManager.js');
+                    BaseManager.updateLocaleCache(locale);
+                    this._log({ key: 'logs.localeStorage.saved' }, { locale });
                 }
 
                 return result;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError('Ошибка сохранения локали', error);
+                this._logError({ key: 'logs.localeStorage.saveError' }, error);
                 return false;
             }
         });

@@ -61,7 +61,7 @@ class DiagnosticsManager extends BaseManager {
     constructor(serviceWorkerManager, notificationManager, options = {}) {
         super(options);
 
-        const t = this._getTemporaryTranslateFn();
+        const t = this._getTranslateFn();
 
         if (!serviceWorkerManager) {
             throw new TypeError(t('logs.diagnostics.serviceWorkerRequired'));

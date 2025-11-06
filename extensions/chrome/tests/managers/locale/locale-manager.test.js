@@ -426,6 +426,8 @@ describe('LocaleManager', () => {
         });
 
         test('_detectBrowserLocale - должен обрабатывать ошибки', () => {
+            const BaseManager = require('../../../src/base/BaseManager.js');
+            
             // Ломаем navigator.language
             Object.defineProperty(global.navigator, 'language', {
                 get() {
@@ -434,7 +436,7 @@ describe('LocaleManager', () => {
                 configurable: true
             });
 
-            const result = localeManager._detectBrowserLocale();
+            const result = BaseManager.detectBrowserLocale();
 
             expect(result).toBeNull();
             

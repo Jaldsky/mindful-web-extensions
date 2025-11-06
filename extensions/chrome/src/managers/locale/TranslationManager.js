@@ -14,18 +14,17 @@ class TranslationManager extends BaseManager {
      * Доступные локали
      * @readonly
      * @static
+     * @deprecated Используйте BaseManager.SUPPORTED_LOCALES
      */
-    static LOCALES = {
-        EN: 'en',
-        RU: 'ru'
-    };
+    static LOCALES = BaseManager.SUPPORTED_LOCALES;
 
     /**
      * Локаль по умолчанию
      * @readonly
      * @static
+     * @deprecated Используйте BaseManager.DEFAULT_LOCALE
      */
-    static DEFAULT_LOCALE = TranslationManager.LOCALES.EN;
+    static DEFAULT_LOCALE = BaseManager.DEFAULT_LOCALE;
 
     /**
      * Создает экземпляр TranslationManager.
@@ -39,12 +38,12 @@ class TranslationManager extends BaseManager {
 
         /** @type {Object} Словари переводов */
         this.translations = {
-            [TranslationManager.LOCALES.EN]: EN,
-            [TranslationManager.LOCALES.RU]: RU
+            [BaseManager.SUPPORTED_LOCALES.EN]: EN,
+            [BaseManager.SUPPORTED_LOCALES.RU]: RU
         };
 
         /** @type {string} Текущая локаль */
-        this.currentLocale = options.defaultLocale || TranslationManager.DEFAULT_LOCALE;
+        this.currentLocale = options.defaultLocale || BaseManager.DEFAULT_LOCALE;
 
         /** @type {Object} Статистика переводов */
         this.statistics = {
@@ -175,7 +174,7 @@ class TranslationManager extends BaseManager {
      * @returns {Array<Object>} Массив объектов с информацией о локалях
      */
     getAvailableLocales() {
-        return Object.values(TranslationManager.LOCALES).map(locale => ({
+        return Object.values(BaseManager.SUPPORTED_LOCALES).map(locale => ({
             code: locale,
             name: this.translations[locale]?.common?.languageName || locale,
             nativeName: this.translations[locale]?.common?.languageName || locale
@@ -198,7 +197,7 @@ class TranslationManager extends BaseManager {
      * @returns {string} Новая локаль
      */
     toggleLocale() {
-        const locales = Object.values(TranslationManager.LOCALES);
+        const locales = Object.values(BaseManager.SUPPORTED_LOCALES);
         const currentIndex = locales.indexOf(this.currentLocale);
         const nextIndex = (currentIndex + 1) % locales.length;
         const nextLocale = locales[nextIndex];

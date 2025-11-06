@@ -54,7 +54,7 @@ class DOMManager extends BaseManager {
     constructor(options = {}) {
         super(options);
         
-        const t = this._getTemporaryTranslateFn();
+        const t = this._getTranslateFn();
         
         /** @type {boolean} */
         this.strictMode = options.strictMode || false;
@@ -89,7 +89,7 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     _validateDOMAvailability() {
-        const t = this._getTemporaryTranslateFn();
+        const t = this._getTranslateFn();
         
         if (typeof document === 'undefined') {
             throw new Error(t('logs.dom.documentApiUnavailable'));
@@ -484,7 +484,7 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     setTranslateFn(translateFn) {
-        const t = this._getTemporaryTranslateFn();
+        const t = this._getTranslateFn();
         
         if (typeof translateFn !== 'function') {
             throw new TypeError(t('logs.dom.validation.translateFnMustBeFunction'));

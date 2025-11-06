@@ -183,8 +183,13 @@ const EN = {
             trackingStateUpdateError: 'Error updating tracking state',
             statsReceived: 'Statistics received',
             statsError: 'Error getting statistics',
+            statsSkipped: 'Statistics request skipped: {reason}',
             detailedStatsReceived: 'Detailed statistics received',
             detailedStatsError: 'Error getting detailed statistics',
+            detailedStatsSkipped: 'Detailed statistics request skipped: {reason}',
+            trackingDisabled: 'Tracking disabled',
+            noConnection: 'No connection',
+            messageBlocked: 'Message blocked: {type}, reason: {reason}',
             pingSuccess: 'Ping successful',
             serviceWorkerUnavailable: 'Service Worker unavailable',
             generateDomainsError: 'Error generating domains',
@@ -249,6 +254,16 @@ const EN = {
             destroyStart: 'Destroying Localization DOMManager',
             destroyed: 'Localization DOMManager destroyed',
             destroyError: 'Error destroying Localization DOMManager'
+        },
+        localeStorage: {
+            created: 'Locale StorageManager created',
+            storageUnavailable: 'chrome.storage.local is unavailable',
+            loadError: 'Error loading locale',
+            notFound: 'Saved locale not found',
+            loaded: 'Locale loaded',
+            invalidLocale: 'Invalid locale for saving',
+            saveError: 'Error saving locale',
+            saved: 'Locale saved'
         }
     },
 

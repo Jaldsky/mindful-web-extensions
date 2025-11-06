@@ -107,6 +107,32 @@ class MessageHandlerManager extends BaseManager {
         try {
             const messageType = request.type || request.action;
 
+            // Проверяем статус отслеживания и подключения для неслужебных сообщений
+            const blockCheck = this._shouldBlockMessage(
+                messageType,
+                MessageHandlerManager.MESSAGE_TYPES,
+                () => this.statisticsManager.isTrackingEnabled(),
+                () => this.eventQueueManager.state.isOnline
+            );
+
+            if (blockCheck.shouldBlock) {
+                const isTracking = this.statisticsManager.isTrackingEnabled();
+                const isOnline = this.eventQueueManager.state.isOnline;
+                
+                this._log('Сообщение заблокировано', { 
+                    messageType, 
+                    reason: blockCheck.reason 
+                });
+                
+                sendResponse({ 
+                    success: false, 
+                    error: blockCheck.reason,
+                    isTracking: !isTracking ? false : undefined,
+                    isOnline: !isOnline ? false : undefined
+                });
+                return;
+            }
+
             switch (messageType) {
                 case MessageHandlerManager.MESSAGE_TYPES.PING:
                     this._handlePing(sendResponse);

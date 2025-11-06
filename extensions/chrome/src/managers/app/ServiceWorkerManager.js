@@ -109,10 +109,26 @@ class ServiceWorkerManager extends BaseManager {
      * @throws {Error} Если отправка сообщения не удалась или превышен таймаут
      */
     async sendMessage(type, data = {}, timeout) {
-        const t = this._getTemporaryTranslateFn();
+        const t = this._getTranslateFn();
         
         if (typeof type !== 'string' || !type) {
             throw new TypeError(t('logs.serviceWorker.messageTypeMustBeString'));
+        }
+
+        const blockCheck = this._shouldBlockMessage(
+            type,
+            ServiceWorkerManager.MESSAGE_TYPES,
+            () => this.state?.isTracking !== undefined ? Boolean(this.state.isTracking) : true,
+            () => this.state?.isOnline !== undefined ? Boolean(this.state.isOnline) : true
+        );
+
+        if (blockCheck.shouldBlock) {
+            const errorMessage = blockCheck.reason === 'Tracking is disabled'
+                ? (t('logs.serviceWorker.trackingDisabled') || 'Tracking is disabled')
+                : (t('logs.serviceWorker.noConnection') || 'No connection');
+
+            const error = new Error(errorMessage);
+            throw error;
         }
 
         const actualTimeout = timeout || this.messageTimeout;
@@ -200,7 +216,7 @@ class ServiceWorkerManager extends BaseManager {
      * @returns {Promise<{success: boolean, isTracking: boolean}>} Результат операции
      */
     async setTrackingEnabled(isEnabled) {
-        const t = this._getTemporaryTranslateFn();
+        const t = this._getTranslateFn();
         
         if (typeof isEnabled !== 'boolean') {
             throw new TypeError(t('logs.serviceWorker.isEnabledMustBeBoolean'));
@@ -264,6 +280,9 @@ class ServiceWorkerManager extends BaseManager {
             
             return defaultStats;
         } catch (error) {
+            if (this._isBlockingError(error)) {
+                return defaultStats;
+            }
             this._logError({ key: 'logs.serviceWorker.statsError' }, error);
             return defaultStats;
         }
@@ -307,6 +326,9 @@ class ServiceWorkerManager extends BaseManager {
 
             return defaultStats;
         } catch (error) {
+            if (this._isBlockingError(error)) {
+                return defaultStats;
+            }
             this._logError({ key: 'logs.serviceWorker.detailedStatsError' }, error);
             return defaultStats;
         }
