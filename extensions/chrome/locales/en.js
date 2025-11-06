@@ -374,6 +374,13 @@ const EN = {
             noLogsAvailable: 'No logs available. Logs will appear here when you interact with the extension.',
             noLogsMatchFilters: 'No logs match the current filters.',
             loadErrorMessage: 'Error loading logs: {message}'
+        },
+        options: {
+            domManagerInitError: 'Critical DOMManager initialization error',
+            storageManagerInitError: 'Critical StorageManager initialization error',
+            statusManagerInitError: 'StatusManager initialization error',
+            domManagerInitFailed: 'DOM Manager initialization failed: {message}',
+            storageManagerInitFailed: 'Storage Manager initialization failed: {message}'
         }
     },
 
