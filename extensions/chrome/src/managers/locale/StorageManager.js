@@ -9,13 +9,6 @@ const CONFIG = require('../../../config.js');
  * @extends BaseManager
  */
 class StorageManager extends BaseManager {
-    /**
-     * Ключ для хранения выбранной локали в storage
-     * @readonly
-     * @static
-     * @deprecated Используйте CONFIG.LOCALE.STORAGE_KEY
-     */
-    static STORAGE_KEY = CONFIG.LOCALE.STORAGE_KEY;
 
     /**
      * Создает экземпляр StorageManager.
@@ -65,17 +58,14 @@ class StorageManager extends BaseManager {
                 });
 
                 if (result === null && this.statistics.errors === 0) {
-                    // null из-за отсутствия сохранённой локали, а не ошибки
                     this.statistics.loads++;
                     this.statistics.lastOperation = 'load';
                     this.updateState({ lastLoadTime: Date.now() });
                     this._log({ key: 'logs.localeStorage.notFound' });
                 } else if (result !== null) {
-                    // Успешная загрузка
                     this.statistics.loads++;
                     this.statistics.lastOperation = 'load';
                     this.updateState({ lastLoadTime: Date.now() });
-                    // Обновляем кэш локали для синхронного доступа
                     const BaseManager = require('../../base/BaseManager.js');
                     BaseManager.updateLocaleCache(result);
                     this._log({ key: 'logs.localeStorage.loaded' }, { locale: result });
@@ -134,7 +124,6 @@ class StorageManager extends BaseManager {
                         lastSaveTime: Date.now(),
                         currentLocale: locale 
                     });
-                    // Обновляем кэш локали для синхронного доступа
                     const BaseManager = require('../../base/BaseManager.js');
                     BaseManager.updateLocaleCache(locale);
                     this._log({ key: 'logs.localeStorage.saved' }, { locale });
@@ -160,39 +149,12 @@ class StorageManager extends BaseManager {
     }
 
     /**
-     * Получает статистику работы со storage.
-     * 
-     * @returns {Object} Статистика
-     */
-    getStatistics() {
-        return {
-            ...this.statistics,
-            storageAvailable: this._isStorageAvailable()
-        };
-    }
-
-    /**
-     * Сбрасывает статистику.
-     * 
-     * @returns {void}
-     */
-    resetStatistics() {
-        this.statistics = {
-            loads: 0,
-            saves: 0,
-            errors: 0,
-            lastOperation: null
-        };
-        this._log('Статистика сброшена');
-    }
-
-    /**
      * Очищает ресурсы при уничтожении менеджера.
      * 
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов StorageManager');
+        this._log({ key: 'logs.localeStorage.destroyStart' });
         
         try {
             this.statistics = {
@@ -202,9 +164,9 @@ class StorageManager extends BaseManager {
                 lastOperation: null
             };
             
-            this._log('StorageManager уничтожен');
+            this._log({ key: 'logs.localeStorage.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении StorageManager', error);
+            this._logError({ key: 'logs.localeStorage.destroyError' }, error);
         }
         
         super.destroy();

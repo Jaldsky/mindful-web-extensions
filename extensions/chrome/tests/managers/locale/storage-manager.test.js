@@ -4,6 +4,7 @@
  */
 
 const StorageManager = require('../../../src/managers/locale/StorageManager.js');
+const CONFIG = require('../../../config.js');
 
 describe('StorageManager', () => {
     let storageManager;
@@ -56,21 +57,18 @@ describe('StorageManager', () => {
             expect(storageManager.statistics.errors).toBe(0);
         });
 
-        test('should have STORAGE_KEY constant', () => {
-            expect(StorageManager.STORAGE_KEY).toBe('mindful_locale');
-        });
     });
 
     describe('loadLocale', () => {
         test('should load saved locale from storage', async () => {
-            mockStorage.data[StorageManager.STORAGE_KEY] = 'ru';
+            mockStorage.data[CONFIG.LOCALE.STORAGE_KEY] = 'ru';
 
             const locale = await storageManager.loadLocale();
 
             expect(locale).toBe('ru');
             expect(storageManager.statistics.loads).toBe(1);
             expect(mockStorage.get).toHaveBeenCalledWith(
-                [StorageManager.STORAGE_KEY],
+                [CONFIG.LOCALE.STORAGE_KEY],
                 expect.any(Function)
             );
         });
@@ -112,9 +110,9 @@ describe('StorageManager', () => {
 
             expect(result).toBe(true);
             expect(storageManager.statistics.saves).toBe(1);
-            expect(mockStorage.data[StorageManager.STORAGE_KEY]).toBe('en');
+            expect(mockStorage.data[CONFIG.LOCALE.STORAGE_KEY]).toBe('en');
             expect(mockStorage.set).toHaveBeenCalledWith(
-                { [StorageManager.STORAGE_KEY]: 'en' },
+                { [CONFIG.LOCALE.STORAGE_KEY]: 'en' },
                 expect.any(Function)
             );
         });
@@ -157,54 +155,17 @@ describe('StorageManager', () => {
         });
     });
 
-    describe('getStatistics', () => {
-        test('should return correct statistics', async () => {
-            await storageManager.loadLocale();
-            await storageManager.saveLocale('en');
-
-            const stats = storageManager.getStatistics();
-
-            expect(stats.loads).toBe(1);
-            expect(stats.saves).toBe(1);
-            expect(stats.errors).toBe(0);
-            expect(stats.storageAvailable).toBe(true);
-            expect(stats.lastOperation).toBe('save');
-        });
-
-        test('should track storage availability', () => {
-            let stats = storageManager.getStatistics();
-            expect(stats.storageAvailable).toBe(true);
-
-            delete global.chrome.storage;
-
-            stats = storageManager.getStatistics();
-            expect(stats.storageAvailable).toBe(false);
-        });
-    });
-
-    describe('resetStatistics', () => {
-        test('should reset all statistics', async () => {
-            await storageManager.loadLocale();
-            await storageManager.saveLocale('en');
-
-            storageManager.resetStatistics();
-
-            const stats = storageManager.getStatistics();
-            expect(stats.loads).toBe(0);
-            expect(stats.saves).toBe(0);
-            expect(stats.errors).toBe(0);
-            expect(stats.lastOperation).toBeNull();
-        });
-    });
-
     describe('destroy', () => {
         test('should cleanup resources', () => {
+            storageManager.statistics.loads = 5;
+            storageManager.statistics.saves = 3;
+            storageManager.statistics.errors = 1;
+
             storageManager.destroy();
 
-            const stats = storageManager.getStatistics();
-            expect(stats.loads).toBe(0);
-            expect(stats.saves).toBe(0);
-            expect(stats.errors).toBe(0);
+            expect(storageManager.statistics.loads).toBe(0);
+            expect(storageManager.statistics.saves).toBe(0);
+            expect(storageManager.statistics.errors).toBe(0);
         });
     });
 
