@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * @typedef {Object} DOMElements
@@ -20,22 +21,11 @@ const BaseManager = require('../../base/BaseManager.js');
  */
 class DOMManager extends BaseManager {
     /**
-     * ID элементов DOM
+     * ID элементов DOM (для обратной совместимости, ссылается на CONFIG.OPTIONS_DOM.ELEMENT_IDS)
      * @readonly
-     * @enum {string}
+     * @static
      */
-    static ELEMENT_IDS = {
-        SETTINGS_FORM: 'settingsForm',
-        BACKEND_URL: 'backendUrl',
-        SAVE_BTN: 'saveBtn',
-        RESET_BTN: 'resetBtn',
-        STATUS: 'status',
-        RUN_DIAGNOSTICS: 'runDiagnostics',
-        TOGGLE_DEVELOPER_TOOLS: 'toggleDeveloperTools',
-        DOMAIN_EXCEPTION_INPUT: 'domainExceptionInput',
-        ADD_DOMAIN_EXCEPTION_BTN: 'addDomainExceptionBtn',
-        DOMAIN_EXCEPTIONS_LIST: 'domainExceptionsList'
-    };
+    static ELEMENT_IDS = CONFIG.OPTIONS_DOM.ELEMENT_IDS;
 
     /**
      * Создает экземпляр DOMManager.
@@ -52,8 +42,7 @@ class DOMManager extends BaseManager {
         
         /** @type {DOMElements} */
         this.elements = {};
-        
-        // Валидируем доступность DOM API
+
         this._validateDOMAvailability();
         
         this._initializeElements();
@@ -67,17 +56,19 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     _validateDOMAvailability() {
+        const t = this._getTranslateFn();
+        
         if (typeof document === 'undefined' || !document.getElementById) {
-            const error = new Error('DOM API недоступен');
-            this._logError('Критическая ошибка инициализации', error);
+            const error = new Error(t('logs.optionsDom.domApiUnavailable'));
+            this._logError({ key: 'logs.optionsDom.criticalInitializationError' }, error);
             throw error;
         }
         
         if (!document.body) {
-            this._log('Предупреждение: document.body еще не доступен');
+            this._log({ key: 'logs.optionsDom.bodyNotAvailable' });
         }
         
-        this._log('DOM API доступен');
+        this._log({ key: 'logs.optionsDom.domApiAvailable' });
     }
 
     /**
@@ -87,7 +78,7 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     _initializeElements() {
-        return this._executeWithTiming('initializeElements', () => {
+        this._executeWithTiming('initializeElements', () => {
             try {
                 this.elements = this._cacheDOMElements();
                 
@@ -95,7 +86,7 @@ class DOMManager extends BaseManager {
                     .filter(([, el]) => el !== null).length;
                 const totalElements = Object.keys(this.elements).length;
                 
-                this._log('DOM элементы инициализированы', {
+                this._log({ key: 'logs.optionsDom.elementsInitialized' }, {
                     found: `${foundElements}/${totalElements}`,
                     elements: Object.keys(this.elements).filter(key => this.elements[key])
                 });
@@ -104,7 +95,7 @@ class DOMManager extends BaseManager {
                     this._validateElements();
                 }
             } catch (error) {
-                this._logError('Ошибка инициализации DOM элементов', error);
+                this._logError({ key: 'logs.optionsDom.initializationError' }, error);
                 if (this.strictMode) {
                     throw error;
                 }
@@ -122,22 +113,22 @@ class DOMManager extends BaseManager {
         const getElement = (id) => {
             const element = document.getElementById(id);
             if (!element) {
-                this._log(`Элемент с ID "${id}" не найден`);
+                this._log({ key: 'logs.optionsDom.elementNotFound', params: { id } });
             }
             return element;
         };
 
         return {
-            settingsForm: getElement(DOMManager.ELEMENT_IDS.SETTINGS_FORM),
-            backendUrl: getElement(DOMManager.ELEMENT_IDS.BACKEND_URL),
-            saveBtn: getElement(DOMManager.ELEMENT_IDS.SAVE_BTN),
-            resetBtn: getElement(DOMManager.ELEMENT_IDS.RESET_BTN),
-            status: getElement(DOMManager.ELEMENT_IDS.STATUS),
-            runDiagnostics: getElement(DOMManager.ELEMENT_IDS.RUN_DIAGNOSTICS),
-            toggleDeveloperTools: getElement(DOMManager.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS),
-            domainExceptionInput: getElement(DOMManager.ELEMENT_IDS.DOMAIN_EXCEPTION_INPUT),
-            addDomainExceptionBtn: getElement(DOMManager.ELEMENT_IDS.ADD_DOMAIN_EXCEPTION_BTN),
-            domainExceptionsList: getElement(DOMManager.ELEMENT_IDS.DOMAIN_EXCEPTIONS_LIST)
+            settingsForm: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.SETTINGS_FORM),
+            backendUrl: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.BACKEND_URL),
+            saveBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.SAVE_BTN),
+            resetBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.RESET_BTN),
+            status: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.STATUS),
+            runDiagnostics: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.RUN_DIAGNOSTICS),
+            toggleDeveloperTools: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS),
+            domainExceptionInput: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.DOMAIN_EXCEPTION_INPUT),
+            addDomainExceptionBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ADD_DOMAIN_EXCEPTION_BTN),
+            domainExceptionsList: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.DOMAIN_EXCEPTIONS_LIST)
         };
     }
 
@@ -149,6 +140,7 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     _validateElements() {
+        const t = this._getTranslateFn();
         const missingElements = [];
 
         Object.entries(this.elements).forEach(([key, element]) => {
@@ -159,7 +151,7 @@ class DOMManager extends BaseManager {
 
         if (missingElements.length > 0) {
             throw new Error(
-                `Отсутствуют критичные DOM элементы: ${missingElements.join(', ')}`
+                t('logs.optionsDom.missingElements', { elements: missingElements.join(', ') })
             );
         }
     }
@@ -174,15 +166,14 @@ class DOMManager extends BaseManager {
      * @param {string} [elementName='element'] - Название элемента для логирования
      * @returns {boolean} true если обновление успешно
      */
-    _safeUpdateElement(element, updateFn, verifyFn, elementName = 'element') {
+    _safeUpdateElement(element, updateFn, verifyFn, elementName = CONFIG.OPTIONS_DOM.DEFAULT_ELEMENT_NAMES.ELEMENT) {
         if (!element) {
-            this._log(`Невозможно обновить ${elementName}: элемент не найден`);
+            this._log({ key: 'logs.optionsDom.updateElementNotFound', params: { elementName } });
             return false;
         }
 
-        // Проверяем, что элемент в DOM
         if (!document.body.contains(element)) {
-            this._logError(`${elementName} не находится в DOM`);
+            this._logError({ key: 'logs.optionsDom.elementNotInDOM', params: { elementName } });
             return false;
         }
 
@@ -190,20 +181,19 @@ class DOMManager extends BaseManager {
 
         try {
             updateFn(element);
-            
-            // Верификация если функция предоставлена
+
             if (verifyFn && !verifyFn(element)) {
-                this._logError(`Верификация обновления ${elementName} не удалась`);
+                this._logError({ key: 'logs.optionsDom.verificationFailed', params: { elementName } });
                 return false;
             }
             
             const duration = Math.round(performance.now() - startTime);
-            this._log(`${elementName} обновлен успешно (${duration}мс)`);
+            this._log({ key: 'logs.optionsDom.updateSuccess', params: { elementName, duration } });
             
             return true;
         } catch (error) {
             const duration = Math.round(performance.now() - startTime);
-            this._logError(`Ошибка обновления ${elementName} (${duration}мс)`, error);
+            this._logError({ key: 'logs.optionsDom.updateError', params: { elementName, duration } }, error);
             return false;
         }
     }
@@ -216,12 +206,12 @@ class DOMManager extends BaseManager {
     getBackendUrlValue() {
         return this._executeWithTiming('getBackendUrlValue', () => {
             if (!this.elements.backendUrl) {
-                this._log('Элемент backendUrl не найден');
+                this._log({ key: 'logs.optionsDom.backendUrlNotFound' });
                 return '';
             }
             
             const value = this.elements.backendUrl.value.trim();
-            this._log('Значение URL получено', { length: value.length });
+            this._log({ key: 'logs.optionsDom.urlValueRetrieved' }, { length: value.length });
             
             return value;
         });
@@ -235,8 +225,10 @@ class DOMManager extends BaseManager {
      * @returns {boolean} true если установка успешна
      */
     setBackendUrlValue(url) {
+        const t = this._getTranslateFn();
+        
         if (typeof url !== 'string') {
-            throw new TypeError('url должен быть строкой');
+            throw new TypeError(t('logs.optionsDom.urlMustBeString'));
         }
 
         return this._executeWithTiming('setBackendUrlValue', () => {
@@ -245,8 +237,8 @@ class DOMManager extends BaseManager {
                 (element) => {
                     element.value = url;
                 },
-                (element) => element.value === url, // Верификация
-                'поле URL бэкенда'
+                (element) => element.value === url,
+                CONFIG.OPTIONS_DOM.DEFAULT_ELEMENT_NAMES.BACKEND_URL_FIELD
             );
         });
     }
@@ -261,12 +253,14 @@ class DOMManager extends BaseManager {
      * @returns {boolean} true если обновление успешно
      */
     setButtonState(button, text, disabled) {
+        const t = this._getTranslateFn();
+        
         if (typeof text !== 'string') {
-            throw new TypeError('text должен быть строкой');
+            throw new TypeError(t('logs.optionsDom.textMustBeString'));
         }
 
         if (typeof disabled !== 'boolean') {
-            throw new TypeError('disabled должен быть булевым значением');
+            throw new TypeError(t('logs.optionsDom.disabledMustBeBoolean'));
         }
 
         return this._executeWithTiming('setButtonState', () => {
@@ -277,10 +271,9 @@ class DOMManager extends BaseManager {
                     element.disabled = disabled;
                 },
                 (element) => {
-                    // Верификация: проверяем, что текст и состояние установлены
                     return element.textContent === text && element.disabled === disabled;
                 },
-                'кнопка'
+                CONFIG.OPTIONS_DOM.DEFAULT_ELEMENT_NAMES.BUTTON
             );
         });
     }
@@ -318,7 +311,7 @@ class DOMManager extends BaseManager {
 
             return stats;
         } catch (error) {
-            this._logError('Ошибка получения статистики элементов', error);
+            this._logError({ key: 'logs.optionsDom.getStatisticsError' }, error);
             return {};
         }
     }
@@ -329,15 +322,14 @@ class DOMManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов DOMManager');
+        this._log({ key: 'logs.optionsDom.destroyStart' });
         
         try {
-            // Очищаем ссылки на элементы
             this.elements = {};
             
-            this._log('DOMManager уничтожен');
+            this._log({ key: 'logs.optionsDom.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении DOMManager', error);
+            this._logError({ key: 'logs.optionsDom.destroyError' }, error);
         }
         
         super.destroy();

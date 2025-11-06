@@ -309,6 +309,30 @@ const EN = {
             clearError: 'Error clearing diagnostics',
             elementsNotFound: 'Diagnostics elements not found',
             renderError: 'Error rendering diagnostics'
+        },
+        optionsDom: {
+            domApiUnavailable: 'DOM API unavailable',
+            criticalInitializationError: 'Critical initialization error',
+            bodyNotAvailable: 'Warning: document.body is not yet available',
+            domApiAvailable: 'DOM API available',
+            elementsInitialized: 'DOM elements initialized',
+            initializationError: 'Error initializing DOM elements',
+            elementNotFound: 'Element with ID "{id}" not found',
+            missingElements: 'Missing critical DOM elements: {elements}',
+            updateElementNotFound: 'Cannot update {elementName}: element not found',
+            elementNotInDOM: '{elementName} is not in DOM',
+            verificationFailed: 'Update verification for {elementName} failed',
+            updateSuccess: '{elementName} updated successfully ({duration}ms)',
+            updateError: 'Error updating {elementName} ({duration}ms)',
+            backendUrlNotFound: 'Element backendUrl not found',
+            urlValueRetrieved: 'URL value retrieved',
+            urlMustBeString: 'url must be a string',
+            textMustBeString: 'text must be a string',
+            disabledMustBeBoolean: 'disabled must be a boolean',
+            getStatisticsError: 'Error getting elements statistics',
+            destroyStart: 'Cleaning up DOMManager resources',
+            destroyed: 'DOMManager destroyed',
+            destroyError: 'Error destroying DOMManager'
         }
     },
 
