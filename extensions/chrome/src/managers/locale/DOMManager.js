@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * Менеджер для локализации DOM элементов.
@@ -13,14 +14,14 @@ class DOMManager extends BaseManager {
      * @readonly
      * @static
      */
-    static I18N_ATTRIBUTE = 'data-i18n';
+    static I18N_ATTRIBUTE = CONFIG.LOCALE_DOM.I18N_ATTRIBUTE;
 
     /**
      * Атрибут для указания целевого атрибута элемента
      * @readonly
      * @static
      */
-    static I18N_ATTR_ATTRIBUTE = 'data-i18n-attr';
+    static I18N_ATTR_ATTRIBUTE = CONFIG.LOCALE_DOM.I18N_ATTR_ATTRIBUTE;
 
     /**
      * Создает экземпляр DOMManager.
@@ -33,7 +34,8 @@ class DOMManager extends BaseManager {
         super(options);
 
         if (typeof translationCallback !== 'function') {
-            throw new TypeError('translationCallback должен быть функцией');
+            const t = this._getTranslateFn();
+            throw new TypeError(t('logs.localeDom.translationCallbackMustBeFunction'));
         }
 
         /** @type {Function} Функция для получения переводов */
@@ -44,12 +46,8 @@ class DOMManager extends BaseManager {
             totalLocalizations: 0,
             elementsLocalized: 0,
             errors: 0,
-            lastLocalizationTime: null,
-            lastElementCount: 0
+            lastLocalizationTime: null
         };
-
-        /** @type {WeakMap<HTMLElement, string>} Кэш оригинальных ключей элементов */
-        this.elementKeyCache = new WeakMap();
 
         this._log({ key: 'logs.localeDom.created' });
     }
@@ -87,12 +85,6 @@ class DOMManager extends BaseManager {
                 this.statistics.totalLocalizations++;
                 this.statistics.elementsLocalized += count;
                 this.statistics.lastLocalizationTime = Date.now();
-                this.statistics.lastElementCount = count;
-
-                this.updateState({
-                    lastLocalizationTime: Date.now(),
-                    lastElementCount: count
-                });
 
                 this._log({ key: 'logs.localeDom.localizedCount', params: { count } });
                 return count;
@@ -119,19 +111,13 @@ class DOMManager extends BaseManager {
             return false;
         }
 
-        // Сохраняем ключ в кэш для возможного повторного использования
-        this.elementKeyCache.set(element, key);
-
         const translation = this.getTranslation(key);
 
         if (attr) {
-            // Обновляем атрибут
             element.setAttribute(attr, translation);
         } else {
-            // Обновляем текстовое содержимое
             element.textContent = translation;
         }
-
         return true;
     }
 
@@ -169,137 +155,6 @@ class DOMManager extends BaseManager {
     }
 
     /**
-     * Локализует множественные элементы по селектору.
-     * 
-     * @param {string} selector - CSS селектор элементов
-     * @param {string} key - Ключ перевода
-     * @param {string} [attr] - Атрибут для обновления
-     * @returns {number} Количество локализованных элементов
-     */
-    localizeElementsBySelector(selector, key, attr = null) {
-        try {
-            const elements = document.querySelectorAll(selector);
-            if (elements.length === 0) {
-                this._log({ key: 'logs.localeDom.elementsNotFound', params: { selector } });
-                return 0;
-            }
-
-            const translation = this.getTranslation(key);
-            let count = 0;
-
-            elements.forEach(element => {
-                try {
-                    if (attr) {
-                        element.setAttribute(attr, translation);
-                    } else {
-                        element.textContent = translation;
-                    }
-                    count++;
-                } catch (error) {
-                    this.statistics.errors++;
-                    this._logError({ key: 'logs.localeDom.elementLocalizeError' }, error);
-                }
-            });
-
-            this._log({ key: 'logs.localeDom.elementsLocalized', params: { selector } }, { count, key });
-            return count;
-        } catch (error) {
-            this.statistics.errors++;
-            this._logError({ key: 'logs.localeDom.elementsLocalizeError', params: { selector } }, error);
-            return 0;
-        }
-    }
-
-    /**
-     * Добавляет атрибуты локализации к элементу.
-     * 
-     * @param {HTMLElement} element - Элемент
-     * @param {string} key - Ключ перевода
-     * @param {string} [attr] - Атрибут для обновления
-     * @returns {boolean} true если атрибуты добавлены
-     */
-    addLocalizationAttributes(element, key, attr = null) {
-        try {
-            if (!element) {
-                this._log({ key: 'logs.localeDom.elementNotProvided' });
-                return false;
-            }
-
-            element.setAttribute(DOMManager.I18N_ATTRIBUTE, key);
-            
-            if (attr) {
-                element.setAttribute(DOMManager.I18N_ATTR_ATTRIBUTE, attr);
-            }
-
-            // Сразу локализуем элемент
-            this._localizeElement(element);
-
-            this._log({ key: 'logs.localeDom.attrsAdded' }, { key, attr });
-            return true;
-        } catch (error) {
-            this.statistics.errors++;
-            this._logError({ key: 'logs.localeDom.addAttrsError' }, error);
-            return false;
-        }
-    }
-
-    /**
-     * Удаляет атрибуты локализации у элемента.
-     * 
-     * @param {HTMLElement} element - Элемент
-     * @returns {boolean} true если атрибуты удалены
-     */
-    removeLocalizationAttributes(element) {
-        try {
-            if (!element) {
-                this._log({ key: 'logs.localeDom.elementNotProvided' });
-                return false;
-            }
-
-            element.removeAttribute(DOMManager.I18N_ATTRIBUTE);
-            element.removeAttribute(DOMManager.I18N_ATTR_ATTRIBUTE);
-
-            this._log({ key: 'logs.localeDom.attrsRemoved' });
-            return true;
-        } catch (error) {
-            this.statistics.errors++;
-            this._logError({ key: 'logs.localeDom.removeAttrsError' }, error);
-            return false;
-        }
-    }
-
-    /**
-     * Получает все локализуемые элементы.
-     * 
-     * @param {HTMLElement} [root=document] - Корневой элемент
-     * @returns {NodeList} Список элементов
-     */
-    getLocalizableElements(root = document) {
-        try {
-            return root.querySelectorAll(`[${DOMManager.I18N_ATTRIBUTE}]`);
-        } catch (error) {
-            this._logError({ key: 'logs.localeDom.getElementsError' }, error);
-            return [];
-        }
-    }
-
-    /**
-     * Получает количество локализуемых элементов.
-     * 
-     * @param {HTMLElement} [root=document] - Корневой элемент
-     * @returns {number} Количество элементов
-     */
-    getLocalizableElementsCount(root = document) {
-        try {
-            const elements = this.getLocalizableElements(root);
-            return elements.length;
-        } catch (error) {
-            this._logError({ key: 'logs.localeDom.countElementsError' }, error);
-            return 0;
-        }
-    }
-
-    /**
      * Получает статистику локализации DOM.
      * 
      * @returns {Object} Статистика
@@ -323,8 +178,7 @@ class DOMManager extends BaseManager {
             totalLocalizations: 0,
             elementsLocalized: 0,
             errors: 0,
-            lastLocalizationTime: null,
-            lastElementCount: 0
+            lastLocalizationTime: null
         };
         this._log({ key: 'logs.localeDom.statsReset' });
     }
@@ -338,13 +192,11 @@ class DOMManager extends BaseManager {
         this._log({ key: 'logs.localeDom.destroyStart' });
         
         try {
-            this.elementKeyCache = new WeakMap();
             this.statistics = {
                 totalLocalizations: 0,
                 elementsLocalized: 0,
                 errors: 0,
-                lastLocalizationTime: null,
-                lastElementCount: 0
+                lastLocalizationTime: null
             };
             
             this._log({ key: 'logs.localeDom.destroyed' });

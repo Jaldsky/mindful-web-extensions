@@ -233,6 +233,7 @@ const EN = {
         },
         localeDom: {
             created: 'Localization DOMManager created',
+            translationCallbackMustBeFunction: 'translationCallback must be a function',
             rootNotProvided: 'Root element is not provided',
             elementLocalizeError: 'Element localization error',
             localizedCount: 'Elements localized: {count}',

@@ -233,6 +233,7 @@ const RU = {
         },
         localeDom: {
             created: 'DOMManager локализации создан',
+            translationCallbackMustBeFunction: 'translationCallback должен быть функцией',
             rootNotProvided: 'Root элемент не предоставлен',
             elementLocalizeError: 'Ошибка локализации элемента',
             localizedCount: 'Локализовано элементов: {count}',
