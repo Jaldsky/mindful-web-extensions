@@ -284,6 +284,21 @@ const RU = {
             tabSwitched: 'Переключено на вкладку: {tabName}',
             tabNotFound: 'Вкладка {tabName} не найдена',
             switchTabError: 'Ошибка переключения вкладок'
+        },
+        diagnosticsData: {
+            getStatusStatisticsError: 'Ошибка получения статистики статусов',
+            getStatusHistoryError: 'Ошибка получения истории статусов',
+            getStatusPerformanceMetricsError: 'Ошибка получения метрик производительности',
+            statusHistoryCleared: 'История статусов очищена: {count} записей',
+            clearStatusHistoryError: 'Ошибка очистки истории статусов',
+            getValidationStatisticsError: 'Ошибка получения статистики валидации',
+            getValidationHistoryError: 'Ошибка получения истории валидации',
+            validationHistoryCleared: 'История валидаций очищена: {count} записей',
+            clearValidationHistoryError: 'Ошибка очистки истории валидации',
+            getValidationPerformanceMetricsError: 'Ошибка получения метрик производительности валидации',
+            managersValidationCompleted: 'Валидация менеджеров завершена',
+            managersValidationError: 'Ошибка валидации менеджеров',
+            getDiagnosticsError: 'Ошибка получения диагностики'
         }
     },
 
