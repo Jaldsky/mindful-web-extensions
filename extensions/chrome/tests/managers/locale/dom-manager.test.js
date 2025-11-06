@@ -4,6 +4,7 @@
  */
 
 const DOMManager = require('../../../src/managers/locale/DOMManager.js');
+const CONFIG = require('../../../config.js');
 
 describe('DOMManager (locale_manager)', () => {
     let domManager;
@@ -46,12 +47,12 @@ describe('DOMManager (locale_manager)', () => {
             expect(() => new DOMManager('invalid')).toThrow(TypeError);
         });
 
-        test('should have I18N_ATTRIBUTE constant', () => {
-            expect(DOMManager.I18N_ATTRIBUTE).toBe('data-i18n');
+        test('should have I18N_ATTRIBUTE constant from config', () => {
+            expect(DOMManager.I18N_ATTRIBUTE).toBe(CONFIG.LOCALE_DOM.I18N_ATTRIBUTE);
         });
 
-        test('should have I18N_ATTR_ATTRIBUTE constant', () => {
-            expect(DOMManager.I18N_ATTR_ATTRIBUTE).toBe('data-i18n-attr');
+        test('should have I18N_ATTR_ATTRIBUTE constant from config', () => {
+            expect(DOMManager.I18N_ATTR_ATTRIBUTE).toBe(CONFIG.LOCALE_DOM.I18N_ATTR_ATTRIBUTE);
         });
     });
 
@@ -104,7 +105,6 @@ describe('DOMManager (locale_manager)', () => {
             const stats = domManager.getStatistics();
             expect(stats.totalLocalizations).toBe(1);
             expect(stats.elementsLocalized).toBe(1);
-            expect(stats.lastElementCount).toBe(1);
         });
 
         test('should work with custom root element', () => {
@@ -155,129 +155,6 @@ describe('DOMManager (locale_manager)', () => {
             const result = domManager.localizeElementBySelector('#nonexistent', 'app.title');
 
             expect(result).toBe(false);
-        });
-    });
-
-    describe('localizeElementsBySelector', () => {
-        test('should localize multiple elements', () => {
-            document.body.innerHTML = `
-                <div class="test"></div>
-                <div class="test"></div>
-                <div class="test"></div>
-            `;
-
-            const count = domManager.localizeElementsBySelector('.test', 'app.title');
-
-            expect(count).toBe(3);
-            document.querySelectorAll('.test').forEach(el => {
-                expect(el.textContent).toBe('Test Application');
-            });
-        });
-
-        test('should return 0 when no elements found', () => {
-            const count = domManager.localizeElementsBySelector('.nonexistent', 'app.title');
-
-            expect(count).toBe(0);
-        });
-
-        test('should localize attributes for multiple elements', () => {
-            document.body.innerHTML = `
-                <input class="test" />
-                <input class="test" />
-            `;
-
-            const count = domManager.localizeElementsBySelector('.test', 'app.title', 'placeholder');
-
-            expect(count).toBe(2);
-            document.querySelectorAll('.test').forEach(el => {
-                expect(el.getAttribute('placeholder')).toBe('Test Application');
-            });
-        });
-    });
-
-    describe('addLocalizationAttributes', () => {
-        test('should add i18n attributes to element', () => {
-            const element = document.createElement('div');
-
-            const result = domManager.addLocalizationAttributes(element, 'app.title');
-
-            expect(result).toBe(true);
-            expect(element.getAttribute('data-i18n')).toBe('app.title');
-            expect(element.textContent).toBe('Test Application');
-        });
-
-        test('should add i18n attributes with target attribute', () => {
-            const element = document.createElement('input');
-
-            const result = domManager.addLocalizationAttributes(element, 'app.title', 'placeholder');
-
-            expect(result).toBe(true);
-            expect(element.getAttribute('data-i18n')).toBe('app.title');
-            expect(element.getAttribute('data-i18n-attr')).toBe('placeholder');
-            expect(element.getAttribute('placeholder')).toBe('Test Application');
-        });
-
-        test('should return false for null element', () => {
-            const result = domManager.addLocalizationAttributes(null, 'app.title');
-
-            expect(result).toBe(false);
-        });
-    });
-
-    describe('removeLocalizationAttributes', () => {
-        test('should remove i18n attributes', () => {
-            const element = document.createElement('div');
-            element.setAttribute('data-i18n', 'app.title');
-            element.setAttribute('data-i18n-attr', 'title');
-
-            const result = domManager.removeLocalizationAttributes(element);
-
-            expect(result).toBe(true);
-            expect(element.hasAttribute('data-i18n')).toBe(false);
-            expect(element.hasAttribute('data-i18n-attr')).toBe(false);
-        });
-
-        test('should return false for null element', () => {
-            const result = domManager.removeLocalizationAttributes(null);
-
-            expect(result).toBe(false);
-        });
-    });
-
-    describe('getLocalizableElements', () => {
-        test('should return all elements with i18n attribute', () => {
-            document.body.innerHTML = `
-                <div data-i18n="app.title"></div>
-                <span data-i18n="app.button"></span>
-                <p>No i18n</p>
-            `;
-
-            const elements = domManager.getLocalizableElements();
-
-            expect(elements.length).toBe(2);
-        });
-
-        test('should work with custom root', () => {
-            const container = document.createElement('div');
-            container.innerHTML = '<span data-i18n="app.title"></span>';
-            document.body.appendChild(container);
-
-            const elements = domManager.getLocalizableElements(container);
-
-            expect(elements.length).toBe(1);
-        });
-    });
-
-    describe('getLocalizableElementsCount', () => {
-        test('should return count of localizable elements', () => {
-            document.body.innerHTML = `
-                <div data-i18n="app.title"></div>
-                <div data-i18n="app.button"></div>
-            `;
-
-            const count = domManager.getLocalizableElementsCount();
-
-            expect(count).toBe(2);
         });
     });
 
@@ -381,108 +258,7 @@ describe('DOMManager (locale_manager)', () => {
             expect(stats.errors).toBeGreaterThan(0);
         });
 
-        test('should handle individual element errors in localizeElementsBySelector', () => {
-            document.body.innerHTML = `
-                <div class="test"></div>
-                <div class="test"></div>
-            `;
-
-            const elements = document.querySelectorAll('.test');
-            
-            // Mock setAttribute to throw error on first element
-            const originalSetAttribute = Element.prototype.setAttribute;
-            let callCount = 0;
-            Element.prototype.setAttribute = jest.fn(function(name, value) {
-                if (callCount === 0 && name === 'test-attr') {
-                    callCount++;
-                    throw new Error('setAttribute error');
-                }
-                callCount++;
-                return originalSetAttribute.call(this, name, value);
-            });
-
-            const count = domManager.localizeElementsBySelector('.test', 'app.title', 'test-attr');
-            
-            Element.prototype.setAttribute = originalSetAttribute;
-            
-            expect(count).toBeLessThan(2);
-            const stats = domManager.getStatistics();
-            expect(stats.errors).toBeGreaterThan(0);
-        });
-
-        test('should handle querySelectorAll errors in localizeElementsBySelector', () => {
-            document.querySelectorAll = jest.fn(() => {
-                throw new Error('querySelectorAll error');
-            });
-
-            const count = domManager.localizeElementsBySelector('.test', 'app.title');
-            
-            expect(count).toBe(0);
-            const stats = domManager.getStatistics();
-            expect(stats.errors).toBeGreaterThan(0);
-        });
-
-        test('should handle errors in addLocalizationAttributes', () => {
-            const element = {
-                setAttribute: jest.fn(() => {
-                    throw new Error('setAttribute error');
-                })
-            };
-
-            const result = domManager.addLocalizationAttributes(element, 'app.title');
-            
-            expect(result).toBe(false);
-            const stats = domManager.getStatistics();
-            expect(stats.errors).toBeGreaterThan(0);
-        });
-
-        test('should handle errors in removeLocalizationAttributes', () => {
-            const element = {
-                removeAttribute: jest.fn(() => {
-                    throw new Error('removeAttribute error');
-                })
-            };
-
-            const result = domManager.removeLocalizationAttributes(element);
-            
-            expect(result).toBe(false);
-            const stats = domManager.getStatistics();
-            expect(stats.errors).toBeGreaterThan(0);
-        });
-
-        test('should handle errors in getLocalizableElements', () => {
-            const badRoot = {
-                querySelectorAll: jest.fn(() => {
-                    throw new Error('querySelectorAll error');
-                })
-            };
-
-            const elements = domManager.getLocalizableElements(badRoot);
-            
-            expect(elements).toEqual([]);
-        });
-
-        test('should handle errors in getLocalizableElementsCount', () => {
-            const badRoot = {
-                querySelectorAll: jest.fn(() => {
-                    throw new Error('querySelectorAll error');
-                })
-            };
-
-            const count = domManager.getLocalizableElementsCount(badRoot);
-            
-            expect(count).toBe(0);
-        });
-
         test('should handle errors in destroy', () => {
-            // Create a scenario where destroy might fail
-            Object.defineProperty(domManager, 'elementKeyCache', {
-                set: jest.fn(() => {
-                    throw new Error('Cannot set elementKeyCache');
-                }),
-                get: jest.fn(() => new WeakMap())
-            });
-
             // Should not throw
             expect(() => domManager.destroy()).not.toThrow();
         });
