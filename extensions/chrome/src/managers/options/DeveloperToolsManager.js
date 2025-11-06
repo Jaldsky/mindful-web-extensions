@@ -1,8 +1,24 @@
+/**
+ * Менеджер для работы с инструментами разработчика.
+ * Отвечает за переключение видимости, открытие/закрытие панели и переключение вкладок.
+ * 
+ * @class DeveloperToolsManager
+ */
 class DeveloperToolsManager {
+    /**
+     * Создает экземпляр DeveloperToolsManager.
+     * 
+     * @param {Object} manager - Экземпляр OptionsManager
+     */
     constructor(manager) {
         this.manager = manager;
     }
 
+    /**
+     * Переключает видимость developer tools.
+     * 
+     * @returns {void}
+     */
     toggle() {
         const manager = this.manager;
 
@@ -12,7 +28,7 @@ class DeveloperToolsManager {
             const button = document.getElementById('toggleDeveloperTools');
 
             if (!content || !icon || !button) {
-                manager._logError('Не найдены элементы developer tools');
+                manager._logError({ key: 'logs.developerTools.elementsNotFound' });
                 return;
             }
 
@@ -36,12 +52,17 @@ class DeveloperToolsManager {
                 localStorage.setItem('mindful_developer_tools_expanded', 'true');
             }
 
-            manager._log('Developer tools переключены', { isVisible: !isVisible });
+            manager._log({ key: 'logs.developerTools.toggled' }, { isVisible: !isVisible });
         } catch (error) {
-            manager._logError('Ошибка переключения developer tools', error);
+            manager._logError({ key: 'logs.developerTools.toggleError' }, error);
         }
     }
 
+    /**
+     * Восстанавливает состояние developer tools из localStorage.
+     * 
+     * @returns {void}
+     */
     restoreState() {
         const manager = this.manager;
 
@@ -66,19 +87,25 @@ class DeveloperToolsManager {
                 button.classList.remove('active');
             }
 
-            manager._log('Developer tools состояние восстановлено', { isExpanded });
+            manager._log({ key: 'logs.developerTools.stateRestored' }, { isExpanded });
         } catch (error) {
-            manager._logError('Ошибка восстановления состояния developer tools', error);
+            manager._logError({ key: 'logs.developerTools.restoreError' }, error);
         }
     }
 
+    /**
+     * Открывает панель разработчика.
+     * 
+     * @param {string} [tab='logs'] - Имя вкладки для открытия
+     * @returns {void}
+     */
     openPanel(tab = 'logs') {
         const manager = this.manager;
 
         try {
             const panel = document.getElementById('devToolsPanel');
             if (!panel) {
-                manager._logError('Панель разработчика не найдена');
+                manager._logError({ key: 'logs.developerTools.panelNotFound' });
                 return;
             }
 
@@ -96,19 +123,24 @@ class DeveloperToolsManager {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
 
-            manager._log(`Панель разработчика открыта, вкладка: ${tab}`);
+            manager._log({ key: 'logs.developerTools.panelOpened', params: { tab } });
         } catch (error) {
-            manager._logError('Ошибка открытия панели разработчика', error);
+            manager._logError({ key: 'logs.developerTools.openError' }, error);
         }
     }
 
+    /**
+     * Закрывает панель разработчика.
+     * 
+     * @returns {void}
+     */
     closePanel() {
         const manager = this.manager;
 
         try {
             const panel = document.getElementById('devToolsPanel');
             if (!panel) {
-                manager._logError('Панель разработчика не найдена');
+                manager._logError({ key: 'logs.developerTools.panelNotFound' });
                 return;
             }
 
@@ -121,12 +153,18 @@ class DeveloperToolsManager {
                 panel.classList.remove('closing');
             }, 300);
 
-            manager._log('Панель разработчика закрыта');
+            manager._log({ key: 'logs.developerTools.panelClosed' });
         } catch (error) {
-            manager._logError('Ошибка закрытия панели разработчика', error);
+            manager._logError({ key: 'logs.developerTools.closeError' }, error);
         }
     }
 
+    /**
+     * Переключает вкладку в панели разработчика.
+     * 
+     * @param {string} tabName - Имя вкладки для переключения
+     * @returns {void}
+     */
     switchTab(tabName) {
         const manager = this.manager;
 
@@ -151,12 +189,12 @@ class DeveloperToolsManager {
                     manager.logsManager.stopAutoRefresh();
                 }
 
-                manager._log(`Переключено на вкладку: ${tabName}`);
+                manager._log({ key: 'logs.developerTools.tabSwitched', params: { tabName } });
             } else {
-                manager._logError(`Вкладка ${tabName} не найдена`);
+                manager._logError({ key: 'logs.developerTools.tabNotFound', params: { tabName } });
             }
         } catch (error) {
-            manager._logError('Ошибка переключения вкладок', error);
+            manager._logError({ key: 'logs.developerTools.switchTabError' }, error);
         }
     }
 }

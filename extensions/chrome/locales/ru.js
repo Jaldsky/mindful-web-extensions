@@ -269,6 +269,21 @@ const RU = {
             destroyStart: 'Очистка ресурсов StorageManager',
             destroyed: 'StorageManager уничтожен',
             destroyError: 'Ошибка при уничтожении StorageManager'
+        },
+        developerTools: {
+            elementsNotFound: 'Элементы developer tools не найдены',
+            toggled: 'Developer tools переключены',
+            toggleError: 'Ошибка переключения developer tools',
+            stateRestored: 'Состояние developer tools восстановлено',
+            restoreError: 'Ошибка восстановления состояния developer tools',
+            panelNotFound: 'Панель разработчика не найдена',
+            panelOpened: 'Панель разработчика открыта, вкладка: {tab}',
+            openError: 'Ошибка открытия панели разработчика',
+            panelClosed: 'Панель разработчика закрыта',
+            closeError: 'Ошибка закрытия панели разработчика',
+            tabSwitched: 'Переключено на вкладку: {tabName}',
+            tabNotFound: 'Вкладка {tabName} не найдена',
+            switchTabError: 'Ошибка переключения вкладок'
         }
     },
 

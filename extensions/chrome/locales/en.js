@@ -269,6 +269,21 @@ const EN = {
             destroyStart: 'Cleaning up StorageManager resources',
             destroyed: 'StorageManager destroyed',
             destroyError: 'Error destroying StorageManager'
+        },
+        developerTools: {
+            elementsNotFound: 'Developer tools elements not found',
+            toggled: 'Developer tools toggled',
+            toggleError: 'Error toggling developer tools',
+            stateRestored: 'Developer tools state restored',
+            restoreError: 'Error restoring developer tools state',
+            panelNotFound: 'Developer panel not found',
+            panelOpened: 'Developer panel opened, tab: {tab}',
+            openError: 'Error opening developer panel',
+            panelClosed: 'Developer panel closed',
+            closeError: 'Error closing developer panel',
+            tabSwitched: 'Switched to tab: {tabName}',
+            tabNotFound: 'Tab {tabName} not found',
+            switchTabError: 'Error switching tabs'
         }
     },
 
