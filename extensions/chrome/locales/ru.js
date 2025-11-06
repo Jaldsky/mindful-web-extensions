@@ -374,6 +374,13 @@ const RU = {
             noLogsAvailable: 'Логи отсутствуют. Логи будут появляться здесь при взаимодействии с расширением.',
             noLogsMatchFilters: 'Нет логов, соответствующих текущим фильтрам.',
             loadErrorMessage: 'Ошибка загрузки логов: {message}'
+        },
+        options: {
+            domManagerInitError: 'Критическая ошибка инициализации DOMManager',
+            storageManagerInitError: 'Критическая ошибка инициализации StorageManager',
+            statusManagerInitError: 'Ошибка инициализации StatusManager',
+            domManagerInitFailed: 'Ошибка инициализации DOM Manager: {message}',
+            storageManagerInitFailed: 'Ошибка инициализации Storage Manager: {message}'
         }
     },
 
