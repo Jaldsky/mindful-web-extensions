@@ -265,7 +265,10 @@ const EN = {
             loaded: 'Locale loaded',
             invalidLocale: 'Invalid locale for saving',
             saveError: 'Error saving locale',
-            saved: 'Locale saved'
+            saved: 'Locale saved',
+            destroyStart: 'Cleaning up StorageManager resources',
+            destroyed: 'StorageManager destroyed',
+            destroyError: 'Error destroying StorageManager'
         }
     },
 

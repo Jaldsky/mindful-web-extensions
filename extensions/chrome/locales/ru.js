@@ -265,7 +265,10 @@ const RU = {
             loaded: 'Локаль загружена',
             invalidLocale: 'Невалидная локаль для сохранения',
             saveError: 'Ошибка сохранения локали',
-            saved: 'Локаль сохранена'
+            saved: 'Локаль сохранена',
+            destroyStart: 'Очистка ресурсов StorageManager',
+            destroyed: 'StorageManager уничтожен',
+            destroyError: 'Ошибка при уничтожении StorageManager'
         }
     },
 
