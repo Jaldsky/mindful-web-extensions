@@ -381,6 +381,31 @@ const EN = {
             statusManagerInitError: 'StatusManager initialization error',
             domManagerInitFailed: 'DOM Manager initialization failed: {message}',
             storageManagerInitFailed: 'Storage Manager initialization failed: {message}'
+        },
+        status: {
+            initSuccess: 'StatusManager initialized',
+            displayed: 'Status displayed and verified',
+            messageMustBeString: 'message must be a non-empty string',
+            invalidType: 'Invalid type "{type}", using INFO',
+            elementNotSet: 'Status element not set',
+            displayError: 'Error displaying status',
+            hidden: 'Status hidden and verified ({time}ms)',
+            hideError: 'Error hiding status ({time}ms)',
+            clearHistoryError: 'Error clearing history',
+            getStatisticsError: 'Error getting statistics',
+            invalidElementType: 'statusElement is not an HTMLElement',
+            invalidDuration: 'defaultDuration cannot be negative',
+            historyExceedsMaxSize: 'History exceeds maximum size: {size}/{maxSize}',
+            queueExceedsMaxSize: 'Queue exceeds maximum size: {size}/{maxSize}',
+            invalidHistoryFormat: 'History has incorrect format',
+            invalidQueueFormat: 'Queue has incorrect format',
+            visibleButNoType: 'Status is visible but type is not set',
+            visibleButNoMessage: 'Status is visible but message is not set',
+            validationError: 'Error validating state',
+            validationExecutionError: 'Error during validation execution',
+            destroyStart: 'Cleaning up StatusManager resources',
+            destroyed: 'StatusManager destroyed',
+            destroyError: 'Error destroying StatusManager'
         }
     },
 

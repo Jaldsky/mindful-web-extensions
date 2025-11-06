@@ -381,6 +381,31 @@ const RU = {
             statusManagerInitError: 'Ошибка инициализации StatusManager',
             domManagerInitFailed: 'Ошибка инициализации DOM Manager: {message}',
             storageManagerInitFailed: 'Ошибка инициализации Storage Manager: {message}'
+        },
+        status: {
+            initSuccess: 'StatusManager инициализирован',
+            displayed: 'Статус отображен и верифицирован',
+            messageMustBeString: 'message должен быть непустой строкой',
+            invalidType: 'Неверный тип "{type}", используется INFO',
+            elementNotSet: 'Элемент статуса не установлен',
+            displayError: 'Ошибка отображения статуса',
+            hidden: 'Статус скрыт и верифицирован ({time}мс)',
+            hideError: 'Ошибка скрытия статуса ({time}мс)',
+            clearHistoryError: 'Ошибка очистки истории',
+            getStatisticsError: 'Ошибка получения статистики',
+            invalidElementType: 'statusElement не является HTMLElement',
+            invalidDuration: 'defaultDuration не может быть отрицательным',
+            historyExceedsMaxSize: 'История превышает максимальный размер: {size}/{maxSize}',
+            queueExceedsMaxSize: 'Очередь превышает максимальный размер: {size}/{maxSize}',
+            invalidHistoryFormat: 'История имеет некорректный формат',
+            invalidQueueFormat: 'Очередь имеет некорректный формат',
+            visibleButNoType: 'Статус видим, но тип не установлен',
+            visibleButNoMessage: 'Статус видим, но сообщение не установлено',
+            validationError: 'Ошибка валидации состояния',
+            validationExecutionError: 'Ошибка при выполнении валидации',
+            destroyStart: 'Очистка ресурсов StatusManager',
+            destroyed: 'StatusManager уничтожен',
+            destroyError: 'Ошибка при уничтожении StatusManager'
         }
     },
 
