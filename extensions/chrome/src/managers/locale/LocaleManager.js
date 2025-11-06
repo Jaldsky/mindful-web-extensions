@@ -16,18 +16,17 @@ class LocaleManager extends BaseManager {
      * Доступные локали
      * @readonly
      * @static
+     * @deprecated Используйте BaseManager.SUPPORTED_LOCALES
      */
-    static LOCALES = {
-        EN: 'en',
-        RU: 'ru'
-    };
+    static LOCALES = BaseManager.SUPPORTED_LOCALES;
 
     /**
      * Локаль по умолчанию
      * @readonly
      * @static
+     * @deprecated Используйте BaseManager.DEFAULT_LOCALE
      */
-    static DEFAULT_LOCALE = LocaleManager.LOCALES.EN;
+    static DEFAULT_LOCALE = BaseManager.DEFAULT_LOCALE;
 
     /**
      * Создает экземпляр LocaleManager.
@@ -48,7 +47,7 @@ class LocaleManager extends BaseManager {
         // Инициализация менеджеров с общими настройками логирования
         this.storageManager = new StorageManager({ enableLogging });
         this.translationManager = new TranslationManager({
-            defaultLocale: options.defaultLocale || LocaleManager.DEFAULT_LOCALE,
+            defaultLocale: options.defaultLocale || BaseManager.DEFAULT_LOCALE,
             enableLogging
         });
         
@@ -96,13 +95,17 @@ class LocaleManager extends BaseManager {
                 
                 if (savedLocale && this.translationManager.isLocaleSupported(savedLocale)) {
                     this.translationManager.setLocale(savedLocale);
+                    // Обновляем кэш локали для синхронного доступа
+                    BaseManager.updateLocaleCache(savedLocale);
                     this._log({ key: 'logs.locale.savedLocaleLoaded' }, { locale: savedLocale });
                 } else {
                     // Пытаемся определить локаль браузера
-                    const browserLocale = this._detectBrowserLocale();
+                    const browserLocale = BaseManager.detectBrowserLocale();
                     if (browserLocale && this.translationManager.isLocaleSupported(browserLocale)) {
                         this.translationManager.setLocale(browserLocale);
                         await this.storageManager.saveLocale(browserLocale);
+                        // Обновляем кэш локали для синхронного доступа
+                        BaseManager.updateLocaleCache(browserLocale);
                         this._log({ key: 'logs.locale.browserLocaleSet' }, { locale: browserLocale });
                     }
                 }
@@ -120,40 +123,14 @@ class LocaleManager extends BaseManager {
             } catch (error) {
                 this._logError({ key: 'logs.locale.initError' }, error);
                 // Используем локаль по умолчанию при ошибке
-                this.translationManager.setLocale(LocaleManager.DEFAULT_LOCALE);
+                this.translationManager.setLocale(BaseManager.DEFAULT_LOCALE);
                 this.isInitialized = true;
                 this.updateState({ 
                     isInitialized: true,
-                    currentLocale: LocaleManager.DEFAULT_LOCALE
+                    currentLocale: BaseManager.DEFAULT_LOCALE
                 });
             }
         });
-    }
-
-    /**
-     * Определяет локаль браузера.
-     * 
-     * @private
-     * @returns {string|null} Код локали или null
-     */
-    _detectBrowserLocale() {
-        try {
-            const browserLang = navigator.language || navigator.userLanguage;
-            if (!browserLang) return null;
-
-            // Извлекаем первые две буквы (en-US -> en)
-            const langCode = browserLang.substring(0, 2).toLowerCase();
-            
-            // Проверяем, поддерживается ли эта локаль
-            if (Object.values(LocaleManager.LOCALES).includes(langCode)) {
-                return langCode;
-            }
-
-            return null;
-        } catch (error) {
-            this._logError({ key: 'logs.locale.detectBrowserLocaleError' }, error);
-            return null;
-        }
     }
 
     /**
@@ -200,6 +177,9 @@ class LocaleManager extends BaseManager {
 
             // Сохраняем в storage
             const saved = await this.storageManager.saveLocale(locale);
+
+            // Обновляем кэш локали для синхронного доступа
+            BaseManager.updateLocaleCache(locale);
 
             this.updateState({ currentLocale: locale });
 

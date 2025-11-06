@@ -25,6 +25,117 @@ class BaseManager {
     static DEFAULT_CONSTANTS = CONFIG.BASE;
 
     /**
+     * Поддерживаемые локали
+     * @readonly
+     * @static
+     */
+    static SUPPORTED_LOCALES = {
+        EN: 'en',
+        RU: 'ru'
+    };
+
+    /**
+     * Локаль по умолчанию
+     * @readonly
+     * @static
+     */
+    static DEFAULT_LOCALE = BaseManager.SUPPORTED_LOCALES.EN;
+
+    /**
+     * Кэш локали для синхронного доступа
+     * @private
+     * @static
+     * @type {string|null}
+     */
+    static _localeCache = null;
+
+    /**
+     * Определяет локаль браузера.
+     * 
+     * @static
+     * @returns {string|null} Код локали или null, если не удалось определить
+     */
+    static detectBrowserLocale() {
+        try {
+            const browserLang = typeof navigator !== 'undefined' 
+                ? (navigator.language || navigator.userLanguage)
+                : null;
+            
+            if (!browserLang) {
+                return null;
+            }
+
+            // Извлекаем первые две буквы (en-US -> en)
+            const langCode = browserLang.substring(0, 2).toLowerCase();
+            
+            // Проверяем, поддерживается ли эта локаль
+            const supportedLocales = Object.values(BaseManager.SUPPORTED_LOCALES);
+            if (supportedLocales.includes(langCode)) {
+                return langCode;
+            }
+
+            return null;
+        } catch (error) {
+            // Игнорируем ошибки определения локали
+            return null;
+        }
+    }
+
+    /**
+     * Инициализирует кэш локали из localStorage (синхронно).
+     * Вызывается автоматически при первом обращении к _getTranslateFn().
+     * 
+     * @private
+     * @static
+     * @returns {string} Код локали ('en' или 'ru')
+     */
+    static _initLocaleCache() {
+        if (BaseManager._localeCache !== null) {
+            return BaseManager._localeCache;
+        }
+
+        // Пытаемся загрузить из localStorage (синхронно)
+        try {
+            if (typeof localStorage !== 'undefined') {
+                const cachedLocale = localStorage.getItem(CONFIG.LOCALE.CACHE_KEY);
+                const supportedLocales = Object.values(BaseManager.SUPPORTED_LOCALES);
+                if (supportedLocales.includes(cachedLocale)) {
+                    BaseManager._localeCache = cachedLocale;
+                    return cachedLocale;
+                }
+            }
+        } catch (e) {
+            // Игнорируем ошибки localStorage
+        }
+
+        // Если кэш не найден, определяем по языку браузера
+        const browserLocale = BaseManager.detectBrowserLocale() || BaseManager.DEFAULT_LOCALE;
+        BaseManager._localeCache = browserLocale;
+        return browserLocale;
+    }
+
+    /**
+     * Обновляет кэш локали.
+     * 
+     * @static
+     * @param {string} locale - Код локали
+     * @returns {void}
+     */
+    static updateLocaleCache(locale) {
+        const supportedLocales = Object.values(BaseManager.SUPPORTED_LOCALES);
+        if (supportedLocales.includes(locale)) {
+            BaseManager._localeCache = locale;
+            try {
+                if (typeof localStorage !== 'undefined') {
+                    localStorage.setItem(CONFIG.LOCALE.CACHE_KEY, locale);
+                }
+            } catch (e) {
+                // Игнорируем ошибки localStorage
+            }
+        }
+    }
+
+    /**
      * Создает экземпляр BaseManager.
      * 
      * @param {Object} [options={}] - Опции конфигурации
@@ -63,15 +174,21 @@ class BaseManager {
     }
 
     /**
-     * Получает временную функцию локализации на основе языка браузера.
-     * Используется в конструкторе до того, как translateFn будет доступен.
+     * Получает универсальную функцию перевода.
+     * Использует основную функцию перевода, если она установлена, иначе временную на основе сохраненной локали.
      * 
      * @protected
      * @returns {Function} Функция перевода: (key: string, params?: Object) => string
      */
-    _getTemporaryTranslateFn() {
-        const defaultLocale = typeof navigator !== 'undefined' && navigator.language?.startsWith('ru') ? 'ru' : 'en';
-        const translations = defaultLocale === 'ru' ? RU : EN;
+    _getTranslateFn() {
+        // Если основная функция перевода установлена, используем её
+        if (this.options && typeof this.options.translateFn === 'function') {
+            return this.options.translateFn;
+        }
+        
+        // Иначе используем временную функцию на основе сохраненной локали (из кэша)
+        const locale = BaseManager._initLocaleCache();
+        const translations = locale === 'ru' ? RU : EN;
         
         return (key, params = {}) => {
             const keys = key.split('.');
@@ -146,10 +263,17 @@ class BaseManager {
             if (message && typeof message === 'object' && typeof message.key === 'string') {
                 const key = message.key;
                 const params = message.params || {};
-                const translate = this.options && typeof this.options.translateFn === 'function'
-                    ? this.options.translateFn
-                    : null;
-                const resolved = translate ? translate(key, params) : (message.fallback || key);
+                
+                // Используем универсальную функцию перевода
+                const translate = this._getTranslateFn();
+                const resolved = translate(key, params);
+                
+                // Если перевод не найден (вернул ключ), используем fallback или ключ
+                if (!resolved || resolved === key) {
+                    const finalResolved = message.fallback || key;
+                    return { resolvedMessage: finalResolved, messageKey: key, messageParams: params };
+                }
+                
                 return { resolvedMessage: resolved, messageKey: key, messageParams: params };
             }
             return { resolvedMessage: String(message), messageKey: null, messageParams: null };
@@ -390,6 +514,112 @@ class BaseManager {
         } catch (error) {
             this._logError('Ошибка очистки метрик производительности', error);
         }
+    }
+
+    /**
+     * Получает список служебных сообщений, которые обрабатываются независимо от статуса отслеживания.
+     * 
+     * @protected
+     * @param {Object} messageTypes - Объект с типами сообщений (например, CONFIG.MESSAGE_TYPES)
+     * @returns {Array<string>} Массив типов служебных сообщений
+     */
+    _getSystemMessages(messageTypes) {
+        if (!messageTypes || typeof messageTypes !== 'object') {
+            return [];
+        }
+
+        return [
+            messageTypes.PING,
+            messageTypes.GET_STATUS,
+            messageTypes.GET_TRACKING_STATUS,
+            messageTypes.SET_TRACKING_ENABLED,
+            messageTypes.CHECK_CONNECTION,
+            messageTypes.UPDATE_BACKEND_URL,
+            messageTypes.UPDATE_DOMAIN_EXCEPTIONS
+        ].filter(Boolean);
+    }
+
+    /**
+     * Проверяет, является ли сообщение служебным.
+     * 
+     * @protected
+     * @param {string} messageType - Тип сообщения
+     * @param {Object} messageTypes - Объект с типами сообщений (например, CONFIG.MESSAGE_TYPES)
+     * @returns {boolean} true, если сообщение служебное
+     */
+    _isSystemMessage(messageType, messageTypes) {
+        if (!messageType || typeof messageType !== 'string') {
+            return false;
+        }
+
+        const systemMessages = this._getSystemMessages(messageTypes);
+        return systemMessages.includes(messageType);
+    }
+
+    /**
+     * Проверяет, нужно ли блокировать сообщение на основе статуса отслеживания и подключения.
+     * 
+     * @protected
+     * @param {string} messageType - Тип сообщения
+     * @param {Object} messageTypes - Объект с типами сообщений (например, CONFIG.MESSAGE_TYPES)
+     * @param {Function} getTrackingStatus - Функция, возвращающая статус отслеживания (boolean)
+     * @param {Function} getOnlineStatus - Функция, возвращающая статус подключения (boolean)
+     * @returns {{shouldBlock: boolean, reason?: string}} Результат проверки
+     */
+    _shouldBlockMessage(messageType, messageTypes, getTrackingStatus, getOnlineStatus) {
+        // Служебные сообщения не блокируются
+        if (this._isSystemMessage(messageType, messageTypes)) {
+            return { shouldBlock: false };
+        }
+
+        // Проверяем статус отслеживания
+        const isTracking = typeof getTrackingStatus === 'function' 
+            ? getTrackingStatus() 
+            : (this.state?.isTracking !== undefined ? Boolean(this.state.isTracking) : true);
+
+        if (!isTracking) {
+            return { 
+                shouldBlock: true, 
+                reason: 'Tracking is disabled' 
+            };
+        }
+
+        // Проверяем статус подключения
+        const isOnline = typeof getOnlineStatus === 'function' 
+            ? getOnlineStatus() 
+            : (this.state?.isOnline !== undefined ? Boolean(this.state.isOnline) : true);
+
+        if (!isOnline) {
+            return { 
+                shouldBlock: true, 
+                reason: 'No connection' 
+            };
+        }
+
+        return { shouldBlock: false };
+    }
+
+    /**
+     * Проверяет, является ли ошибка связанной с блокировкой сообщения
+     * (отслеживание отключено или нет подключения).
+     * 
+     * @protected
+     * @param {Error} error - Объект ошибки
+     * @returns {boolean} true, если ошибка связана с блокировкой сообщения
+     */
+    _isBlockingError(error) {
+        if (!error || !error.message) {
+            return false;
+        }
+
+        const message = String(error.message).toLowerCase();
+        // Проверяем как переведенные сообщения, так и ключи локализации
+        return message.includes('tracking is disabled') || 
+               message.includes('no connection') ||
+               message.includes('отслеживание отключено') ||
+               message.includes('нет подключения') ||
+               message.includes('logs.serviceworker.trackingdisabled') ||
+               message.includes('logs.serviceworker.noconnection');
     }
 
     /**

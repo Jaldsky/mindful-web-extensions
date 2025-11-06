@@ -161,7 +161,7 @@ class NotificationManager extends BaseManager {
      */
     _addNotificationToDOM(notification) {
         if (!document.body) {
-            const t = this._getTemporaryTranslateFn();
+            const t = this._getTranslateFn();
             throw new Error(t('logs.notification.documentBodyUnavailable'));
         }
         

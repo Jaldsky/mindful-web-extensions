@@ -854,7 +854,10 @@ class UIManager {
                 }
             }
 
-            manager._log('Обновлены данные активности', { countDomains: stats.domainsVisited });
+            // Логируем только если есть реальные данные
+            if (stats.domainsVisited > 0 || stats.eventsTracked > 0) {
+                manager._log('Обновлены данные активности', { countDomains: stats.domainsVisited });
+            }
 
             this._updateActivityChart(stats.eventsTracked, true);
 

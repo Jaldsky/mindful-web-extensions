@@ -183,8 +183,13 @@ const RU = {
             trackingStateUpdateError: 'Ошибка обновления состояния отслеживания',
             statsReceived: 'Получена статистика',
             statsError: 'Ошибка получения статистики',
+            statsSkipped: 'Запрос статистики пропущен: {reason}',
             detailedStatsReceived: 'Получена подробная статистика',
             detailedStatsError: 'Ошибка получения подробной статистики',
+            detailedStatsSkipped: 'Запрос подробной статистики пропущен: {reason}',
+            trackingDisabled: 'Отслеживание отключено',
+            noConnection: 'Нет подключения',
+            messageBlocked: 'Сообщение заблокировано: {type}, причина: {reason}',
             pingSuccess: 'Ping успешен',
             serviceWorkerUnavailable: 'Service Worker недоступен',
             generateDomainsError: 'Ошибка генерации доменов',
@@ -249,6 +254,16 @@ const RU = {
             destroyStart: 'Очистка ресурсов DOMManager локализации',
             destroyed: 'DOMManager локализации уничтожен',
             destroyError: 'Ошибка при уничтожении DOMManager локализации'
+        },
+        localeStorage: {
+            created: 'Locale StorageManager создан',
+            storageUnavailable: 'chrome.storage.local недоступен',
+            loadError: 'Ошибка загрузки локали',
+            notFound: 'Сохраненная локаль не найдена',
+            loaded: 'Локаль загружена',
+            invalidLocale: 'Невалидная локаль для сохранения',
+            saveError: 'Ошибка сохранения локали',
+            saved: 'Локаль сохранена'
         }
     },
 

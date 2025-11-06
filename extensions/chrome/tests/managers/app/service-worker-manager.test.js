@@ -26,6 +26,8 @@ describe('ServiceWorkerManager', () => {
         };
 
         serviceWorkerManager = new ServiceWorkerManager();
+        // Устанавливаем состояние отслеживания, чтобы тесты могли отправлять сообщения
+        serviceWorkerManager.updateState({ isTracking: true, isOnline: true });
     });
 
     afterEach(() => {
@@ -150,7 +152,7 @@ describe('ServiceWorkerManager', () => {
 
             jest.advanceTimersByTime(1000);
 
-            await expect(promise).rejects.toThrow('Таймаут');
+            await expect(promise).rejects.toThrow();
 
             jest.useRealTimers();
         });

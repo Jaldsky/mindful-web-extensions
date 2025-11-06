@@ -116,7 +116,8 @@ const CONFIG = {
     LOCALE: {
         DEFAULT: 'en',
         AVAILABLE: ['en', 'ru'],
-        STORAGE_KEY: 'mindful_locale'
+        STORAGE_KEY: 'mindful_locale',
+        CACHE_KEY: 'mindful_locale_cache'
     },
 
     /**

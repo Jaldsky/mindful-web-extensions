@@ -490,7 +490,7 @@ describe('DOMManager', () => {
 
                 expect(() => {
                     new DOMManager({ translateFn: createMockTranslateFn() });
-                }).toThrow('document API недоступен');
+                }).toThrow('document API is unavailable');
             } finally {
                 // Восстанавливаем document в finally, чтобы гарантировать восстановление даже при ошибках
                 if (originalDescriptor) {
