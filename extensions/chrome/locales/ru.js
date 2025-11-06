@@ -361,6 +361,19 @@ const RU = {
             destroyStart: 'Очистка ресурсов OptionsManager',
             destroyed: 'OptionsManager уничтожен',
             destroyError: 'Ошибка при уничтожении OptionsManager'
+        },
+        logs: {
+            containerNotFound: 'Контейнер для логов не найден',
+            loadError: 'Ошибка загрузки логов',
+            clearError: 'Ошибка очистки логов',
+            noLogsToCopy: 'Нет логов для копирования',
+            logsCopied: 'Логи скопированы в буфер обмена',
+            copyError: 'Ошибка копирования логов',
+            autoRefreshStarted: 'Автоматическое обновление логов запущено (каждые {interval}{timeUnit})',
+            autoRefreshStopped: 'Автоматическое обновление логов остановлено',
+            noLogsAvailable: 'Логи отсутствуют. Логи будут появляться здесь при взаимодействии с расширением.',
+            noLogsMatchFilters: 'Нет логов, соответствующих текущим фильтрам.',
+            loadErrorMessage: 'Ошибка загрузки логов: {message}'
         }
     },
 
