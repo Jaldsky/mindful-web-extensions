@@ -351,6 +351,16 @@ const RU = {
             domainExceptionsUpdateError: 'Не удалось обновить список исключений доменов в UI',
             storageApiUnavailable: 'Storage API недоступен. Пожалуйста, перезагрузите расширение.',
             storageApiUnavailableError: 'chrome.storage API недоступен'
+        },
+        lifecycle: {
+            eventHandlersRemoved: 'Обработчики событий удалены',
+            removeEventHandlersError: 'Ошибка удаления обработчиков событий',
+            managersDestroyed: 'Все менеджеры уничтожены',
+            destroyManagersError: 'Ошибка уничтожения менеджеров',
+            alreadyDestroyed: 'OptionsManager уже был уничтожен',
+            destroyStart: 'Очистка ресурсов OptionsManager',
+            destroyed: 'OptionsManager уничтожен',
+            destroyError: 'Ошибка при уничтожении OptionsManager'
         }
     },
 
