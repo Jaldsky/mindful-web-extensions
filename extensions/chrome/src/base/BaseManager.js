@@ -203,6 +203,19 @@ class BaseManager {
     }
 
     /**
+     * Получает перевод по ключу.
+     * Поддерживает вложенные ключи через точку (например, 'app.title').
+     * 
+     * @param {string} key - Ключ перевода
+     * @param {Object} [params] - Параметры для подстановки
+     * @returns {string} Переведенная строка или ключ, если перевод не найден
+     */
+    t(key, params = {}) {
+        const translate = this._getTranslateFn();
+        return translate(key, params);
+    }
+
+    /**
      * Логирует сообщение, если логирование включено.
      * 
      * @protected
