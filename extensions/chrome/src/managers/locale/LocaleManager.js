@@ -12,21 +12,6 @@ const DOMManager = require('./DOMManager.js');
  * @extends BaseManager
  */
 class LocaleManager extends BaseManager {
-    /**
-     * Доступные локали
-     * @readonly
-     * @static
-     * @deprecated Используйте BaseManager.SUPPORTED_LOCALES
-     */
-    static LOCALES = BaseManager.SUPPORTED_LOCALES;
-
-    /**
-     * Локаль по умолчанию
-     * @readonly
-     * @static
-     * @deprecated Используйте BaseManager.DEFAULT_LOCALE
-     */
-    static DEFAULT_LOCALE = BaseManager.DEFAULT_LOCALE;
 
     /**
      * Создает экземпляр LocaleManager.
@@ -37,21 +22,23 @@ class LocaleManager extends BaseManager {
      * @param {boolean} [options.enableLogging] - Включить логирование
      */
     constructor(options = {}) {
+        const enableLogging = options.enableLogging !== undefined ? options.enableLogging : false;
+        
         super({
-            enableLogging: options.enableLogging !== undefined ? options.enableLogging : false,
+            enableLogging,
             ...options
         });
 
-        const enableLogging = this.enableLogging;
-
-        // Инициализация менеджеров с общими настройками логирования
         this.storageManager = new StorageManager({ enableLogging });
         this.translationManager = new TranslationManager({
             defaultLocale: options.defaultLocale || BaseManager.DEFAULT_LOCALE,
             enableLogging
         });
-        
-        // DOMManager требует callback для получения переводов
+
+        if (this.options) {
+            this.options.translateFn = (key, params) => this.translationManager.translate(key, params);
+        }
+
         this.domManager = new DOMManager(
             (key, params) => this.translationManager.translate(key, params),
             { enableLogging }
@@ -90,21 +77,20 @@ class LocaleManager extends BaseManager {
             try {
                 this._log({ key: 'logs.locale.initStart' });
 
-                // Загружаем сохраненную локаль
                 const savedLocale = await this.storageManager.loadLocale();
                 
                 if (savedLocale && this.translationManager.isLocaleSupported(savedLocale)) {
                     this.translationManager.setLocale(savedLocale);
-                    // Обновляем кэш локали для синхронного доступа
+
                     BaseManager.updateLocaleCache(savedLocale);
                     this._log({ key: 'logs.locale.savedLocaleLoaded' }, { locale: savedLocale });
                 } else {
-                    // Пытаемся определить локаль браузера
+
                     const browserLocale = BaseManager.detectBrowserLocale();
                     if (browserLocale && this.translationManager.isLocaleSupported(browserLocale)) {
                         this.translationManager.setLocale(browserLocale);
                         await this.storageManager.saveLocale(browserLocale);
-                        // Обновляем кэш локали для синхронного доступа
+
                         BaseManager.updateLocaleCache(browserLocale);
                         this._log({ key: 'logs.locale.browserLocaleSet' }, { locale: browserLocale });
                     }
@@ -122,7 +108,7 @@ class LocaleManager extends BaseManager {
                 });
             } catch (error) {
                 this._logError({ key: 'logs.locale.initError' }, error);
-                // Используем локаль по умолчанию при ошибке
+
                 this.translationManager.setLocale(BaseManager.DEFAULT_LOCALE);
                 this.isInitialized = true;
                 this.updateState({ 
@@ -130,69 +116,6 @@ class LocaleManager extends BaseManager {
                     currentLocale: BaseManager.DEFAULT_LOCALE
                 });
             }
-        });
-    }
-
-    /**
-     * Получает перевод по ключу.
-     * Поддерживает вложенные ключи через точку (например, 'app.title').
-     * 
-     * @param {string} key - Ключ перевода
-     * @param {Object} [params] - Параметры для подстановки
-     * @returns {string} Переведенная строка или ключ, если перевод не найден
-     */
-    t(key, params = {}) {
-        return this.translationManager.translate(key, params);
-    }
-
-    /**
-     * Устанавливает новую локаль.
-     * 
-     * @async
-     * @param {string} locale - Код локали
-     * @returns {Promise<boolean>} Успешно ли установлена локаль
-     */
-    async setLocale(locale) {
-        return await this._executeWithTimingAsync('setLocale', async () => {
-            if (!this.translationManager.isLocaleSupported(locale)) {
-                this._logError({ key: 'logs.locale.unsupported', params: { locale } });
-                return false;
-            }
-
-            const currentLocale = this.translationManager.getCurrentLocale();
-            
-            if (currentLocale === locale) {
-                this._log({ key: 'logs.locale.alreadySet', params: { locale } });
-                return true;
-            }
-
-            const oldLocale = currentLocale;
-            
-            // Устанавливаем локаль в TranslationManager
-            const setSuccess = this.translationManager.setLocale(locale);
-            
-            if (!setSuccess) {
-                return false;
-            }
-
-            // Сохраняем в storage
-            const saved = await this.storageManager.saveLocale(locale);
-
-            // Обновляем кэш локали для синхронного доступа
-            BaseManager.updateLocaleCache(locale);
-
-            this.updateState({ currentLocale: locale });
-
-            this._log({ key: 'logs.locale.changed' }, { 
-                from: oldLocale, 
-                to: locale,
-                saved 
-            });
-
-            // Уведомляем слушателей
-            this._notifyListeners(locale, oldLocale);
-
-            return true;
         });
     }
 
@@ -206,25 +129,6 @@ class LocaleManager extends BaseManager {
     }
 
     /**
-     * Получает список доступных локалей.
-     * 
-     * @returns {Array<Object>} Массив объектов с информацией о локалях
-     */
-    getAvailableLocales() {
-        return this.translationManager.getAvailableLocales();
-    }
-
-    /**
-     * Проверяет, поддерживается ли локаль.
-     * 
-     * @param {string} locale - Код локали
-     * @returns {boolean} true если локаль поддерживается
-     */
-    isLocaleSupported(locale) {
-        return this.translationManager.isLocaleSupported(locale);
-    }
-
-    /**
      * Добавляет слушателя изменения локали.
      * 
      * @param {Function} listener - Функция-слушатель
@@ -232,7 +136,8 @@ class LocaleManager extends BaseManager {
      */
     addLocaleChangeListener(listener) {
         if (typeof listener !== 'function') {
-            throw new TypeError('Listener должен быть функцией');
+            const t = this._getTranslateFn();
+            throw new TypeError(t('logs.locale.listenerMustBeFunction'));
         }
 
         this.listeners.push(listener);
@@ -240,28 +145,15 @@ class LocaleManager extends BaseManager {
             listenersCount: this.listeners.length
         });
 
-        // Возвращаем функцию для отписки
         return () => {
-            this.removeLocaleChangeListener(listener);
+            const index = this.listeners.indexOf(listener);
+            if (index !== -1) {
+                this.listeners.splice(index, 1);
+                this._log({ key: 'logs.locale.listenerRemoved' }, {
+                    listenersCount: this.listeners.length
+                });
+            }
         };
-    }
-
-    /**
-     * Удаляет слушателя изменения локали.
-     * 
-     * @param {Function} listener - Функция-слушатель
-     * @returns {boolean} true если слушатель был удален
-     */
-    removeLocaleChangeListener(listener) {
-        const index = this.listeners.indexOf(listener);
-        if (index !== -1) {
-            this.listeners.splice(index, 1);
-            this._log({ key: 'logs.locale.listenerRemoved' }, {
-                listenersCount: this.listeners.length
-            });
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -294,18 +186,6 @@ class LocaleManager extends BaseManager {
     }
 
     /**
-     * Локализует отдельный элемент по селектору.
-     * 
-     * @param {string} selector - CSS селектор элемента
-     * @param {string} key - Ключ перевода
-     * @param {string} [attr] - Атрибут для обновления
-     * @returns {boolean} true если элемент найден и локализован
-     */
-    localizeElement(selector, key, attr = null) {
-        return this.domManager.localizeElementBySelector(selector, key, attr);
-    }
-
-    /**
      * Переключает на следующую доступную локаль.
      * 
      * @async
@@ -323,97 +203,6 @@ class LocaleManager extends BaseManager {
             
             return newLocale;
         });
-    }
-
-    /**
-     * Получает информацию о текущей локали.
-     * 
-     * @returns {Object} Информация о локали
-     */
-    getCurrentLocaleInfo() {
-        return this.translationManager.getCurrentLocaleInfo();
-    }
-
-    /**
-     * Получает общую статистику локализации.
-     * 
-     * @returns {Object} Объект со статистикой
-     */
-    getStatistics() {
-        return {
-            currentLocale: this.getCurrentLocale(),
-            isInitialized: this.isInitialized,
-            storage: this.storageManager.getStatistics(),
-            translation: this.translationManager.getStatistics(),
-            dom: this.domManager.getStatistics(),
-            listeners: this.listeners.length
-        };
-    }
-
-    /**
-     * Получает метрики производительности всех менеджеров.
-     * 
-     * @returns {Object} Метрики производительности
-     */
-    getAllPerformanceMetrics() {
-        return {
-            localeManager: this.getPerformanceMetrics(),
-            storage: this.storageManager.getPerformanceMetrics(),
-            translation: this.translationManager.getPerformanceMetrics(),
-            dom: this.domManager.getPerformanceMetrics()
-        };
-    }
-
-    /**
-     * Получает диагностическую информацию.
-     * 
-     * @returns {Object} Диагностическая информация
-     */
-    getDiagnostics() {
-        return {
-            isInitialized: this.isInitialized,
-            state: this.getState(),
-            statistics: this.getStatistics(),
-            performanceMetrics: this.getAllPerformanceMetrics(),
-            timestamp: new Date().toISOString()
-        };
-    }
-
-    /**
-     * Сбрасывает статистику всех менеджеров.
-     * 
-     * @returns {void}
-     */
-    resetStatistics() {
-        try {
-            this.storageManager.resetStatistics();
-            this.translationManager.resetStatistics();
-            this.domManager.resetStatistics();
-            this._log({ key: 'logs.locale.statisticsReset' });
-        } catch (error) {
-            this._logError({ key: 'logs.locale.statisticsResetError' }, error);
-        }
-    }
-
-    /**
-     * Проверяет наличие перевода для ключа.
-     * 
-     * @param {string} key - Ключ перевода
-     * @param {string} [locale] - Локаль (по умолчанию текущая)
-     * @returns {boolean} true если перевод существует
-     */
-    hasTranslation(key, locale = null) {
-        return this.translationManager.hasTranslation(key, locale || this.getCurrentLocale());
-    }
-
-    /**
-     * Получает все ключи переводов для текущей локали.
-     * 
-     * @param {string} [locale] - Локаль (по умолчанию текущая)
-     * @returns {Array<string>} Массив ключей
-     */
-    getAllTranslationKeys(locale = null) {
-        return this.translationManager.getAllKeys(locale || this.getCurrentLocale());
     }
 
     /**
@@ -439,9 +228,9 @@ class LocaleManager extends BaseManager {
                 this.storageManager = null;
             }
 
-            this._log('Все менеджеры уничтожены');
+            this._log({ key: 'logs.locale.managersDestroyed' });
         } catch (error) {
-            this._logError('Ошибка уничтожения менеджеров', error);
+            this._logError({ key: 'logs.locale.managersDestroyError' }, error);
         }
     }
 

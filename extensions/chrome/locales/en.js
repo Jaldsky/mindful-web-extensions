@@ -212,6 +212,7 @@ const EN = {
             listenerAdded: 'Locale change listener added',
             listenerRemoved: 'Locale change listener removed',
             listenerError: 'Error in locale change listener',
+            listenerMustBeFunction: 'Listener must be a function',
             statisticsReset: 'All localization statistics reset',
             statisticsResetError: 'Error resetting localization statistics',
             alreadyDestroyed: 'LocaleManager already destroyed',

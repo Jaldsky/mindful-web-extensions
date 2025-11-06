@@ -212,6 +212,7 @@ const RU = {
             listenerAdded: 'Добавлен слушатель изменения локали',
             listenerRemoved: 'Удалён слушатель изменения локали',
             listenerError: 'Ошибка в слушателе изменения локали',
+            listenerMustBeFunction: 'Listener должен быть функцией',
             statisticsReset: 'Вся статистика локализации сброшена',
             statisticsResetError: 'Ошибка сброса статистики локализации',
             alreadyDestroyed: 'LocaleManager уже был уничтожен',
