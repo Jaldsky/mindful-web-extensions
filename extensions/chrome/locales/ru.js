@@ -309,6 +309,30 @@ const RU = {
             clearError: 'Ошибка очистки диагностики',
             elementsNotFound: 'Элементы диагностики не найдены',
             renderError: 'Ошибка отрисовки диагностики'
+        },
+        optionsDom: {
+            domApiUnavailable: 'DOM API недоступен',
+            criticalInitializationError: 'Критическая ошибка инициализации',
+            bodyNotAvailable: 'Предупреждение: document.body еще не доступен',
+            domApiAvailable: 'DOM API доступен',
+            elementsInitialized: 'DOM элементы инициализированы',
+            initializationError: 'Ошибка инициализации DOM элементов',
+            elementNotFound: 'Элемент с ID "{id}" не найден',
+            missingElements: 'Отсутствуют критичные DOM элементы: {elements}',
+            updateElementNotFound: 'Невозможно обновить {elementName}: элемент не найден',
+            elementNotInDOM: '{elementName} не находится в DOM',
+            verificationFailed: 'Верификация обновления {elementName} не удалась',
+            updateSuccess: '{elementName} обновлен успешно ({duration}мс)',
+            updateError: 'Ошибка обновления {elementName} ({duration}мс)',
+            backendUrlNotFound: 'Элемент backendUrl не найден',
+            urlValueRetrieved: 'Значение URL получено',
+            urlMustBeString: 'url должен быть строкой',
+            textMustBeString: 'text должен быть строкой',
+            disabledMustBeBoolean: 'disabled должен быть булевым значением',
+            getStatisticsError: 'Ошибка получения статистики элементов',
+            destroyStart: 'Очистка ресурсов DOMManager',
+            destroyed: 'DOMManager уничтожен',
+            destroyError: 'Ошибка при уничтожении DOMManager'
         }
     },
 

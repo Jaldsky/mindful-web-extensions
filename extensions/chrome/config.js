@@ -107,6 +107,31 @@ const CONFIG = {
     },
 
     /**
+     * Настройки DOM менеджера для options страницы
+     */
+    OPTIONS_DOM: {
+        // ID элементов DOM
+        ELEMENT_IDS: {
+            SETTINGS_FORM: 'settingsForm',
+            BACKEND_URL: 'backendUrl',
+            SAVE_BTN: 'saveBtn',
+            RESET_BTN: 'resetBtn',
+            STATUS: 'status',
+            RUN_DIAGNOSTICS: 'runDiagnostics',
+            TOGGLE_DEVELOPER_TOOLS: 'toggleDeveloperTools',
+            DOMAIN_EXCEPTION_INPUT: 'domainExceptionInput',
+            ADD_DOMAIN_EXCEPTION_BTN: 'addDomainExceptionBtn',
+            DOMAIN_EXCEPTIONS_LIST: 'domainExceptionsList'
+        },
+        // Дефолтные названия элементов для логирования
+        DEFAULT_ELEMENT_NAMES: {
+            ELEMENT: 'element',
+            BACKEND_URL_FIELD: 'поле URL бэкенда',
+            BUTTON: 'кнопка'
+        }
+    },
+
+    /**
      * Ключи для Chrome Storage
      */
     STORAGE_KEYS: {
