@@ -299,6 +299,16 @@ const EN = {
             managersValidationCompleted: 'Managers validation completed',
             managersValidationError: 'Error validating managers',
             getDiagnosticsError: 'Error getting diagnostics'
+        },
+        diagnosticsWorkflow: {
+            runStart: 'Starting diagnostics',
+            runCompleted: 'Diagnostics completed',
+            runError: 'Diagnostics error ({totalTime}ms)',
+            statusErrorWarning: 'Warning: failed to display diagnostics error status',
+            cleared: 'Diagnostics results cleared',
+            clearError: 'Error clearing diagnostics',
+            elementsNotFound: 'Diagnostics elements not found',
+            renderError: 'Error rendering diagnostics'
         }
     },
 

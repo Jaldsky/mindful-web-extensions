@@ -65,7 +65,21 @@ const CONFIG = {
             warning: '⚠️',
             error: '❌',
             unknown: '❓'
-        }
+        },
+        // Эмодзи для UI элементов
+        UI_EMOJI: {
+            SUCCESS: '✅',
+            WARNING: '⚠️',
+            TIME: '⏱️'
+        },
+        // Маппинг статусов диагностики на статусы UI
+        STATUS_MAP: {
+            ok: 'success',
+            warning: 'success',
+            error: 'failed'
+        },
+        // Задержка перед отображением результатов (мс)
+        MIN_DISPLAY_DELAY: 500
     },
 
     /**

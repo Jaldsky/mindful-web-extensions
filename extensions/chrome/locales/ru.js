@@ -299,6 +299,16 @@ const RU = {
             managersValidationCompleted: 'Валидация менеджеров завершена',
             managersValidationError: 'Ошибка валидации менеджеров',
             getDiagnosticsError: 'Ошибка получения диагностики'
+        },
+        diagnosticsWorkflow: {
+            runStart: 'Запуск диагностики',
+            runCompleted: 'Диагностика завершена',
+            runError: 'Ошибка диагностики ({totalTime}мс)',
+            statusErrorWarning: 'Предупреждение: не удалось отобразить статус ошибки диагностики',
+            cleared: 'Результаты диагностики очищены',
+            clearError: 'Ошибка очистки диагностики',
+            elementsNotFound: 'Элементы диагностики не найдены',
+            renderError: 'Ошибка отрисовки диагностики'
         }
     },
 
