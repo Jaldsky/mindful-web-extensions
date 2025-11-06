@@ -361,6 +361,19 @@ const EN = {
             destroyStart: 'Cleaning up OptionsManager resources',
             destroyed: 'OptionsManager destroyed',
             destroyError: 'Error destroying OptionsManager'
+        },
+        logs: {
+            containerNotFound: 'Logs container not found',
+            loadError: 'Error loading logs',
+            clearError: 'Error clearing logs',
+            noLogsToCopy: 'No logs to copy',
+            logsCopied: 'Logs copied to clipboard',
+            copyError: 'Error copying logs',
+            autoRefreshStarted: 'Auto refresh started (every {interval}{timeUnit})',
+            autoRefreshStopped: 'Auto refresh stopped',
+            noLogsAvailable: 'No logs available. Logs will appear here when you interact with the extension.',
+            noLogsMatchFilters: 'No logs match the current filters.',
+            loadErrorMessage: 'Error loading logs: {message}'
         }
     },
 

@@ -1,6 +1,17 @@
 const CONFIG = require('../../../config.js');
 
+/**
+ * Менеджер для работы с логами.
+ * Отвечает за загрузку, фильтрацию, отображение и управление логами.
+ * 
+ * @class LogsManager
+ */
 class LogsManager {
+    /**
+     * Создает экземпляр LogsManager.
+     * 
+     * @param {Object} manager - Экземпляр OptionsManager
+     */
     constructor(manager) {
         this.manager = manager;
         this.buttonFeedbackTimers = new Map();
@@ -15,6 +26,12 @@ class LogsManager {
         }
     }
 
+    /**
+     * Инициализирует кнопки обратной связи, устанавливая их минимальную ширину.
+     * 
+     * @private
+     * @returns {void}
+     */
     _initializeFeedbackButtons() {
         const buttonIds = ['clearLogs', 'copyLogs'];
 
@@ -38,6 +55,14 @@ class LogsManager {
         });
     }
 
+    /**
+     * Получает варианты текста для обратной связи кнопки.
+     * 
+     * @private
+     * @param {string} buttonId - ID кнопки
+     * @param {string} [defaultText=''] - Текст по умолчанию
+     * @returns {Array<string>} Массив вариантов текста
+     */
     _getFeedbackVariants(buttonId, defaultText = '') {
         const manager = this.manager;
         const texts = [defaultText].filter(Boolean);
@@ -57,6 +82,14 @@ class LogsManager {
         return texts;
     }
 
+    /**
+     * Измеряет ширину текста кнопки с учетом всех стилей.
+     * 
+     * @private
+     * @param {HTMLButtonElement} button - Элемент кнопки для измерения
+     * @param {string} text - Текст для измерения
+     * @returns {number} Ширина текста в пикселях
+     */
     _measureButtonText(button, text) {
         if (typeof document === 'undefined' || !button) {
             return 0;
@@ -100,6 +133,17 @@ class LogsManager {
         return Math.ceil(measurement.offsetWidth);
     }
 
+    /**
+     * Устанавливает временную обратную связь на кнопке (изменяет текст и состояние).
+     * 
+     * @private
+     * @param {string} buttonId - ID кнопки
+     * @param {Object} options - Опции обратной связи
+     * @param {string} options.text - Текст для отображения
+     * @param {boolean} [options.disabled=true] - Заблокировать ли кнопку
+     * @param {number} [options.duration=500] - Длительность обратной связи в миллисекундах
+     * @returns {void}
+     */
     _setButtonFeedback(buttonId, { text, disabled = true, duration = 500 }) {
         const button = document.getElementById(buttonId);
 
@@ -126,10 +170,8 @@ class LogsManager {
             return `${s.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
         };
 
-        const maxChars = 14; // чуть короче, т.к. есть иконка
-        const truncated = truncate(text, maxChars);
-
-        button.textContent = truncated;
+        const maxChars = 14;
+        button.textContent = truncate(text, maxChars);
         button.disabled = disabled;
         button.setAttribute('title', text);
 
@@ -149,6 +191,12 @@ class LogsManager {
         this.buttonFeedbackTimers.set(buttonId, timerId);
     }
 
+    /**
+     * Устанавливает фильтр по уровню логов.
+     * 
+     * @param {string} level - Уровень логов ('all', 'INFO', 'ERROR')
+     * @returns {void}
+     */
     setLevelFilter(level) {
         const manager = this.manager;
         manager.logsFilter.level = level;
@@ -165,6 +213,12 @@ class LogsManager {
         this.loadLogs();
     }
 
+    /**
+     * Устанавливает фильтр по классу логов.
+     * 
+     * @param {string} className - Имя класса или 'all'
+     * @returns {void}
+     */
     setClassFilter(className) {
         const manager = this.manager;
         manager.logsFilter.className = className;
@@ -177,6 +231,12 @@ class LogsManager {
         this.loadLogs();
     }
 
+    /**
+     * Устанавливает фильтр "только серверные запросы".
+     * 
+     * @param {boolean} serverOnly - true для показа только серверных запросов
+     * @returns {void}
+     */
     setServerOnly(serverOnly) {
         const manager = this.manager;
         manager.logsFilter.serverOnly = serverOnly;
@@ -194,13 +254,19 @@ class LogsManager {
         this.loadLogs();
     }
 
+    /**
+     * Загружает и отображает логи.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
     async loadLogs() {
         const manager = this.manager;
 
         try {
             const logsContent = document.getElementById('logsContent');
             if (!logsContent) {
-                manager._logError('Контейнер для логов не найден');
+                manager._logError({ key: 'logs.logs.containerNotFound' });
                 return;
             }
 
@@ -236,13 +302,13 @@ class LogsManager {
 
             if (filteredLogs.length === 0) {
                 if (logs.length === 0) {
-                    logsContent.innerHTML = '<div class="log-empty">No logs available. Logs will appear here when you interact with the extension.</div>';
+                    logsContent.innerHTML = `<div class="log-empty">${this.escapeHtml(manager.localeManager.t('logs.logs.noLogsAvailable'))}</div>`;
                 } else {
-                    logsContent.innerHTML = '<div class="log-empty">No logs match the current filters.</div>';
+                    logsContent.innerHTML = `<div class="log-empty">${this.escapeHtml(manager.localeManager.t('logs.logs.noLogsMatchFilters'))}</div>`;
                 }
             } else {
                 const recentLogs = filteredLogs.slice(-100).reverse();
-                const formattedLogs = recentLogs.map(log => {
+                logsContent.innerHTML = recentLogs.map(log => {
                     const timestamp = new Date(log.timestamp).toLocaleString();
                     const level = log.level || 'INFO';
                     const className = log.className || 'Unknown';
@@ -253,8 +319,6 @@ class LogsManager {
                     return `<div class="log-entry log-${levelClass}"><div class="log-header"><span class="log-timestamp">${timestamp}</span><span class="log-level log-level-${levelClass}">${level}</span><span class="log-class">${className}</span></div><div class="log-message">${this.escapeHtml(message)}</div>${data ? `<pre class="log-data">${this.escapeHtml(data)}</pre>` : ''}</div>`;
                 }).join('');
 
-                logsContent.innerHTML = formattedLogs;
-
                 if (wasAtTop) {
                     logsContent.scrollTop = 0;
                 } else {
@@ -264,14 +328,21 @@ class LogsManager {
                 }
             }
         } catch (error) {
-            manager._logError('Ошибка загрузки логов', error);
+            manager._logError({ key: 'logs.logs.loadError' }, error);
             const logsContent = document.getElementById('logsContent');
             if (logsContent) {
-                logsContent.innerHTML = `<div class="log-error">Error loading logs: ${this.escapeHtml(error.message)}</div>`;
+                const errorMessage = manager.localeManager.t('logs.logs.loadErrorMessage', { message: error.message });
+                logsContent.innerHTML = `<div class="log-error">${this.escapeHtml(errorMessage)}</div>`;
             }
         }
     }
 
+    /**
+     * Очищает все логи.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
     async clearLogs() {
         const manager = this.manager;
 
@@ -280,7 +351,7 @@ class LogsManager {
 
             const logsContent = document.getElementById('logsContent');
             if (logsContent) {
-                logsContent.textContent = 'No logs available. Logs will appear here when you interact with the extension.';
+                logsContent.textContent = manager.localeManager.t('logs.logs.noLogsAvailable');
             }
 
             this.updateCounter(0);
@@ -292,7 +363,7 @@ class LogsManager {
                 duration: 600
             });
         } catch (error) {
-            manager._logError('Ошибка очистки логов', error);
+            manager._logError({ key: 'logs.logs.clearError' }, error);
 
             const errorMessage = manager.localeManager.t('options.notifications.logsClearErrorShort') || 'Clear error';
             this._setButtonFeedback('clearLogs', {
@@ -303,19 +374,25 @@ class LogsManager {
         }
     }
 
+    /**
+     * Копирует логи в буфер обмена.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
     async copyLogs() {
         const manager = this.manager;
 
         try {
             const logsContent = document.getElementById('logsContent');
             if (!logsContent || !logsContent.textContent) {
-                manager._log('Нет логов для копирования');
+                manager._log({ key: 'logs.logs.noLogsToCopy' });
                 return;
             }
 
             const textContent = logsContent.innerText || logsContent.textContent;
             await navigator.clipboard.writeText(textContent);
-            manager._log('Логи скопированы в буфер обмена');
+            manager._log({ key: 'logs.logs.logsCopied' });
 
             const successMessage = manager.localeManager.t('options.notifications.logsCopiedShort') || 'Copied';
             this._setButtonFeedback('copyLogs', {
@@ -324,7 +401,7 @@ class LogsManager {
                 duration: 550
             });
         } catch (error) {
-            manager._logError('Ошибка копирования логов', error);
+            manager._logError({ key: 'logs.logs.copyError' }, error);
 
             const errorMessage = manager.localeManager.t('options.notifications.logsCopyErrorShort') || 'Copy error';
             this._setButtonFeedback('copyLogs', {
@@ -335,6 +412,11 @@ class LogsManager {
         }
     }
 
+    /**
+     * Запускает автоматическое обновление логов.
+     * 
+     * @returns {void}
+     */
     startAutoRefresh() {
         const manager = this.manager;
         this.stopAutoRefresh();
@@ -346,23 +428,34 @@ class LogsManager {
             try {
                 await this.loadLogs();
             } catch (error) {
-                // swallow errors during auto refresh
             }
         }, refreshInterval);
 
-        manager._log(`Автоматическое обновление логов запущено (каждые ${refreshInterval}мс)`);
+        const timeUnit = manager.localeManager.t('common.timeUnitMs');
+        manager._log({ key: 'logs.logs.autoRefreshStarted', params: { interval: refreshInterval, timeUnit } });
     }
 
+    /**
+     * Останавливает автоматическое обновление логов.
+     * 
+     * @returns {void}
+     */
     stopAutoRefresh() {
         const manager = this.manager;
         if (manager.logsRefreshIntervalId !== null) {
             clearInterval(manager.logsRefreshIntervalId);
             manager.logsRefreshIntervalId = null;
             this.removeSelectionChangeHandler();
-            manager._log('Автоматическое обновление логов остановлено');
+            manager._log({ key: 'logs.logs.autoRefreshStopped' });
         }
     }
 
+    /**
+     * Обновляет список классов в фильтре классов.
+     * 
+     * @param {Array} logs - Массив логов
+     * @returns {void}
+     */
     updateClassFilter(logs) {
         const manager = this.manager;
         const classFilter = document.getElementById('logsClassFilter');
@@ -396,6 +489,12 @@ class LogsManager {
         }
     }
 
+    /**
+     * Фильтрует логи по текущим фильтрам.
+     * 
+     * @param {Array} logs - Массив логов
+     * @returns {Array} Отфильтрованные логи
+     */
     filterLogs(logs) {
         const manager = this.manager;
 
@@ -411,16 +510,18 @@ class LogsManager {
                 }
             }
 
-            if (manager.logsFilter.className !== 'all' && log.className !== manager.logsFilter.className) {
-                return false;
-            }
-
-            return true;
+            return manager.logsFilter.className === 'all' || log.className === manager.logsFilter.className;
         });
     }
 
+    /**
+     * Обновляет счетчик логов.
+     * 
+     * @param {number} count - Количество отфильтрованных логов
+     * @param {number} [total] - Общее количество логов
+     * @returns {void}
+     */
     updateCounter(count, total) {
-        const manager = this.manager;
         const counterElement = document.getElementById('logsCounter');
         if (!counterElement) {
             return;
@@ -434,12 +535,23 @@ class LogsManager {
         }
     }
 
+    /**
+     * Экранирует HTML в тексте.
+     * 
+     * @param {string} text - Текст для экранирования
+     * @returns {string} Экранированный текст
+     */
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
+    /**
+     * Настраивает обработчик изменения выделения текста.
+     * 
+     * @returns {void}
+     */
     setupSelectionChangeHandler() {
         const manager = this.manager;
         if (!manager.selectionChangeHandler) {
@@ -453,6 +565,11 @@ class LogsManager {
         }
     }
 
+    /**
+     * Удаляет обработчик изменения выделения текста.
+     * 
+     * @returns {void}
+     */
     removeSelectionChangeHandler() {
         const manager = this.manager;
         if (manager.selectionChangeHandler) {
