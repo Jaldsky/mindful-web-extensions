@@ -130,7 +130,8 @@ class StatusManager extends BaseManager {
                 if (size > 0 && !isVisible) {
                     this._processQueue().catch(() => {});
                 }
-            }
+            },
+            t: this.t.bind(this)
         });
         
         /** @type {number|null} */

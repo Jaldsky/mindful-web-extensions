@@ -409,7 +409,14 @@ const EN = {
             addHistoryError: 'Error adding to history',
             getHistoryError: 'Error getting history',
             historyCleared: 'History cleared: {count} entries',
-            clearHistoryError: 'Error clearing history'
+            clearHistoryError: 'Error clearing history',
+            queueFull: 'Queue is full, skipping message',
+            queueEntryAdded: 'Message added to queue',
+            addQueueError: 'Error adding to queue',
+            queueProcessCompleted: 'Queue processing completed',
+            queueProcessError: 'Critical queue processing error',
+            queueCleared: 'Queue cleared: {count} messages',
+            clearQueueError: 'Error clearing queue'
         }
     },
 

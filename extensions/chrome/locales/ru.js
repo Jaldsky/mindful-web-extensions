@@ -409,7 +409,14 @@ const RU = {
             historyEntryAdded: 'Запись добавлена в историю',
             addHistoryError: 'Ошибка добавления в историю',
             getHistoryError: 'Ошибка получения истории',
-            historyCleared: 'История очищена: {count} записей'
+            historyCleared: 'История очищена: {count} записей',
+            queueFull: 'Очередь переполнена, пропуск сообщения',
+            queueEntryAdded: 'Сообщение добавлено в очередь',
+            addQueueError: 'Ошибка добавления в очередь',
+            queueProcessCompleted: 'Обработка очереди завершена',
+            queueProcessError: 'Критическая ошибка обработки очереди',
+            queueCleared: 'Очередь очищена: {count} сообщений',
+            clearQueueError: 'Ошибка очистки очереди'
         }
     },
 
