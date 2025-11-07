@@ -28,9 +28,8 @@ class StatusQueueManager {
      * @param {Function} [options.log] - Функция логирования
      * @param {Function} [options.logError] - Функция логирования ошибок
      * @param {Function} [options.onUpdate] - Callback при обновлении очереди
-     * @param {Function} [options.t] - Функция локализации
      */
-    constructor({ enableQueue = false, maxQueueSize = 5, log = () => {}, logError = () => {}, onUpdate = null, t = (key, params) => key } = {}) {
+    constructor({ enableQueue = false, maxQueueSize = 5, log = () => {}, logError = () => {}, onUpdate = null } = {}) {
         /** @type {boolean} */
         this.enableQueue = enableQueue === true;
         
@@ -51,9 +50,6 @@ class StatusQueueManager {
         
         /** @type {Function|null} */
         this.onUpdate = onUpdate;
-        
-        /** @type {Function} */
-        this.t = t;
     }
 
     /**
@@ -90,41 +86,25 @@ class StatusQueueManager {
      * @returns {Promise<void>} Promise, который разрешается после обработки всех элементов очереди
      */
     async process(processItemFn) {
-        try {
-            if (this.isProcessing || this.items.length === 0) return;
-        } catch (_e) {
-            return;
-        }
+        if (this.isProcessing || this.items.length === 0) return;
+        
         this.isProcessing = true;
-        let startSize = 0;
-        try {
-            startSize = this.items.length;
-        } catch (_e) {
-            startSize = 0;
-        }
+        const startSize = this.items.length;
         let processed = 0;
         let failed = 0;
+        
         try {
-            while (true) {
-                let hasItems = false;
-                try {
-                    hasItems = this.items.length > 0;
-                } catch (_e) {
-                    hasItems = false;
-                }
-                if (!hasItems) break;
-                let item;
-                try {
-                    item = this.items.shift();
-                } catch (_e) {
-                    break;
-                }
+            while (this.items.length > 0) {
+                const item = this.items.shift();
                 if (!item) continue;
+                
                 const ok = await processItemFn(item);
                 if (ok) processed++; else failed++;
+                
                 if (this.onUpdate) {
                     this.onUpdate(this.size());
                 }
+                
                 if (item.duration > 0) {
                     await new Promise(resolve => setTimeout(resolve, item.duration));
                 }

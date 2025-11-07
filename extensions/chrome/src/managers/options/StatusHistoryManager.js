@@ -22,9 +22,8 @@ class StatusHistoryManager {
      * @param {Function} [options.log] - Функция логирования
      * @param {Function} [options.logError] - Функция логирования ошибок
      * @param {Function} [options.onUpdate] - Callback при обновлении истории
-     * @param {Function} [options.t] - Функция локализации
      */
-    constructor({ enableHistory = true, maxHistorySize = 50, log = () => {}, logError = () => {}, onUpdate = null, t = (key, params) => key } = {}) {
+    constructor({ enableHistory = true, maxHistorySize = 50, log = () => {}, logError = () => {}, onUpdate = null } = {}) {
         /** @type {boolean} */
         this.enableHistory = enableHistory !== false;
         
@@ -42,9 +41,6 @@ class StatusHistoryManager {
         
         /** @type {Function|null} */
         this.onUpdate = onUpdate;
-        
-        /** @type {Function} */
-        this.t = t;
     }
 
     /**
