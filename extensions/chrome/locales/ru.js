@@ -416,7 +416,17 @@ const RU = {
             queueProcessCompleted: 'Обработка очереди завершена',
             queueProcessError: 'Критическая ошибка обработки очереди',
             queueCleared: 'Очередь очищена: {count} сообщений',
-            clearQueueError: 'Ошибка очистки очереди'
+            clearQueueError: 'Ошибка очистки очереди',
+            statusElementMustBeHTMLElement: 'statusElement должен быть HTMLElement',
+            criticalValidationError: 'Критическая ошибка валидации',
+            elementNotInDOM: 'Предупреждение: statusElement не находится в DOM',
+            elementValid: 'statusElement валиден',
+            hideTimeoutCleared: 'Таймер скрытия очищен',
+            hideScheduled: 'Скрытие статуса запланировано через {duration}мс',
+            elementUnavailableDisplaySkipped: 'Элемент статуса недоступен, отображение пропущено',
+            displayVerificationFailed: 'Верификация отображения не удалась',
+            elementUnavailableHideSkipped: 'Элемент статуса недоступен, скрытие пропущено',
+            hideVerificationFailed: 'Верификация скрытия не удалась'
         }
     },
 

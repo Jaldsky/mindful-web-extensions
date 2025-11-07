@@ -2,6 +2,7 @@ const CONFIG = require('../../../config.js');
 
 /**
  * Менеджер для рендеринга статусных сообщений в DOM.
+ * Отвечает за отображение, скрытие и валидацию статусных уведомлений в DOM элементах.
  * 
  * @class StatusRendererManager
  */
@@ -13,8 +14,9 @@ class StatusRendererManager {
      * @param {HTMLElement|null} [options.element=null] - Элемент для отображения статуса
      * @param {Function} [options.log] - Функция логирования
      * @param {Function} [options.logError] - Функция логирования ошибок
+     * @param {Function} [options.t] - Функция локализации
      */
-    constructor({ element = null, log = () => {}, logError = () => {} } = {}) {
+    constructor({ element = null, log = () => {}, logError = () => {}, t = (key) => key } = {}) {
         /** @type {HTMLElement|null} */
         this.statusElement = element || null;
         
@@ -27,25 +29,12 @@ class StatusRendererManager {
         /** @type {Function} */
         this._logError = logError;
         
+        /** @type {Function} */
+        this.t = t;
+        
         if (this.statusElement) {
             this.validateElement();
         }
-    }
-
-    /**
-     * Устанавливает элемент статуса.
-     * 
-     * @param {HTMLElement} element - DOM элемент для статуса
-     * @throws {TypeError} Если element не является HTMLElement
-     * @returns {void}
-     */
-    setElement(element) {
-        if (!(element instanceof HTMLElement)) {
-            throw new TypeError('element должен быть HTMLElement');
-        }
-        this.statusElement = element;
-        this.validateElement();
-        this._log('Элемент статуса установлен и валидирован');
     }
 
     /**
@@ -57,14 +46,14 @@ class StatusRendererManager {
     validateElement() {
         if (!this.statusElement) return;
         if (!(this.statusElement instanceof HTMLElement)) {
-            const error = new Error('statusElement должен быть HTMLElement');
-            this._logError('Критическая ошибка валидации', error);
+            const error = new Error(this.t('logs.status.statusElementMustBeHTMLElement'));
+            this._logError({ key: 'logs.status.criticalValidationError' }, error);
             throw error;
         }
         if (!document.body.contains(this.statusElement)) {
-            this._log('Предупреждение: statusElement не находится в DOM');
+            this._log({ key: 'logs.status.elementNotInDOM' });
         }
-        this._log('statusElement валиден');
+        this._log({ key: 'logs.status.elementValid' });
     }
 
     /**
@@ -76,7 +65,7 @@ class StatusRendererManager {
         if (this.hideTimeout) {
             clearTimeout(this.hideTimeout);
             this.hideTimeout = null;
-            this._log('Таймер скрытия очищен');
+            this._log({ key: 'logs.status.hideTimeoutCleared' });
         }
     }
 
@@ -89,7 +78,7 @@ class StatusRendererManager {
      */
     scheduleHide(duration, hideFn) {
         this.hideTimeout = setTimeout(() => { hideFn(); }, duration);
-        this._log(`Скрытие статуса запланировано через ${duration}мс`);
+        this._log({ key: 'logs.status.hideScheduled', params: { duration } });
     }
 
     /**
@@ -101,7 +90,7 @@ class StatusRendererManager {
      */
     display(message, type) {
         if (!this.statusElement || !document.body.contains(this.statusElement)) {
-            this._log('Элемент статуса недоступен, отображение пропущено');
+            this._log({ key: 'logs.status.elementUnavailableDisplaySkipped' });
             return false;
         }
         this.clearHideTimeout();
@@ -112,7 +101,7 @@ class StatusRendererManager {
         const hasCorrectClass = this.statusElement.classList.contains(CONFIG.STATUS_SETTINGS.CSS_CLASSES.BASE) && this.statusElement.classList.contains(type);
         const hasCorrectText = this.statusElement.textContent === message;
         if (!isVisible || !hasCorrectClass || !hasCorrectText) {
-            this._logError('Верификация отображения не удалась', { isVisible, hasCorrectClass, hasCorrectText });
+            this._logError({ key: 'logs.status.displayVerificationFailed' }, { isVisible, hasCorrectClass, hasCorrectText });
             return false;
         }
         return true;
@@ -125,7 +114,7 @@ class StatusRendererManager {
      */
     hide() {
         if (!this.statusElement || !document.body.contains(this.statusElement)) {
-            this._log('Элемент статуса недоступен, скрытие пропущено');
+            this._log({ key: 'logs.status.elementUnavailableHideSkipped' });
             return false;
         }
         this.clearHideTimeout();
@@ -134,7 +123,7 @@ class StatusRendererManager {
         const isHidden = this.statusElement.classList.contains(CONFIG.STATUS_SETTINGS.CSS_CLASSES.HIDDEN);
         const isCleared = this.statusElement.textContent === '';
         if (!isHidden || !isCleared) {
-            this._logError('Верификация скрытия не удалась', { isHidden, isCleared });
+            this._logError({ key: 'logs.status.hideVerificationFailed' }, { isHidden, isCleared });
             return false;
         }
         return true;

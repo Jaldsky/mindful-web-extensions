@@ -416,7 +416,17 @@ const EN = {
             queueProcessCompleted: 'Queue processing completed',
             queueProcessError: 'Critical queue processing error',
             queueCleared: 'Queue cleared: {count} messages',
-            clearQueueError: 'Error clearing queue'
+            clearQueueError: 'Error clearing queue',
+            statusElementMustBeHTMLElement: 'statusElement must be HTMLElement',
+            criticalValidationError: 'Critical validation error',
+            elementNotInDOM: 'Warning: statusElement is not in DOM',
+            elementValid: 'statusElement is valid',
+            hideTimeoutCleared: 'Hide timeout cleared',
+            hideScheduled: 'Status hide scheduled in {duration}ms',
+            elementUnavailableDisplaySkipped: 'Status element unavailable, display skipped',
+            displayVerificationFailed: 'Display verification failed',
+            elementUnavailableHideSkipped: 'Status element unavailable, hide skipped',
+            hideVerificationFailed: 'Hide verification failed'
         }
     },
 

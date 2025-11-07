@@ -99,7 +99,8 @@ class StatusManager extends BaseManager {
         this.renderer = new StatusRendererManager({
             element: options.statusElement || null,
             log: (m, d) => this._log(m, d),
-            logError: (m, e) => this._logError(m, e)
+            logError: (m, e) => this._logError(m, e),
+            t: this.t.bind(this)
         });
         
         /** @type {StatusHistoryManager} */
@@ -112,8 +113,7 @@ class StatusManager extends BaseManager {
                 /** @type {Partial<StatusManagerState>} */
                 const newState = { historyLength: size };
                 this.updateState(newState);
-            },
-            t: this.t.bind(this)
+            }
         });
 
         /** @type {StatusQueueManager} */
@@ -130,8 +130,7 @@ class StatusManager extends BaseManager {
                 if (size > 0 && !isVisible) {
                     this._processQueue().catch(() => {});
                 }
-            },
-            t: this.t.bind(this)
+            }
         });
         
         /** @type {number|null} */
