@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const LifecycleManager = require('../../../src/managers/options/LifecycleManager.js');
+const LifecycleManager = require('../../../src/managers/options/core/LifecycleManager.js');
 const { createBaseOptionsManager } = require('./options-test-helpers.js');
 
 describe('LifecycleManager', () => {

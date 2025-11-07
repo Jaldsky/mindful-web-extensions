@@ -1,20 +1,20 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../../config.js');
-const DOMManager = require('./DOMManager.js');
-const StorageManager = require('./StorageManager.js');
-const StatusManager = require('./StatusManager.js');
-const ValidationManager = require('./ValidationManager.js');
+const DOMManager = require('./core/DOMManager.js');
+const StorageManager = require('./core/StorageManager.js');
+const StatusManager = require('./status/StatusManager.js');
+const ValidationManager = require('./core/ValidationManager.js');
 const ServiceWorkerManager = require('../app/ServiceWorkerManager.js');
 const DiagnosticsManager = require('../app/DiagnosticsManager.js');
 const NotificationManager = require('../app/NotificationManager.js');
 const LocaleManager = require('../locale/LocaleManager.js');
-const InitializationManager = require('./InitializationManager.js');
-const UIManager = require('./UIManager.js');
-const DiagnosticsWorkflowManager = require('./DiagnosticsWorkflowManager.js');
-const DeveloperToolsManager = require('./DeveloperToolsManager.js');
-const LogsManager = require('./LogsManager.js');
-const DiagnosticsDataManager = require('./DiagnosticsDataManager.js');
-const LifecycleManager = require('./LifecycleManager.js');
+const InitializationManager = require('./core/InitializationManager.js');
+const UIManager = require('./ui/UIManager.js');
+const DiagnosticsWorkflowManager = require('./diagnostics/DiagnosticsWorkflowManager.js');
+const DeveloperToolsManager = require('./diagnostics/DeveloperToolsManager.js');
+const LogsManager = require('./core/LogsManager.js');
+const DiagnosticsDataManager = require('./diagnostics/DiagnosticsDataManager.js');
+const LifecycleManager = require('./core/LifecycleManager.js');
 
 /**
  * Главный менеджер для страницы настроек расширения.

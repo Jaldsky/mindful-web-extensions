@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const UIManager = require('../../../src/managers/options/UIManager.js');
+const UIManager = require('../../../src/managers/options/ui/UIManager.js');
 const { createBaseOptionsManager } = require('./options-test-helpers.js');
 
 describe('UIManager', () => {
