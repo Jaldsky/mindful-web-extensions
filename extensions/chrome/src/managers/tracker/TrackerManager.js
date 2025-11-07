@@ -411,4 +411,11 @@ class TrackerManager extends BaseManager {
     }
 }
 
-module.exports = TrackerManager;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = TrackerManager;
+    module.exports.default = TrackerManager;
+}
+
+if (typeof window !== 'undefined') {
+    window.TrackerManager = TrackerManager;
+}

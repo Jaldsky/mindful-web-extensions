@@ -223,3 +223,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = StorageManager;
     module.exports.default = StorageManager;
 }
+
+if (typeof window !== 'undefined') {
+    window.StorageManager = StorageManager;
+}

@@ -78,7 +78,6 @@ class SyncManager extends BaseManager {
                 return false;
             }
 
-            // Удаляем старый слушатель если есть
             this.stopListening();
 
             this.storageListener = (changes, areaName) => {
@@ -177,4 +176,8 @@ class SyncManager extends BaseManager {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SyncManager;
     module.exports.default = SyncManager;
+}
+
+if (typeof window !== 'undefined') {
+    window.SyncManager = SyncManager;
 }

@@ -534,4 +534,11 @@ class MessageHandlerManager extends BaseManager {
     }
 }
 
-module.exports = MessageHandlerManager;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = MessageHandlerManager;
+    module.exports.default = MessageHandlerManager;
+}
+
+if (typeof window !== 'undefined') {
+    window.MessageHandlerManager = MessageHandlerManager;
+}

@@ -192,4 +192,11 @@ class StatisticsManager extends BaseManager {
     }
 }
 
-module.exports = StatisticsManager;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = StatisticsManager;
+    module.exports.default = StatisticsManager;
+}
+
+if (typeof window !== 'undefined') {
+    window.StatisticsManager = StatisticsManager;
+}
