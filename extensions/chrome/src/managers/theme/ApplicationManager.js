@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * Менеджер для применения темы к DOM.
@@ -13,7 +14,7 @@ class ApplicationManager extends BaseManager {
      * @readonly
      * @static
      */
-    static THEME_ATTRIBUTE = 'data-theme';
+    static THEME_ATTRIBUTE = CONFIG.THEME.ATTRIBUTE;
 
     /**
      * Доступные темы
@@ -21,10 +22,7 @@ class ApplicationManager extends BaseManager {
      * @static
      * @enum {string}
      */
-    static THEMES = {
-        LIGHT: 'light',
-        DARK: 'dark'
-    };
+    static THEMES = CONFIG.THEME.THEMES;
 
     /**
      * Создает экземпляр ApplicationManager.
@@ -36,7 +34,7 @@ class ApplicationManager extends BaseManager {
         super(options);
 
         /** @type {string} */
-        this.currentTheme = ApplicationManager.THEMES.LIGHT;
+        this.currentTheme = CONFIG.THEME.THEMES.LIGHT;
 
         /** @type {Object} */
         this.statistics = {
@@ -45,7 +43,7 @@ class ApplicationManager extends BaseManager {
             errors: 0
         };
 
-        this._log('ApplicationManager создан');
+        this._log({ key: 'logs.theme.application.created' });
     }
 
     /**
@@ -55,7 +53,7 @@ class ApplicationManager extends BaseManager {
      * @returns {boolean} true если тема валидна
      */
     isValidTheme(theme) {
-        return Object.values(ApplicationManager.THEMES).includes(theme);
+        return CONFIG.THEME.AVAILABLE.includes(theme);
     }
 
     /**
@@ -68,14 +66,14 @@ class ApplicationManager extends BaseManager {
         return this._executeWithTiming('applyTheme', () => {
             try {
                 if (!this.isValidTheme(theme)) {
-                    this._logError('Попытка применить невалидную тему', { theme });
-                    theme = ApplicationManager.THEMES.LIGHT;
+                    this._logError({ key: 'logs.theme.application.invalidThemeAttempt' }, { theme });
+                    theme = CONFIG.THEME.THEMES.LIGHT;
                 }
 
-                if (theme === ApplicationManager.THEMES.DARK) {
-                    document.documentElement.setAttribute(ApplicationManager.THEME_ATTRIBUTE, 'dark');
+                if (theme === CONFIG.THEME.THEMES.DARK) {
+                    document.documentElement.setAttribute(CONFIG.THEME.ATTRIBUTE, CONFIG.THEME.THEMES.DARK);
                 } else {
-                    document.documentElement.removeAttribute(ApplicationManager.THEME_ATTRIBUTE);
+                    document.documentElement.removeAttribute(CONFIG.THEME.ATTRIBUTE);
                 }
                 
                 this.currentTheme = theme;
@@ -86,11 +84,11 @@ class ApplicationManager extends BaseManager {
                     lastApplyTime: Date.now() 
                 });
                 
-                this._log('Тема применена к DOM', { theme });
+                this._log({ key: 'logs.theme.application.themeApplied' }, { theme });
                 return true;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError('Ошибка применения темы', error);
+                this._logError({ key: 'logs.theme.application.applyError' }, error);
                 return false;
             }
         });
@@ -120,7 +118,7 @@ class ApplicationManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов ApplicationManager');
+        this._log({ key: 'logs.theme.application.cleanupStart' });
         super.destroy();
     }
 }
@@ -128,8 +126,4 @@ class ApplicationManager extends BaseManager {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ApplicationManager;
     module.exports.default = ApplicationManager;
-}
-
-if (typeof window !== 'undefined') {
-    window.ThemeApplicationManager = ApplicationManager;
 }

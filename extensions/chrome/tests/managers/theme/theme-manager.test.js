@@ -94,10 +94,6 @@ describe('theme_manager/ThemeManager', () => {
 
         test('должен иметь правильные константы', () => {
             expect(ThemeManager.DEFAULT_THEME).toBe('light');
-            expect(ThemeManager.THEMES).toEqual({
-                LIGHT: 'light',
-                DARK: 'dark'
-            });
         });
     });
 

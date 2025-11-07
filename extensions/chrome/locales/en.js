@@ -550,6 +550,59 @@ const EN = {
                 lastValidationResultIsValidMustBeBoolean: 'lastValidationResult.isValid must be boolean',
                 validationExecutionError: 'Error during validation execution'
             }
+        },
+        theme: {
+            themeManager: {
+                created: 'ThemeManager created',
+                loadingAndApplying: 'Loading and applying theme',
+                appliedFromCache: 'Theme applied from cache',
+                loadedAndApplied: 'Theme loaded and applied',
+                loadError: 'Error loading theme',
+                invalidTheme: 'Invalid theme',
+                applyError: 'Error applying theme',
+                invalidThemeForSave: 'Invalid theme for saving',
+                saveError: 'Error saving theme',
+                userCallbackError: 'Error in user callback',
+                listenerSetupError: 'Error setting up listener',
+                cleanupStart: 'Cleaning up ThemeManager resources',
+                destroyed: 'ThemeManager destroyed',
+                destroyError: 'Error destroying ThemeManager'
+            },
+            application: {
+                created: 'ApplicationManager created',
+                invalidThemeAttempt: 'Attempt to apply invalid theme',
+                themeApplied: 'Theme applied to DOM',
+                applyError: 'Error applying theme',
+                cleanupStart: 'Cleaning up ApplicationManager resources'
+            },
+            storage: {
+                created: 'StorageManager created',
+                themeFromCache: 'Theme retrieved from cache',
+                cacheReadError: 'Error reading from cache',
+                themeSavedToCache: 'Theme saved to cache',
+                cacheSaveError: 'Error saving to cache',
+                storageApiUnavailable: 'Chrome storage API unavailable',
+                themeLoaded: 'Theme loaded from storage',
+                loadError: 'Error loading theme',
+                invalidThemeForSave: 'Invalid theme for saving',
+                themeSaved: 'Theme saved to storage',
+                saveError: 'Error saving theme',
+                cleanupStart: 'Cleaning up StorageManager resources'
+            },
+            sync: {
+                created: 'SyncManager created',
+                storageApiUnavailable: 'Chrome storage onChanged API unavailable',
+                callbackNotSet: 'Callback not set',
+                themeChanged: 'Theme changed from storage',
+                callbackError: 'Error in theme change callback',
+                listenerSetupError: 'Error setting up theme listener',
+                listenerSet: 'Theme change listener set',
+                listenerRemoved: 'Theme change listener removed',
+                removeListenerError: 'Error removing listener',
+                cleanupStart: 'Cleaning up SyncManager resources',
+                destroyed: 'SyncManager destroyed',
+                destroyError: 'Error destroying SyncManager'
+            }
         }
     },
 

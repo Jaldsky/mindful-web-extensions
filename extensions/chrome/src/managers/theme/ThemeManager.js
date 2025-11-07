@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 const StorageManager = require('./StorageManager.js');
 const ApplicationManager = require('./ApplicationManager.js');
 const SyncManager = require('./SyncManager.js');
@@ -17,14 +18,7 @@ class ThemeManager extends BaseManager {
      * @readonly
      * @static
      */
-    static DEFAULT_THEME = 'light';
-
-    /**
-     * Доступные темы
-     * @readonly
-     * @static
-     */
-    static THEMES = ApplicationManager.THEMES;
+    static DEFAULT_THEME = CONFIG.THEME.DEFAULT;
 
     /**
      * Создает экземпляр ThemeManager.
@@ -55,7 +49,7 @@ class ThemeManager extends BaseManager {
         /** @type {boolean} */
         this.isInitialized = false;
 
-        this._log('ThemeManager создан', {
+        this._log({ key: 'logs.theme.themeManager.created' }, {
             enableCache: this.storageManager.enableCache,
             hasCallback: !!options.onThemeChange
         });
@@ -71,20 +65,20 @@ class ThemeManager extends BaseManager {
     async loadAndApplyTheme() {
         return await this._executeWithTimingAsync('loadAndApplyTheme', async () => {
             try {
-                this._log('Загрузка и применение темы');
+                this._log({ key: 'logs.theme.themeManager.loadingAndApplying' });
 
                 // Сначала применяем из кеша для мгновенного эффекта
                 const cachedTheme = this.storageManager.getThemeFromCache();
                 if (cachedTheme && this.applicationManager.isValidTheme(cachedTheme)) {
                     this.applicationManager.applyTheme(cachedTheme);
-                    this._log('Тема применена из кеша', { theme: cachedTheme });
+                    this._log({ key: 'logs.theme.themeManager.appliedFromCache' }, { theme: cachedTheme });
                 }
 
                 // Затем загружаем из chrome.storage (авторитетный источник)
                 const storedTheme = await this.storageManager.loadTheme();
                 const theme = (storedTheme && this.applicationManager.isValidTheme(storedTheme)) 
                     ? storedTheme 
-                    : ThemeManager.DEFAULT_THEME;
+                    : CONFIG.THEME.DEFAULT;
 
                 // Применяем и сохраняем в кеш
                 this.applicationManager.applyTheme(theme);
@@ -97,13 +91,13 @@ class ThemeManager extends BaseManager {
                     lastLoadTime: Date.now()
                 });
 
-                this._log('Тема загружена и применена', { theme });
+                this._log({ key: 'logs.theme.themeManager.loadedAndApplied' }, { theme });
                 return theme;
             } catch (error) {
-                this._logError('Ошибка загрузки темы', error);
+                this._logError({ key: 'logs.theme.themeManager.loadError' }, error);
                 
                 // Fallback: пытаемся применить из кеша или default
-                const fallbackTheme = this.storageManager.getThemeFromCache() || ThemeManager.DEFAULT_THEME;
+                const fallbackTheme = this.storageManager.getThemeFromCache() || CONFIG.THEME.DEFAULT;
                 this.applicationManager.applyTheme(fallbackTheme);
                 return fallbackTheme;
             }
@@ -120,7 +114,7 @@ class ThemeManager extends BaseManager {
         return this._executeWithTiming('applyTheme', () => {
             try {
                 if (!this.applicationManager.isValidTheme(theme)) {
-                    this._logError('Невалидная тема', { theme });
+                    this._logError({ key: 'logs.theme.themeManager.invalidTheme' }, { theme });
                     return false;
                 }
 
@@ -132,7 +126,7 @@ class ThemeManager extends BaseManager {
 
                 return applied;
             } catch (error) {
-                this._logError('Ошибка применения темы', error);
+                this._logError({ key: 'logs.theme.themeManager.applyError' }, error);
                 return false;
             }
         });
@@ -149,7 +143,7 @@ class ThemeManager extends BaseManager {
         return await this._executeWithTimingAsync('saveTheme', async () => {
             try {
                 if (!this.applicationManager.isValidTheme(theme)) {
-                    this._logError('Невалидная тема для сохранения', { theme });
+                    this._logError({ key: 'logs.theme.themeManager.invalidThemeForSave' }, { theme });
                     return false;
                 }
 
@@ -160,7 +154,7 @@ class ThemeManager extends BaseManager {
 
                 return saved;
             } catch (error) {
-                this._logError('Ошибка сохранения темы', error);
+                this._logError({ key: 'logs.theme.themeManager.saveError' }, error);
                 return false;
             }
         });
@@ -193,7 +187,7 @@ class ThemeManager extends BaseManager {
                         try {
                             callback(newTheme);
                         } catch (error) {
-                            this._logError('Ошибка в пользовательском callback', error);
+                            this._logError({ key: 'logs.theme.themeManager.userCallbackError' }, error);
                         }
                     }
                 }
@@ -201,7 +195,7 @@ class ThemeManager extends BaseManager {
 
             return this.syncManager.startListening(onThemeChange);
         } catch (error) {
-            this._logError('Ошибка установки слушателя', error);
+            this._logError({ key: 'logs.theme.themeManager.listenerSetupError' }, error);
             return false;
         }
     }
@@ -262,7 +256,7 @@ class ThemeManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов ThemeManager');
+        this._log({ key: 'logs.theme.themeManager.cleanupStart' });
         
         try {
             // Уничтожаем подменеджеры
@@ -282,9 +276,9 @@ class ThemeManager extends BaseManager {
             }
 
             this.isInitialized = false;
-            this._log('ThemeManager уничтожен');
+            this._log({ key: 'logs.theme.themeManager.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении ThemeManager', error);
+            this._logError({ key: 'logs.theme.themeManager.destroyError' }, error);
         }
 
         super.destroy();
