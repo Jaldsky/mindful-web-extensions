@@ -382,6 +382,67 @@ const RU = {
             domManagerInitFailed: 'Ошибка инициализации DOM Manager: {message}',
             storageManagerInitFailed: 'Ошибка инициализации Storage Manager: {message}'
         },
+        ui: {
+            domainExceptions: {
+                localeTextError: 'Ошибка получения текста локали для ключа: {key}',
+                domainInputErrorDisplayError: 'Ошибка отображения ошибки ввода домена',
+                domainAdded: 'Домен добавлен в исключения',
+                domainRemoved: 'Домен удален из исключений',
+                domainExceptionsListNotFound: 'Список исключений доменов не найден в DOM'
+            },
+            activity: {
+                activityDataUpdated: 'Данные активности обновлены',
+                loadActivityStatsError: 'Ошибка загрузки статистики активности',
+                setActivityRangeError: 'Ошибка установки диапазона активности',
+                activityAutoRefreshStarted: 'Автообновление активности запущено (каждые {interval}мс)',
+                startActivityAutoRefreshError: 'Ошибка запуска автообновления активности',
+                activityAutoRefreshStopped: 'Автообновление активности остановлено',
+                stopActivityAutoRefreshError: 'Ошибка остановки автообновления активности',
+                updateActivityChartError: 'Ошибка обновления графика активности'
+            },
+            settings: {
+                buttonNotFound: 'Кнопка {buttonKey} не найдена для отображения состояния',
+                saveSettingsStart: 'Начало операции сохранения настроек',
+                saveButtonStateUpdateFailed: 'Предупреждение: не удалось обновить состояние кнопки сохранения',
+                backendUrlGetFailed: 'Не удалось получить значение URL из DOM',
+                validationFailed: 'Валидация не прошла',
+                validationSuccess: 'Валидация URL успешна',
+                backgroundScriptNotNotified: 'Background script не был уведомлен (продолжаем работу)',
+                domainExceptionsNotNotified: 'Background script не получил обновление исключений доменов (продолжаем работу)',
+                settingsSaved: 'Настройки успешно сохранены',
+                saveSettingsError: 'Ошибка сохранения настроек ({totalTime}мс)',
+                resetSettingsStart: 'Начало операции сброса настроек',
+                resetButtonStateUpdateFailed: 'Предупреждение: не удалось обновить состояние кнопки сброса',
+                uiUpdateAfterResetFailed: 'Не удалось обновить UI после сброса настроек',
+                settingsReset: 'Настройки сброшены к значениям по умолчанию',
+                resetSettingsError: 'Ошибка сброса настроек ({totalTime}мс)',
+                verificationFailed: 'Верификация сохранения не удалась',
+                domainExceptionsSaveFailed: 'Не удалось сохранить список исключений доменов',
+                domainExceptionsResetFailed: 'Не удалось сбросить список исключений доменов'
+            },
+            eventHandlers: {
+                setupEventHandlersStart: 'Настройка обработчиков событий',
+                settingsFormNotFound: 'Предупреждение: форма настроек не найдена, обработчик submit не установлен',
+                resetBtnNotFound: 'Предупреждение: кнопка сброса не найдена, обработчик не установлен',
+                saveBtnNotFound: 'Предупреждение: кнопка сохранения не найдена',
+                runDiagnosticsBtnNotFound: 'Предупреждение: кнопка диагностики не найдена, обработчик не установлен',
+                toggleDeveloperToolsBtnNotFound: 'Предупреждение: кнопка developer tools не найдена, обработчик не установлен',
+                eventHandlersSetup: 'Обработчики событий настроены'
+            },
+            localeDisplay: {
+                toggleLanguageError: 'Ошибка переключения языка',
+                localeChanged: 'Локаль изменена',
+                localeChangeError: 'Ошибка при изменении локали'
+            },
+            themeDisplay: {
+                themeManagerSet: 'ThemeManager установлен',
+                themeManagerNotSet: 'ThemeManager не установлен',
+                toggleThemeStart: 'Переключение темы',
+                themeToggled: 'Тема переключена',
+                toggleThemeError: 'Ошибка переключения темы',
+                updateThemeDisplayError: 'Ошибка обновления отображения темы'
+            }
+        },
         status: {
             initSuccess: 'StatusManager инициализирован',
             displayed: 'Статус отображен и верифицирован',
