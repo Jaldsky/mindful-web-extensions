@@ -242,4 +242,11 @@ class BackendManager extends BaseManager {
     }
 }
 
-module.exports = BackendManager;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = BackendManager;
+    module.exports.default = BackendManager;
+}
+
+if (typeof window !== 'undefined') {
+    window.BackendManager = BackendManager;
+}

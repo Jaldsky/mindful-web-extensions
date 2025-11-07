@@ -388,4 +388,11 @@ class TabTrackingManager extends BaseManager {
     }
 }
 
-module.exports = TabTrackingManager;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = TabTrackingManager;
+    module.exports.default = TabTrackingManager;
+}
+
+if (typeof window !== 'undefined') {
+    window.TabTrackingManager = TabTrackingManager;
+}

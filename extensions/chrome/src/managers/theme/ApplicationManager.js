@@ -127,3 +127,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = ApplicationManager;
     module.exports.default = ApplicationManager;
 }
+
+if (typeof window !== 'undefined') {
+    window.ApplicationManager = ApplicationManager;
+}

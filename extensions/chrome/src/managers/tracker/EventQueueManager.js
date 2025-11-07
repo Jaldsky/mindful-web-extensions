@@ -579,4 +579,11 @@ class EventQueueManager extends BaseManager {
     }
 }
 
-module.exports = EventQueueManager;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = EventQueueManager;
+    module.exports.default = EventQueueManager;
+}
+
+if (typeof window !== 'undefined') {
+    window.EventQueueManager = EventQueueManager;
+}
