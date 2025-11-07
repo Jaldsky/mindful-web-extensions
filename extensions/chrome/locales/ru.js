@@ -520,6 +520,36 @@ const RU = {
             destroyStart: 'Очистка ресурсов StorageManager',
             destroyed: 'StorageManager уничтожен',
             destroyError: 'Ошибка при уничтожении StorageManager'
+        },
+        validation: {
+            initialized: 'ValidationManager инициализирован',
+            urlParsingError: 'Ошибка парсинга URL',
+            urlNormalized: 'URL нормализован',
+            urlValid: 'URL валиден ({time}мс)',
+            unexpectedValidationError: 'Неожиданная ошибка валидации',
+            historyEntryAdded: 'Запись добавлена в историю валидации',
+            addHistoryError: 'Ошибка добавления в историю валидации',
+            getHistoryError: 'Ошибка получения истории валидации',
+            historyCleared: 'История валидации очищена',
+            clearHistoryError: 'Ошибка очистки истории валидации',
+            internalStateCleared: 'Внутреннее состояние валидации очищено',
+            getStatisticsError: 'Ошибка получения статистики валидации',
+            stateValidationError: 'Ошибка валидации состояния',
+            destroyStart: 'Очистка ресурсов ValidationManager',
+            destroyed: 'ValidationManager уничтожен',
+            destroyError: 'Ошибка при уничтожении ValidationManager',
+            stateIssue: {
+                strictProtocolMustBeBoolean: 'strictProtocol должен быть boolean',
+                enableHistoryMustBeBoolean: 'enableHistory должен быть boolean',
+                maxHistorySizeMustBePositive: 'maxHistorySize должен быть положительным числом',
+                historyMustBeArray: 'history должен быть массивом',
+                performanceMetricsMustBeMap: 'performanceMetrics должен быть Map',
+                validationStatsMustBeMap: 'validationStats должен быть Map',
+                lastValidationTimeMustBeNumberOrNull: 'lastValidationTime должен быть положительным числом или null',
+                lastValidationResultMustBeObjectOrNull: 'lastValidationResult должен быть объектом или null',
+                lastValidationResultIsValidMustBeBoolean: 'lastValidationResult.isValid должен быть boolean',
+                validationExecutionError: 'Ошибка при выполнении валидации'
+            }
         }
     },
 
