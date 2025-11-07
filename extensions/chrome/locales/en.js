@@ -391,7 +391,6 @@ const EN = {
             displayError: 'Error displaying status',
             hidden: 'Status hidden and verified ({time}ms)',
             hideError: 'Error hiding status ({time}ms)',
-            clearHistoryError: 'Error clearing history',
             getStatisticsError: 'Error getting statistics',
             invalidElementType: 'statusElement is not an HTMLElement',
             invalidDuration: 'defaultDuration cannot be negative',
@@ -405,7 +404,12 @@ const EN = {
             validationExecutionError: 'Error during validation execution',
             destroyStart: 'Cleaning up StatusManager resources',
             destroyed: 'StatusManager destroyed',
-            destroyError: 'Error destroying StatusManager'
+            destroyError: 'Error destroying StatusManager',
+            historyEntryAdded: 'History entry added',
+            addHistoryError: 'Error adding to history',
+            getHistoryError: 'Error getting history',
+            historyCleared: 'History cleared: {count} entries',
+            clearHistoryError: 'Error clearing history'
         }
     },
 
