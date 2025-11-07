@@ -14,6 +14,7 @@
 
 /**
  * Менеджер для управления очередью статусных сообщений.
+ * Отвечает за добавление, обработку и очистку очереди статусных уведомлений.
  * 
  * @class StatusQueueManager
  */
@@ -27,8 +28,9 @@ class StatusQueueManager {
      * @param {Function} [options.log] - Функция логирования
      * @param {Function} [options.logError] - Функция логирования ошибок
      * @param {Function} [options.onUpdate] - Callback при обновлении очереди
+     * @param {Function} [options.t] - Функция локализации
      */
-    constructor({ enableQueue = false, maxQueueSize = 5, log = () => {}, logError = () => {}, onUpdate = null } = {}) {
+    constructor({ enableQueue = false, maxQueueSize = 5, log = () => {}, logError = () => {}, onUpdate = null, t = (key, params) => key } = {}) {
         /** @type {boolean} */
         this.enableQueue = enableQueue === true;
         
@@ -49,6 +51,9 @@ class StatusQueueManager {
         
         /** @type {Function|null} */
         this.onUpdate = onUpdate;
+        
+        /** @type {Function} */
+        this.t = t;
     }
 
     /**
@@ -63,17 +68,17 @@ class StatusQueueManager {
         if (!this.enableQueue) return false;
         try {
             if (this.items.length >= this.maxQueueSize) {
-                this._log('Очередь переполнена, пропуск сообщения');
+                this._log({ key: 'logs.status.queueFull' });
                 return false;
             }
             this.items.push({ message, type, duration, timestamp: Date.now() });
-            this._log('Сообщение добавлено в очередь', { queueLength: this.items.length });
+            this._log({ key: 'logs.status.queueEntryAdded' }, { queueLength: this.items.length });
             if (this.onUpdate) {
                 this.onUpdate(this.size());
             }
             return true;
         } catch (error) {
-            this._logError('Ошибка добавления в очередь', error);
+            this._logError({ key: 'logs.status.addQueueError' }, error);
             return false;
         }
     }
@@ -86,15 +91,14 @@ class StatusQueueManager {
      */
     async process(processItemFn) {
         try {
-            const items = this.items;
-            if (this.isProcessing || !Array.isArray(items) || items.length === 0) return;
+            if (this.isProcessing || this.items.length === 0) return;
         } catch (_e) {
             return;
         }
         this.isProcessing = true;
         let startSize = 0;
         try {
-            startSize = Array.isArray(this.items) ? this.items.length : 0;
+            startSize = this.items.length;
         } catch (_e) {
             startSize = 0;
         }
@@ -104,7 +108,7 @@ class StatusQueueManager {
             while (true) {
                 let hasItems = false;
                 try {
-                    hasItems = Array.isArray(this.items) && this.items.length > 0;
+                    hasItems = this.items.length > 0;
                 } catch (_e) {
                     hasItems = false;
                 }
@@ -125,9 +129,9 @@ class StatusQueueManager {
                     await new Promise(resolve => setTimeout(resolve, item.duration));
                 }
             }
-            this._log('Обработка очереди завершена', { startSize, processed, failed });
+            this._log({ key: 'logs.status.queueProcessCompleted' }, { startSize, processed, failed });
         } catch (error) {
-            this._logError('Критическая ошибка обработки очереди', error);
+            this._logError({ key: 'logs.status.queueProcessError' }, error);
         } finally {
             this.isProcessing = false;
         }
@@ -142,13 +146,13 @@ class StatusQueueManager {
         try {
             const count = this.items.length;
             this.items = [];
-            this._log(`Очередь очищена: ${count} сообщений`);
+            this._log({ key: 'logs.status.queueCleared', params: { count } });
             if (this.onUpdate) {
                 this.onUpdate(0);
             }
             return count;
         } catch (error) {
-            this._logError('Ошибка очистки очереди', error);
+            this._logError({ key: 'logs.status.clearQueueError' }, error);
             return 0;
         }
     }
@@ -160,8 +164,7 @@ class StatusQueueManager {
      */
     size() {
         try {
-            const items = this.items;
-            return Array.isArray(items) ? items.length : 0;
+            return this.items.length;
         } catch (_e) {
             return 0;
         }
