@@ -3,19 +3,6 @@ const CONFIG = require('../../../config.js');
 const { normalizeDomainList } = require('../../utils/domainUtils.js');
 
 /**
- * @typedef {Object} OptionsStorageData
- * @property {string} mindful_backend_url - URL бэкенда
- */
-
-/**
- * @typedef {Object} StorageOperationResult
- * @property {boolean} success - Успешность операции
- * @property {*} [data] - Данные результата
- * @property {string} [error] - Сообщение об ошибке
- * @property {number} [duration] - Длительность операции в мс
- */
-
-/**
  * Менеджер для работы с хранилищем настроек (chrome.storage).
  * Отвечает за сохранение, загрузку и управление настройками расширения.
  * Включает измерение производительности и надёжную обработку ошибок.
@@ -68,11 +55,11 @@ class StorageManager extends BaseManager {
      */
     _validateStorageAvailability() {
         if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
-            const error = new Error('chrome.storage API недоступен');
-            this._logError('Критическая ошибка инициализации', error);
+            const error = new Error(this.t('logs.storage.apiUnavailable'));
+            this._logError({ key: 'logs.storage.criticalInitError' }, error);
             throw error;
         }
-        this._log('chrome.storage API доступен');
+        this._log({ key: 'logs.storage.apiAvailable' });
     }
 
     /**
@@ -85,7 +72,7 @@ class StorageManager extends BaseManager {
      */
     _validateLoadedValue(value, defaultValue) {
         if (!value || typeof value !== 'string' || value.trim() === '') {
-            this._log('Некорректное значение, используется значение по умолчанию');
+            this._log({ key: 'logs.storage.invalidValueUsingDefault' });
             return defaultValue;
         }
         return value;
@@ -101,7 +88,7 @@ class StorageManager extends BaseManager {
      */
     async loadBackendUrl() {
         return this._executeWithTimingAsync('loadBackendUrl', async () => {
-            this._log('Загрузка URL бэкенда из хранилища');
+            this._log({ key: 'logs.storage.loadingBackendUrl' });
             
             const result = await chrome.storage.local.get([
                 StorageManager.STORAGE_KEYS.BACKEND_URL
@@ -113,7 +100,7 @@ class StorageManager extends BaseManager {
                 StorageManager.DEFAULT_VALUES.BACKEND_URL
             );
             
-            this._log('URL бэкенда загружен', { 
+            this._log({ key: 'logs.storage.backendUrlLoaded' }, { 
                 backendUrl,
                 wasDefault: !loadedUrl
             });
@@ -124,7 +111,7 @@ class StorageManager extends BaseManager {
 
     async loadDomainExceptions() {
         return this._executeWithTimingAsync('loadDomainExceptions', async () => {
-            this._log('Загрузка списка исключений доменов');
+            this._log({ key: 'logs.storage.loadingDomainExceptions' });
 
             try {
                 const result = await chrome.storage.local.get([
@@ -134,13 +121,13 @@ class StorageManager extends BaseManager {
                 const stored = result[StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS];
                 const domains = normalizeDomainList(Array.isArray(stored) ? stored : []);
 
-                this._log('Список исключений доменов загружен', {
+                this._log({ key: 'logs.storage.domainExceptionsLoaded' }, {
                     count: domains.length
                 });
 
                 return domains;
             } catch (error) {
-                this._logError('Ошибка загрузки исключений доменов', error);
+                this._logError({ key: 'logs.storage.loadDomainExceptionsError' }, error);
                 return [];
             }
         });
@@ -158,17 +145,16 @@ class StorageManager extends BaseManager {
      */
     async saveBackendUrl(backendUrl) {
         if (typeof backendUrl !== 'string' || backendUrl.trim() === '') {
-            throw new TypeError('backendUrl должен быть непустой строкой');
+            throw new TypeError(this.t('logs.storage.backendUrlMustBeString'));
         }
 
         return this._executeWithTimingAsync('saveBackendUrl', async () => {
-            this._log('Сохранение URL бэкенда в хранилище', { backendUrl });
+            this._log({ key: 'logs.storage.savingBackendUrl' }, { backendUrl });
             
             await chrome.storage.local.set({
                 [StorageManager.STORAGE_KEYS.BACKEND_URL]: backendUrl
             });
-            
-            // Верификация сохранения
+
             const verification = await chrome.storage.local.get([
                 StorageManager.STORAGE_KEYS.BACKEND_URL
             ]);
@@ -176,9 +162,9 @@ class StorageManager extends BaseManager {
             const saved = verification[StorageManager.STORAGE_KEYS.BACKEND_URL] === backendUrl;
             
             if (saved) {
-                this._log('URL бэкенда успешно сохранен и верифицирован');
+                this._log({ key: 'logs.storage.backendUrlSavedAndVerified' });
             } else {
-                throw new Error('Верификация сохранения не удалась');
+                throw new Error(this.t('logs.storage.verificationFailed'));
             }
             
             return true;
@@ -187,13 +173,13 @@ class StorageManager extends BaseManager {
 
     async saveDomainExceptions(domains) {
         if (!Array.isArray(domains)) {
-            throw new TypeError('domains должен быть массивом строк');
+            throw new TypeError(this.t('logs.storage.domainsMustBeArray'));
         }
 
         const normalized = normalizeDomainList(domains);
 
         return this._executeWithTimingAsync('saveDomainExceptions', async () => {
-            this._log('Сохранение исключений доменов в хранилище', { count: normalized.length });
+            this._log({ key: 'logs.storage.savingDomainExceptions' }, { count: normalized.length });
 
             await chrome.storage.local.set({
                 [StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS]: normalized
@@ -208,10 +194,10 @@ class StorageManager extends BaseManager {
                 : [];
 
             if (saved.length !== normalized.length || saved.some((domain, index) => domain !== normalized[index])) {
-                throw new Error('Верификация сохранения не удалась');
+                throw new Error(this.t('logs.storage.verificationFailed'));
             }
 
-            this._log('Исключения доменов успешно сохранены');
+            this._log({ key: 'logs.storage.domainExceptionsSaved' });
 
             return true;
         });
@@ -227,13 +213,13 @@ class StorageManager extends BaseManager {
      */
     async resetToDefault() {
         return this._executeWithTimingAsync('resetToDefault', async () => {
-            this._log('Сброс настроек к значениям по умолчанию');
+            this._log({ key: 'logs.storage.resettingToDefault' });
             
             const defaultUrl = StorageManager.DEFAULT_VALUES.BACKEND_URL;
             await this.saveBackendUrl(defaultUrl);
             await this.saveDomainExceptions([...StorageManager.DEFAULT_VALUES.DOMAIN_EXCEPTIONS]);
             
-            this._log('Настройки сброшены к значениям по умолчанию');
+            this._log({ key: 'logs.storage.resetToDefault' });
             
             return defaultUrl;
         });
@@ -249,15 +235,15 @@ class StorageManager extends BaseManager {
      */
     async notifyBackgroundScript(url) {
         if (typeof url !== 'string' || url.trim() === '') {
-            throw new TypeError('url должен быть непустой строкой');
+            throw new TypeError(this.t('logs.storage.urlMustBeString'));
         }
 
         return this._executeWithTimingAsync('notifyBackgroundScript', async () => {
-            this._log('Отправка уведомления background script', { url });
+            this._log({ key: 'logs.storage.sendingNotification' }, { url });
             
             try {
                 const timeoutPromise = new Promise((_resolve, reject) => {
-                    setTimeout(() => reject(new Error('Таймаут уведомления')), 
+                    setTimeout(() => reject(new Error(this.t('logs.storage.notificationTimeout'))), 
                         StorageManager.NOTIFICATION_TIMEOUT);
                 });
                 
@@ -265,16 +251,14 @@ class StorageManager extends BaseManager {
                     action: 'updateBackendUrl',
                     url: url
                 });
-                
-                // Race между отправкой и таймаутом
+
                 await Promise.race([sendPromise, timeoutPromise]);
                 
-                this._log('Уведомление успешно отправлено background script');
+                this._log({ key: 'logs.storage.notificationSent' });
                 return true;
                 
             } catch (error) {
-                // Если background script не отвечает, это не критичная ошибка
-                this._log('Background script не ответил (это нормально если он перезагружается)', error);
+                this._log({ key: 'logs.storage.backgroundScriptNoResponse' }, error);
                 return false;
             }
         });
@@ -282,19 +266,19 @@ class StorageManager extends BaseManager {
 
     async notifyDomainExceptionsUpdate(domains) {
         if (!Array.isArray(domains)) {
-            throw new TypeError('domains должен быть массивом строк');
+            throw new TypeError(this.t('logs.storage.domainsMustBeArray'));
         }
 
         const normalized = normalizeDomainList(domains);
 
         return this._executeWithTimingAsync('notifyDomainExceptionsUpdate', async () => {
-            this._log('Отправка исключений доменов background script', {
+            this._log({ key: 'logs.storage.sendingDomainExceptions' }, {
                 count: normalized.length
             });
 
             try {
                 const timeoutPromise = new Promise((_resolve, reject) => {
-                    setTimeout(() => reject(new Error('Таймаут уведомления исключений доменов')),
+                    setTimeout(() => reject(new Error(this.t('logs.storage.domainExceptionsNotificationTimeout'))),
                         StorageManager.NOTIFICATION_TIMEOUT);
                 });
 
@@ -305,10 +289,10 @@ class StorageManager extends BaseManager {
 
                 await Promise.race([sendPromise, timeoutPromise]);
 
-                this._log('Исключения доменов отправлены background script');
+                this._log({ key: 'logs.storage.domainExceptionsSent' });
                 return true;
             } catch (error) {
-                this._log('Background script не ответил на обновление исключений доменов', error);
+                this._log({ key: 'logs.storage.domainExceptionsNoResponse' }, error);
                 return false;
             }
         });
@@ -323,22 +307,18 @@ class StorageManager extends BaseManager {
         return StorageManager.DEFAULT_VALUES.BACKEND_URL;
     }
 
-    getDefaultDomainExceptions() {
-        return [...StorageManager.DEFAULT_VALUES.DOMAIN_EXCEPTIONS];
-    }
-
     /**
      * Очищает ресурсы при уничтожении менеджера.
      * 
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов StorageManager');
+        this._log({ key: 'logs.storage.destroyStart' });
         
         try {
-            this._log('StorageManager уничтожен');
+            this._log({ key: 'logs.storage.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении StorageManager', error);
+            this._logError({ key: 'logs.storage.destroyError' }, error);
         }
         
         super.destroy();
