@@ -520,6 +520,36 @@ const EN = {
             destroyStart: 'Cleaning up StorageManager resources',
             destroyed: 'StorageManager destroyed',
             destroyError: 'Error destroying StorageManager'
+        },
+        validation: {
+            initialized: 'ValidationManager initialized',
+            urlParsingError: 'URL parsing error',
+            urlNormalized: 'URL normalized',
+            urlValid: 'URL valid ({time}ms)',
+            unexpectedValidationError: 'Unexpected validation error',
+            historyEntryAdded: 'History entry added',
+            addHistoryError: 'Error adding to validation history',
+            getHistoryError: 'Error getting validation history',
+            historyCleared: 'Validation history cleared',
+            clearHistoryError: 'Error clearing validation history',
+            internalStateCleared: 'Internal validation state cleared',
+            getStatisticsError: 'Error getting validation statistics',
+            stateValidationError: 'Error validating state',
+            destroyStart: 'Cleaning up ValidationManager resources',
+            destroyed: 'ValidationManager destroyed',
+            destroyError: 'Error destroying ValidationManager',
+            stateIssue: {
+                strictProtocolMustBeBoolean: 'strictProtocol must be boolean',
+                enableHistoryMustBeBoolean: 'enableHistory must be boolean',
+                maxHistorySizeMustBePositive: 'maxHistorySize must be a positive number',
+                historyMustBeArray: 'history must be an array',
+                performanceMetricsMustBeMap: 'performanceMetrics must be Map',
+                validationStatsMustBeMap: 'validationStats must be Map',
+                lastValidationTimeMustBeNumberOrNull: 'lastValidationTime must be a positive number or null',
+                lastValidationResultMustBeObjectOrNull: 'lastValidationResult must be an object or null',
+                lastValidationResultIsValidMustBeBoolean: 'lastValidationResult.isValid must be boolean',
+                validationExecutionError: 'Error during validation execution'
+            }
         }
     },
 

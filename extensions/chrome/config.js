@@ -285,7 +285,9 @@ const CONFIG = {
      */
     VALIDATION: {
         URL_PATTERN: /^https?:\/\/.+/,
-        MAX_HISTORY_SIZE: 50
+        MAX_HISTORY_SIZE: 50,
+        MAX_URL_LENGTH_FOR_HISTORY: 100, // Максимальная длина URL для истории
+        MAX_URL_LENGTH_FOR_LOGGING: 50 // Максимальная длина URL для логирования
     },
 
     /**

@@ -92,7 +92,7 @@ class ValidationManager extends BaseManager {
             lastValidationResult: null
         });
         
-        this._log('ValidationManager инициализирован', {
+        this._log({ key: 'logs.validation.initialized' }, {
             strictProtocol: this.strictProtocol,
             enableHistory: this.enableHistory,
             maxHistorySize: this.maxHistorySize
@@ -111,11 +111,9 @@ class ValidationManager extends BaseManager {
             let errorType = null;
             
             try {
-                // Увеличиваем счетчик валидаций
                 this.validationStats.set('totalValidations', 
                     (this.validationStats.get('totalValidations') || 0) + 1);
-                
-                // Проверка на пустую строку
+
                 if (!url || typeof url !== 'string') {
                     errorType = 'emptyUrlErrors';
                     return this._createValidationResult(
@@ -138,12 +136,11 @@ class ValidationManager extends BaseManager {
                     );
                 }
 
-                // Попытка распарсить URL
                 let parsedUrl;
                 try {
                     parsedUrl = new URL(trimmedUrl);
                 } catch (error) {
-                    this._log('Ошибка парсинга URL', { error: error.message, url: trimmedUrl.substring(0, 50) });
+                    this._log({ key: 'logs.validation.urlParsingError' }, { error: error.message, url: trimmedUrl.substring(0, CONFIG.VALIDATION.MAX_URL_LENGTH_FOR_LOGGING) });
                     errorType = 'invalidUrlErrors';
                     return this._createValidationResult(
                         false, 
@@ -153,7 +150,6 @@ class ValidationManager extends BaseManager {
                     );
                 }
 
-                // Проверка протокола
                 if (this.strictProtocol) {
                     if (!ValidationManager.ALLOWED_PROTOCOLS.includes(parsedUrl.protocol)) {
                         errorType = 'invalidProtocolErrors';
@@ -166,7 +162,6 @@ class ValidationManager extends BaseManager {
                     }
                 }
 
-                // Проверка наличия хоста
                 if (!parsedUrl.host || parsedUrl.host === '') {
                     errorType = 'invalidFormatErrors';
                     return this._createValidationResult(
@@ -177,9 +172,8 @@ class ValidationManager extends BaseManager {
                     );
                 }
 
-                // Верификация результата
                 if (parsedUrl.href !== trimmedUrl) {
-                    this._log('URL нормализован', {
+                    this._log({ key: 'logs.validation.urlNormalized' }, {
                         original: trimmedUrl,
                         normalized: parsedUrl.href
                     });
@@ -188,15 +182,16 @@ class ValidationManager extends BaseManager {
                 const result = this._createValidationResult(true, null, trimmedUrl, startTime);
                 
                 const validationTime = Math.round(performance.now() - startTime);
-                this._log(`URL валиден (${validationTime}мс)`, { 
-                    url: trimmedUrl.substring(0, 50) + (trimmedUrl.length > 50 ? '...' : ''),
+                const maxUrlLength = CONFIG.VALIDATION.MAX_URL_LENGTH_FOR_LOGGING;
+                this._log({ key: 'logs.validation.urlValid', params: { time: validationTime } }, { 
+                    url: trimmedUrl.substring(0, maxUrlLength) + (trimmedUrl.length > maxUrlLength ? '...' : ''),
                     protocol: parsedUrl.protocol,
                     host: parsedUrl.host
                 });
                 
                 return result;
             } catch (error) {
-                this._logError('Неожиданная ошибка валидации', error);
+                this._logError({ key: 'logs.validation.unexpectedValidationError' }, error);
                 errorType = 'invalidUrlErrors';
                 return this._createValidationResult(
                     false, 
@@ -205,7 +200,6 @@ class ValidationManager extends BaseManager {
                     startTime
                 );
             } finally {
-                // Обновляем статистику ошибок
                 if (errorType) {
                     this.validationStats.set(errorType, 
                         (this.validationStats.get(errorType) || 0) + 1);
@@ -234,8 +228,7 @@ class ValidationManager extends BaseManager {
             error: error || undefined,
             value: value !== undefined ? value : undefined
         };
-        
-        // Обновляем статистику
+
         if (isValid) {
             this.validationStats.set('successfulValidations', 
                 (this.validationStats.get('successfulValidations') || 0) + 1);
@@ -243,11 +236,11 @@ class ValidationManager extends BaseManager {
             this.validationStats.set('failedValidations', 
                 (this.validationStats.get('failedValidations') || 0) + 1);
         }
-        
-        // Добавляем в историю если включено
+
         if (this.enableHistory && startTime !== undefined) {
             const duration = Math.round(performance.now() - startTime);
-            this._addToHistory(value || '', isValid, error, duration);
+            const urlForHistory = typeof value === 'string' ? value : '';
+            this._addToHistory(urlForHistory, isValid, error, duration);
         }
         
         this.updateState({
@@ -270,7 +263,7 @@ class ValidationManager extends BaseManager {
     _addToHistory(url, isValid, error, duration) {
         try {
             const entry = {
-                url: url.substring(0, 100), // Ограничиваем длину
+                url: url.substring(0, CONFIG.VALIDATION.MAX_URL_LENGTH_FOR_HISTORY),
                 isValid,
                 error: error || undefined,
                 timestamp: Date.now(),
@@ -278,18 +271,17 @@ class ValidationManager extends BaseManager {
             };
             
             this.history.unshift(entry);
-            
-            // Ограничиваем размер истории
+
             if (this.history.length > this.maxHistorySize) {
                 this.history = this.history.slice(0, this.maxHistorySize);
             }
             
-            this._log('Запись добавлена в историю валидации', {
+            this._log({ key: 'logs.validation.historyEntryAdded' }, {
                 isValid,
                 historySize: this.history.length
             });
         } catch (error) {
-            this._logError('Ошибка добавления в историю валидации', error);
+            this._logError({ key: 'logs.validation.addHistoryError' }, error);
         }
     }
 
@@ -332,7 +324,7 @@ class ValidationManager extends BaseManager {
             
             return result;
         } catch (error) {
-            this._logError('Ошибка получения истории валидации', error);
+            this._logError({ key: 'logs.validation.getHistoryError' }, error);
             return [];
         }
     }
@@ -346,10 +338,10 @@ class ValidationManager extends BaseManager {
         try {
             const count = this.history.length;
             this.history = [];
-            this._log('История валидации очищена', { deletedCount: count });
+            this._log({ key: 'logs.validation.historyCleared' }, { deletedCount: count });
             return count;
         } catch (error) {
-            this._logError('Ошибка очистки истории валидации', error);
+            this._logError({ key: 'logs.validation.clearHistoryError' }, error);
             return 0;
         }
     }
@@ -365,7 +357,7 @@ class ValidationManager extends BaseManager {
             lastValidationTime: null,
             lastValidationResult: null
         });
-        this._log('Внутреннее состояние валидации очищено');
+        this._log({ key: 'logs.validation.internalStateCleared' });
     }
 
     /**
@@ -376,8 +368,7 @@ class ValidationManager extends BaseManager {
     getValidationStatistics() {
         try {
             const stats = Object.fromEntries(this.validationStats);
-            
-            // Добавляем процентные показатели
+
             const total = stats.totalValidations || 0;
             if (total > 0) {
                 stats.successRate = Math.round((stats.successfulValidations / total) * 100);
@@ -392,7 +383,7 @@ class ValidationManager extends BaseManager {
             
             return stats;
         } catch (error) {
-            this._logError('Ошибка получения статистики валидации', error);
+            this._logError({ key: 'logs.validation.getStatisticsError' }, error);
             return {};
         }
     }
@@ -407,42 +398,42 @@ class ValidationManager extends BaseManager {
 
         try {
             if (typeof this.strictProtocol !== 'boolean') {
-                issues.push('strictProtocol должен быть boolean');
+                issues.push(this.t('logs.validation.stateIssue.strictProtocolMustBeBoolean'));
             }
             
             if (typeof this.enableHistory !== 'boolean') {
-                issues.push('enableHistory должен быть boolean');
+                issues.push(this.t('logs.validation.stateIssue.enableHistoryMustBeBoolean'));
             }
             
             if (typeof this.maxHistorySize !== 'number' || this.maxHistorySize <= 0) {
-                issues.push('maxHistorySize должен быть положительным числом');
+                issues.push(this.t('logs.validation.stateIssue.maxHistorySizeMustBePositive'));
             }
             
             if (!Array.isArray(this.history)) {
-                issues.push('history должен быть массивом');
+                issues.push(this.t('logs.validation.stateIssue.historyMustBeArray'));
             }
             
             if (!(this.performanceMetrics instanceof Map)) {
-                issues.push('performanceMetrics должен быть Map');
+                issues.push(this.t('logs.validation.stateIssue.performanceMetricsMustBeMap'));
             }
             
             if (!(this.validationStats instanceof Map)) {
-                issues.push('validationStats должен быть Map');
+                issues.push(this.t('logs.validation.stateIssue.validationStatsMustBeMap'));
             }
 
             if (this.state.lastValidationTime !== null && 
                 (typeof this.state.lastValidationTime !== 'number' || this.state.lastValidationTime < 0)) {
-                issues.push('lastValidationTime должен быть положительным числом или null');
+                issues.push(this.t('logs.validation.stateIssue.lastValidationTimeMustBeNumberOrNull'));
             }
 
             if (this.state.lastValidationResult !== null && 
                 typeof this.state.lastValidationResult !== 'object') {
-                issues.push('lastValidationResult должен быть объектом или null');
+                issues.push(this.t('logs.validation.stateIssue.lastValidationResultMustBeObjectOrNull'));
             }
 
             if (this.state.lastValidationResult && 
                 typeof this.state.lastValidationResult.isValid !== 'boolean') {
-                issues.push('lastValidationResult.isValid должен быть boolean');
+                issues.push(this.t('logs.validation.stateIssue.lastValidationResultIsValidMustBeBoolean'));
             }
 
             const isValid = issues.length === 0;
@@ -453,10 +444,10 @@ class ValidationManager extends BaseManager {
                 timestamp: new Date().toISOString()
             };
         } catch (error) {
-            this._logError('Ошибка валидации состояния', error);
+            this._logError({ key: 'logs.validation.stateValidationError' }, error);
             return {
                 isValid: false,
-                issues: ['Ошибка при выполнении валидации'],
+                issues: [this.t('logs.validation.stateIssue.validationExecutionError')],
                 error: error.message,
                 timestamp: new Date().toISOString()
             };
@@ -469,23 +460,20 @@ class ValidationManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов ValidationManager');
+        this._log({ key: 'logs.validation.destroyStart' });
         
         try {
-            // Очищаем историю
             this.history = [];
-            
-            // Очищаем статистику
+
             if (this.validationStats) {
                 this.validationStats.clear();
             }
-            
-            // Очищаем внутреннее состояние
+
             this._clearValidationHistory();
             
-            this._log('ValidationManager уничтожен');
+            this._log({ key: 'logs.validation.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении ValidationManager', error);
+            this._logError({ key: 'logs.validation.destroyError' }, error);
         }
         
         super.destroy();
