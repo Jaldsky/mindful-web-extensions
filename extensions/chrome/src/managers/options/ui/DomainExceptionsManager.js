@@ -1,5 +1,5 @@
-const CONFIG = require('../../../config.js');
-const { normalizeDomain, normalizeDomainList } = require('../../utils/domainUtils.js');
+const CONFIG = require('../../../../config.js');
+const { normalizeDomain, normalizeDomainList } = require('../../../utils/domainUtils.js');
 
 /**
  * Менеджер для управления исключениями доменов.

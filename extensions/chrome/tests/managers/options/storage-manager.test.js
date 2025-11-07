@@ -2,7 +2,7 @@
  * Тесты для StorageManager
  */
 
-const StorageManager = require('../../../src/managers/options/StorageManager.js');
+const StorageManager = require('../../../src/managers/options/core/StorageManager.js');
 
 describe('StorageManager', () => {
     let storageManager;

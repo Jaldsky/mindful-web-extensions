@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const DeveloperToolsManager = require('../../../src/managers/options/DeveloperToolsManager.js');
+const DeveloperToolsManager = require('../../../src/managers/options/diagnostics/DeveloperToolsManager.js');
 const { createBaseOptionsManager } = require('./options-test-helpers.js');
 
 describe('DeveloperToolsManager', () => {

@@ -3,7 +3,7 @@
  */
 
 const CONFIG = require('../../../config.js');
-const ValidationManager = require('../../../src/managers/options/ValidationManager.js');
+const ValidationManager = require('../../../src/managers/options/core/ValidationManager.js');
 
 describe('ValidationManager', () => {
     let validationManager;

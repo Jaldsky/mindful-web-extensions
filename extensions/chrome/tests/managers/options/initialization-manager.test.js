@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const InitializationManager = require('../../../src/managers/options/InitializationManager.js');
+const InitializationManager = require('../../../src/managers/options/core/InitializationManager.js');
 const { createBaseOptionsManager } = require('./options-test-helpers.js');
 
 describe('InitializationManager', () => {

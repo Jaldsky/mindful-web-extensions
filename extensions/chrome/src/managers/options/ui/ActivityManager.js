@@ -1,4 +1,4 @@
-const CONFIG = require('../../../config.js');
+const CONFIG = require('../../../../config.js');
 
 /**
  * Менеджер для управления активностью и графиком.

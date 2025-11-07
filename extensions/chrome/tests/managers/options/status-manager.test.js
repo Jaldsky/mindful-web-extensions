@@ -6,7 +6,7 @@
  * Тесты для StatusManager
  */
 
-const StatusManager = require('../../../src/managers/options/StatusManager.js');
+const StatusManager = require('../../../src/managers/options/status/StatusManager.js');
 
 describe('StatusManager', () => {
     let statusManager;

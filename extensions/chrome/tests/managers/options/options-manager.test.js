@@ -35,30 +35,30 @@ const mockDiagnosticsManagerInstance = {};
 const mockNotificationManagerInstance = {};
 const mockLocaleManagerInstance = {};
 
-jest.mock('../../../src/managers/options/DOMManager.js', () => jest.fn(() => mockDomManagerInstance));
-jest.mock('../../../src/managers/options/StorageManager.js', () => jest.fn(() => mockStorageManagerInstance));
-jest.mock('../../../src/managers/options/StatusManager.js', () => jest.fn(() => mockStatusManagerInstance));
-jest.mock('../../../src/managers/options/ValidationManager.js', () => jest.fn(() => mockValidationManagerInstance));
+jest.mock('../../../src/managers/options/core/DOMManager.js', () => jest.fn(() => mockDomManagerInstance));
+jest.mock('../../../src/managers/options/core/StorageManager.js', () => jest.fn(() => mockStorageManagerInstance));
+jest.mock('../../../src/managers/options/status/StatusManager.js', () => jest.fn(() => mockStatusManagerInstance));
+jest.mock('../../../src/managers/options/core/ValidationManager.js', () => jest.fn(() => mockValidationManagerInstance));
 jest.mock('../../../src/managers/app/ServiceWorkerManager.js', () => jest.fn(() => mockServiceWorkerManagerInstance));
 jest.mock('../../../src/managers/app/DiagnosticsManager.js', () => jest.fn(() => mockDiagnosticsManagerInstance));
 jest.mock('../../../src/managers/app/NotificationManager.js', () => jest.fn(() => mockNotificationManagerInstance));
 jest.mock('../../../src/managers/locale/LocaleManager.js', () => jest.fn(() => mockLocaleManagerInstance));
 
-jest.mock('../../../src/managers/options/InitializationManager.js', () => jest.fn(() => mockInitializationManagerInstance));
-jest.mock('../../../src/managers/options/UIManager.js', () => jest.fn(() => mockUIManagerInstance));
-jest.mock('../../../src/managers/options/DiagnosticsWorkflowManager.js', () => jest.fn(() => mockDiagnosticsWorkflowManagerInstance));
-jest.mock('../../../src/managers/options/DeveloperToolsManager.js', () => jest.fn(() => mockDeveloperToolsManagerInstance));
-jest.mock('../../../src/managers/options/LogsManager.js', () => jest.fn(() => mockLogsManagerInstance));
-jest.mock('../../../src/managers/options/DiagnosticsDataManager.js', () => jest.fn(() => mockDiagnosticsDataManagerInstance));
-jest.mock('../../../src/managers/options/LifecycleManager.js', () => jest.fn(() => mockLifecycleManagerInstance));
+jest.mock('../../../src/managers/options/core/InitializationManager.js', () => jest.fn(() => mockInitializationManagerInstance));
+jest.mock('../../../src/managers/options/ui/UIManager.js', () => jest.fn(() => mockUIManagerInstance));
+jest.mock('../../../src/managers/options/diagnostics/DiagnosticsWorkflowManager.js', () => jest.fn(() => mockDiagnosticsWorkflowManagerInstance));
+jest.mock('../../../src/managers/options/diagnostics/DeveloperToolsManager.js', () => jest.fn(() => mockDeveloperToolsManagerInstance));
+jest.mock('../../../src/managers/options/core/LogsManager.js', () => jest.fn(() => mockLogsManagerInstance));
+jest.mock('../../../src/managers/options/diagnostics/DiagnosticsDataManager.js', () => jest.fn(() => mockDiagnosticsDataManagerInstance));
+jest.mock('../../../src/managers/options/core/LifecycleManager.js', () => jest.fn(() => mockLifecycleManagerInstance));
 
-const InitializationManagerMock = require('../../../src/managers/options/InitializationManager.js');
-const UIManagerMock = require('../../../src/managers/options/UIManager.js');
-const DiagnosticsWorkflowManagerMock = require('../../../src/managers/options/DiagnosticsWorkflowManager.js');
-const DeveloperToolsManagerMock = require('../../../src/managers/options/DeveloperToolsManager.js');
-const LogsManagerMock = require('../../../src/managers/options/LogsManager.js');
-const DiagnosticsDataManagerMock = require('../../../src/managers/options/DiagnosticsDataManager.js');
-const LifecycleManagerMock = require('../../../src/managers/options/LifecycleManager.js');
+const InitializationManagerMock = require('../../../src/managers/options/core/InitializationManager.js');
+const UIManagerMock = require('../../../src/managers/options/ui/UIManager.js');
+const DiagnosticsWorkflowManagerMock = require('../../../src/managers/options/diagnostics/DiagnosticsWorkflowManager.js');
+const DeveloperToolsManagerMock = require('../../../src/managers/options/diagnostics/DeveloperToolsManager.js');
+const LogsManagerMock = require('../../../src/managers/options/core/LogsManager.js');
+const DiagnosticsDataManagerMock = require('../../../src/managers/options/diagnostics/DiagnosticsDataManager.js');
+const LifecycleManagerMock = require('../../../src/managers/options/core/LifecycleManager.js');
 
 const OptionsManager = require('../../../src/managers/options/OptionsManager.js');
 

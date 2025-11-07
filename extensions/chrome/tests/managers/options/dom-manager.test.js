@@ -6,7 +6,7 @@
  * Тесты для DOMManager
  */
 
-const DOMManager = require('../../../src/managers/options/DOMManager.js');
+const DOMManager = require('../../../src/managers/options/core/DOMManager.js');
 
 describe('DOMManager', () => {
     let domManager;
