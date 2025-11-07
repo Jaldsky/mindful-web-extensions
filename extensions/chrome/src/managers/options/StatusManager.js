@@ -112,7 +112,8 @@ class StatusManager extends BaseManager {
                 /** @type {Partial<StatusManagerState>} */
                 const newState = { historyLength: size };
                 this.updateState(newState);
-            }
+            },
+            t: this.t.bind(this)
         });
 
         /** @type {StatusQueueManager} */

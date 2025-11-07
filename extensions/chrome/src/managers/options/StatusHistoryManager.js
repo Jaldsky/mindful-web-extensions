@@ -8,6 +8,7 @@
 
 /**
  * Менеджер для управления историей статусных сообщений.
+ * Отвечает за хранение, фильтрацию и очистку истории статусных уведомлений.
  * 
  * @class StatusHistoryManager
  */
@@ -21,8 +22,9 @@ class StatusHistoryManager {
      * @param {Function} [options.log] - Функция логирования
      * @param {Function} [options.logError] - Функция логирования ошибок
      * @param {Function} [options.onUpdate] - Callback при обновлении истории
+     * @param {Function} [options.t] - Функция локализации
      */
-    constructor({ enableHistory = true, maxHistorySize = 50, log = () => {}, logError = () => {}, onUpdate = null } = {}) {
+    constructor({ enableHistory = true, maxHistorySize = 50, log = () => {}, logError = () => {}, onUpdate = null, t = (key, params) => key } = {}) {
         /** @type {boolean} */
         this.enableHistory = enableHistory !== false;
         
@@ -40,6 +42,9 @@ class StatusHistoryManager {
         
         /** @type {Function|null} */
         this.onUpdate = onUpdate;
+        
+        /** @type {Function} */
+        this.t = t;
     }
 
     /**
@@ -63,12 +68,12 @@ class StatusHistoryManager {
             if (this.history.length > this.maxHistorySize) {
                 this.history.shift();
             }
-            this._log('Добавлена запись в историю', { entriesCount: this.history.length });
+            this._log({ key: 'logs.status.historyEntryAdded' }, { entriesCount: this.history.length });
             if (this.onUpdate) {
                 this.onUpdate(this.size());
             }
         } catch (error) {
-            this._logError('Ошибка добавления в историю', error);
+            this._logError({ key: 'logs.status.addHistoryError' }, error);
         }
     }
 
@@ -82,8 +87,7 @@ class StatusHistoryManager {
      */
     get(options = {}) {
         try {
-            const history = this.history;
-            let result = Array.isArray(history) ? [...history] : [];
+            let result = [...this.history];
             if (options.type) {
                 result = result.filter(e => e.type === options.type);
             }
@@ -92,7 +96,7 @@ class StatusHistoryManager {
             }
             return result;
         } catch (error) {
-            this._logError('Ошибка получения истории', error);
+            this._logError({ key: 'logs.status.getHistoryError' }, error);
             return [];
         }
     }
@@ -106,13 +110,13 @@ class StatusHistoryManager {
         try {
             const count = this.history.length;
             this.history = [];
-            this._log(`История очищена: ${count} записей`);
+            this._log({ key: 'logs.status.historyCleared', params: { count } });
             if (this.onUpdate) {
                 this.onUpdate(0);
             }
             return count;
         } catch (error) {
-            this._logError('Ошибка очистки истории', error);
+            this._logError({ key: 'logs.status.clearHistoryError' }, error);
             return 0;
         }
     }
@@ -124,8 +128,7 @@ class StatusHistoryManager {
      */
     size() {
         try {
-            const history = this.history;
-            return Array.isArray(history) ? history.length : 0;
+            return this.history.length;
         } catch (_e) {
             return 0;
         }

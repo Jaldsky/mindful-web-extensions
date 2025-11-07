@@ -405,7 +405,11 @@ const RU = {
             validationExecutionError: 'Ошибка при выполнении валидации',
             destroyStart: 'Очистка ресурсов StatusManager',
             destroyed: 'StatusManager уничтожен',
-            destroyError: 'Ошибка при уничтожении StatusManager'
+            destroyError: 'Ошибка при уничтожении StatusManager',
+            historyEntryAdded: 'Запись добавлена в историю',
+            addHistoryError: 'Ошибка добавления в историю',
+            getHistoryError: 'Ошибка получения истории',
+            historyCleared: 'История очищена: {count} записей'
         }
     },
 
