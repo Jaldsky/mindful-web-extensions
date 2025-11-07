@@ -79,6 +79,11 @@ function createBaseOptionsManager() {
             toggleTheme: jest.fn(),
             updateThemeDisplay: jest.fn()
         },
+        domainExceptionsManager: {
+            getDomainExceptions: jest.fn(() => []),
+            setDomainExceptions: jest.fn(),
+            domainExceptions: new Set()
+        },
         setDomainExceptions: jest.fn(),
         eventHandlers: new Map()
     };

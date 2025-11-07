@@ -382,6 +382,67 @@ const EN = {
             domManagerInitFailed: 'DOM Manager initialization failed: {message}',
             storageManagerInitFailed: 'Storage Manager initialization failed: {message}'
         },
+        ui: {
+            domainExceptions: {
+                localeTextError: 'Error getting locale text for key: {key}',
+                domainInputErrorDisplayError: 'Error displaying domain input error',
+                domainAdded: 'Domain added to exceptions',
+                domainRemoved: 'Domain removed from exceptions',
+                domainExceptionsListNotFound: 'Domain exceptions list not found in DOM'
+            },
+            activity: {
+                activityDataUpdated: 'Activity data updated',
+                loadActivityStatsError: 'Error loading activity stats',
+                setActivityRangeError: 'Error setting activity range',
+                activityAutoRefreshStarted: 'Activity auto refresh started (every {interval}ms)',
+                startActivityAutoRefreshError: 'Error starting activity auto refresh',
+                activityAutoRefreshStopped: 'Activity auto refresh stopped',
+                stopActivityAutoRefreshError: 'Error stopping activity auto refresh',
+                updateActivityChartError: 'Error updating activity chart'
+            },
+            settings: {
+                buttonNotFound: 'Button {buttonKey} not found for displaying state',
+                saveSettingsStart: 'Starting settings save operation',
+                saveButtonStateUpdateFailed: 'Warning: failed to update save button state',
+                backendUrlGetFailed: 'Failed to get URL value from DOM',
+                validationFailed: 'Validation failed',
+                validationSuccess: 'URL validation successful',
+                backgroundScriptNotNotified: 'Background script was not notified (continuing)',
+                domainExceptionsNotNotified: 'Background script did not receive domain exceptions update (continuing)',
+                settingsSaved: 'Settings saved successfully',
+                saveSettingsError: 'Error saving settings ({totalTime}ms)',
+                resetSettingsStart: 'Starting settings reset operation',
+                resetButtonStateUpdateFailed: 'Warning: failed to update reset button state',
+                uiUpdateAfterResetFailed: 'Failed to update UI after resetting settings',
+                settingsReset: 'Settings reset to default values',
+                resetSettingsError: 'Error resetting settings ({totalTime}ms)',
+                verificationFailed: 'Save verification failed',
+                domainExceptionsSaveFailed: 'Failed to save domain exceptions list',
+                domainExceptionsResetFailed: 'Failed to reset domain exceptions list'
+            },
+            eventHandlers: {
+                setupEventHandlersStart: 'Setting up event handlers',
+                settingsFormNotFound: 'Warning: settings form not found, submit handler not set',
+                resetBtnNotFound: 'Warning: reset button not found, handler not set',
+                saveBtnNotFound: 'Warning: save button not found',
+                runDiagnosticsBtnNotFound: 'Warning: diagnostics button not found, handler not set',
+                toggleDeveloperToolsBtnNotFound: 'Warning: developer tools button not found, handler not set',
+                eventHandlersSetup: 'Event handlers set up'
+            },
+            localeDisplay: {
+                toggleLanguageError: 'Error toggling language',
+                localeChanged: 'Locale changed',
+                localeChangeError: 'Error changing locale'
+            },
+            themeDisplay: {
+                themeManagerSet: 'ThemeManager set',
+                themeManagerNotSet: 'ThemeManager not set',
+                toggleThemeStart: 'Toggling theme',
+                themeToggled: 'Theme toggled',
+                toggleThemeError: 'Error toggling theme',
+                updateThemeDisplayError: 'Error updating theme display'
+            }
+        },
         status: {
             initSuccess: 'StatusManager initialized',
             displayed: 'Status displayed and verified',

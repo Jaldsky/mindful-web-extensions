@@ -57,8 +57,9 @@ class InitializationManager {
             if (manager.uiManager && typeof manager.uiManager.startActivityAutoRefresh === 'function') {
                 manager.uiManager.startActivityAutoRefresh();
 
-                if (typeof manager.uiManager._markActiveRangeButton === 'function') {
-                    manager.uiManager._markActiveRangeButton(manager.uiManager.activityRangeKey);
+                const rangeSelect = document.getElementById('activityRangeSelect');
+                if (rangeSelect) {
+                    rangeSelect.value = manager.uiManager.activityRangeKey;
                 }
             }
 
