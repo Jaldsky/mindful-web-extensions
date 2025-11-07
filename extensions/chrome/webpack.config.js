@@ -26,7 +26,7 @@ module.exports = (env, argv) => {
           { from: 'manifest.json', to: 'manifest.json' },
           { from: 'app.html', to: 'app.html' },
           { from: 'options.html', to: 'options.html' },
-          { from: 'theme-init.js', to: 'theme-init.js' },
+          { from: 'src/theme-init.js', to: 'theme-init.js' },
           { from: 'icons', to: 'icons' },
           { from: 'styles', to: 'styles' }
         ]

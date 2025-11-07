@@ -184,6 +184,12 @@ const CONFIG = {
         THEMES: {
             LIGHT: 'light',
             DARK: 'dark'
+        },
+        /**
+         * Настройки инициализации темы
+         */
+        INIT: {
+            ENABLE_LOGGING: true // Включить логирование при инициализации темы
         }
     },
 

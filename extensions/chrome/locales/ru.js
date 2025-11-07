@@ -602,6 +602,14 @@ const RU = {
                 cleanupStart: 'Очистка ресурсов SyncManager',
                 destroyed: 'SyncManager уничтожен',
                 destroyError: 'Ошибка при уничтожении SyncManager'
+            },
+            init: {
+                created: 'ThemeInitializer создан',
+                themeAppliedFromCache: 'Тема применена из кеша',
+                themeLoadedFromStorage: 'Тема загружена из storage',
+                cacheReadError: 'Ошибка чтения темы из кеша',
+                storageLoadError: 'Ошибка загрузки темы из storage',
+                initError: 'Ошибка инициализации темы'
             }
         }
     },

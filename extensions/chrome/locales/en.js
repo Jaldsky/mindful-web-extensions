@@ -602,6 +602,14 @@ const EN = {
                 cleanupStart: 'Cleaning up SyncManager resources',
                 destroyed: 'SyncManager destroyed',
                 destroyError: 'Error destroying SyncManager'
+            },
+            init: {
+                created: 'ThemeInitializer created',
+                themeAppliedFromCache: 'Theme applied from cache',
+                themeLoadedFromStorage: 'Theme loaded from storage',
+                cacheReadError: 'Error reading theme from cache',
+                storageLoadError: 'Error loading theme from storage',
+                initError: 'Theme initialization error'
             }
         }
     },
