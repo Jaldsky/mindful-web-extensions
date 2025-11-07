@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * Менеджер для работы с хранилищем темы.
@@ -13,14 +14,14 @@ class StorageManager extends BaseManager {
      * @readonly
      * @static
      */
-    static STORAGE_KEY = 'mindful_theme';
+    static STORAGE_KEY = CONFIG.THEME.STORAGE_KEY;
 
     /**
      * Ключ кеша темы в localStorage
      * @readonly
      * @static
      */
-    static CACHE_KEY = 'mindful_theme_cache';
+    static CACHE_KEY = CONFIG.THEME.CACHE_KEY;
 
     /**
      * Создает экземпляр StorageManager.
@@ -45,7 +46,7 @@ class StorageManager extends BaseManager {
             lastOperation: null
         };
 
-        this._log('StorageManager создан', { enableCache: this.enableCache });
+        this._log({ key: 'logs.theme.storage.created' }, { enableCache: this.enableCache });
     }
 
     /**
@@ -86,17 +87,17 @@ class StorageManager extends BaseManager {
 
         return this._executeWithTiming('getThemeFromCache', () => {
             try {
-                const cachedTheme = localStorage.getItem(StorageManager.CACHE_KEY);
+                const cachedTheme = localStorage.getItem(CONFIG.THEME.CACHE_KEY);
                 if (cachedTheme) {
                     this.statistics.cacheHits++;
-                    this._log('Тема получена из кеша', { theme: cachedTheme });
+                    this._log({ key: 'logs.theme.storage.themeFromCache' }, { theme: cachedTheme });
                     return cachedTheme;
                 }
                 this.statistics.cacheMisses++;
                 return null;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError('Ошибка чтения из кеша', error);
+                this._logError({ key: 'logs.theme.storage.cacheReadError' }, error);
                 return null;
             }
         });
@@ -115,12 +116,12 @@ class StorageManager extends BaseManager {
 
         return this._executeWithTiming('saveThemeToCache', () => {
             try {
-                localStorage.setItem(StorageManager.CACHE_KEY, theme);
-                this._log('Тема сохранена в кеш', { theme });
+                localStorage.setItem(CONFIG.THEME.CACHE_KEY, theme);
+                this._log({ key: 'logs.theme.storage.themeSavedToCache' }, { theme });
                 return true;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError('Ошибка сохранения в кеш', error);
+                this._logError({ key: 'logs.theme.storage.cacheSaveError' }, error);
                 return false;
             }
         });
@@ -136,23 +137,23 @@ class StorageManager extends BaseManager {
         return await this._executeWithTimingAsync('loadTheme', async () => {
             try {
                 if (!this._isStorageAvailable()) {
-                    this._log('Chrome storage API недоступен');
+                    this._log({ key: 'logs.theme.storage.storageApiUnavailable' });
                     this.statistics.errors++;
                     return null;
                 }
 
-                const result = await chrome.storage.local.get([StorageManager.STORAGE_KEY]);
-                const theme = result[StorageManager.STORAGE_KEY] || null;
+                const result = await chrome.storage.local.get([CONFIG.THEME.STORAGE_KEY]);
+                const theme = result[CONFIG.THEME.STORAGE_KEY] || null;
                 
                 this.statistics.loads++;
                 this.statistics.lastOperation = 'load';
                 this.updateState({ lastLoadTime: Date.now() });
                 
-                this._log('Тема загружена из storage', { theme });
+                this._log({ key: 'logs.theme.storage.themeLoaded' }, { theme });
                 return theme;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError('Ошибка загрузки темы', error);
+                this._logError({ key: 'logs.theme.storage.loadError' }, error);
                 return null;
             }
         });
@@ -169,30 +170,30 @@ class StorageManager extends BaseManager {
         return await this._executeWithTimingAsync('saveTheme', async () => {
             try {
                 if (!theme || typeof theme !== 'string') {
-                    this._logError('Невалидная тема для сохранения', { theme });
+                    this._logError({ key: 'logs.theme.storage.invalidThemeForSave' }, { theme });
                     this.statistics.errors++;
                     return false;
                 }
 
                 if (!this._isStorageAvailable()) {
-                    this._log('Chrome storage API недоступен');
+                    this._log({ key: 'logs.theme.storage.storageApiUnavailable' });
                     this.statistics.errors++;
                     return false;
                 }
 
                 await chrome.storage.local.set({
-                    [StorageManager.STORAGE_KEY]: theme
+                    [CONFIG.THEME.STORAGE_KEY]: theme
                 });
                 
                 this.statistics.saves++;
                 this.statistics.lastOperation = 'save';
                 this.updateState({ lastSaveTime: Date.now() });
                 
-                this._log('Тема сохранена в storage', { theme });
+                this._log({ key: 'logs.theme.storage.themeSaved' }, { theme });
                 return true;
             } catch (error) {
                 this.statistics.errors++;
-                this._logError('Ошибка сохранения темы', error);
+                this._logError({ key: 'logs.theme.storage.saveError' }, error);
                 return false;
             }
         });
@@ -213,7 +214,7 @@ class StorageManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов StorageManager');
+        this._log({ key: 'logs.theme.storage.cleanupStart' });
         super.destroy();
     }
 }
@@ -221,8 +222,4 @@ class StorageManager extends BaseManager {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = StorageManager;
     module.exports.default = StorageManager;
-}
-
-if (typeof window !== 'undefined') {
-    window.ThemeStorageManager = StorageManager;
 }

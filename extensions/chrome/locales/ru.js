@@ -550,6 +550,59 @@ const RU = {
                 lastValidationResultIsValidMustBeBoolean: 'lastValidationResult.isValid должен быть boolean',
                 validationExecutionError: 'Ошибка при выполнении валидации'
             }
+        },
+        theme: {
+            themeManager: {
+                created: 'ThemeManager создан',
+                loadingAndApplying: 'Загрузка и применение темы',
+                appliedFromCache: 'Тема применена из кеша',
+                loadedAndApplied: 'Тема загружена и применена',
+                loadError: 'Ошибка загрузки темы',
+                invalidTheme: 'Невалидная тема',
+                applyError: 'Ошибка применения темы',
+                invalidThemeForSave: 'Невалидная тема для сохранения',
+                saveError: 'Ошибка сохранения темы',
+                userCallbackError: 'Ошибка в пользовательском callback',
+                listenerSetupError: 'Ошибка установки слушателя',
+                cleanupStart: 'Очистка ресурсов ThemeManager',
+                destroyed: 'ThemeManager уничтожен',
+                destroyError: 'Ошибка при уничтожении ThemeManager'
+            },
+            application: {
+                created: 'ApplicationManager создан',
+                invalidThemeAttempt: 'Попытка применить невалидную тему',
+                themeApplied: 'Тема применена к DOM',
+                applyError: 'Ошибка применения темы',
+                cleanupStart: 'Очистка ресурсов ApplicationManager'
+            },
+            storage: {
+                created: 'StorageManager создан',
+                themeFromCache: 'Тема получена из кеша',
+                cacheReadError: 'Ошибка чтения из кеша',
+                themeSavedToCache: 'Тема сохранена в кеш',
+                cacheSaveError: 'Ошибка сохранения в кеш',
+                storageApiUnavailable: 'Chrome storage API недоступен',
+                themeLoaded: 'Тема загружена из storage',
+                loadError: 'Ошибка загрузки темы',
+                invalidThemeForSave: 'Невалидная тема для сохранения',
+                themeSaved: 'Тема сохранена в storage',
+                saveError: 'Ошибка сохранения темы',
+                cleanupStart: 'Очистка ресурсов StorageManager'
+            },
+            sync: {
+                created: 'SyncManager создан',
+                storageApiUnavailable: 'Chrome storage onChanged API недоступен',
+                callbackNotSet: 'Callback не установлен',
+                themeChanged: 'Тема изменена из storage',
+                callbackError: 'Ошибка в callback изменения темы',
+                listenerSetupError: 'Ошибка установки слушателя темы',
+                listenerSet: 'Слушатель изменений темы установлен',
+                listenerRemoved: 'Слушатель изменений темы удален',
+                removeListenerError: 'Ошибка удаления слушателя',
+                cleanupStart: 'Очистка ресурсов SyncManager',
+                destroyed: 'SyncManager уничтожен',
+                destroyError: 'Ошибка при уничтожении SyncManager'
+            }
         }
     },
 

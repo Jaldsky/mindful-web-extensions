@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * Менеджер для синхронизации темы между страницами расширения.
@@ -13,7 +14,7 @@ class SyncManager extends BaseManager {
      * @readonly
      * @static
      */
-    static STORAGE_KEY = 'mindful_theme';
+    static STORAGE_KEY = CONFIG.THEME.STORAGE_KEY;
 
     /**
      * Создает экземпляр SyncManager.
@@ -38,7 +39,7 @@ class SyncManager extends BaseManager {
             lastChange: null
         };
 
-        this._log('SyncManager создан', {
+        this._log({ key: 'logs.theme.sync.created' }, {
             hasCallback: !!this.onThemeChangeCallback
         });
     }
@@ -64,7 +65,7 @@ class SyncManager extends BaseManager {
     startListening(callback) {
         try {
             if (!this._isStorageAvailable()) {
-                this._log('Chrome storage onChanged API недоступен');
+                this._log({ key: 'logs.theme.sync.storageApiUnavailable' });
                 return false;
             }
 
@@ -73,7 +74,7 @@ class SyncManager extends BaseManager {
             }
 
             if (!this.onThemeChangeCallback) {
-                this._log('Callback не установлен');
+                this._log({ key: 'logs.theme.sync.callbackNotSet' });
                 return false;
             }
 
@@ -81,8 +82,8 @@ class SyncManager extends BaseManager {
             this.stopListening();
 
             this.storageListener = (changes, areaName) => {
-                if (areaName === 'local' && changes[SyncManager.STORAGE_KEY]) {
-                    const newTheme = changes[SyncManager.STORAGE_KEY].newValue;
+                if (areaName === 'local' && changes[CONFIG.THEME.STORAGE_KEY]) {
+                    const newTheme = changes[CONFIG.THEME.STORAGE_KEY].newValue;
                     
                     this.statistics.changes++;
                     this.statistics.lastChange = Date.now();
@@ -93,20 +94,20 @@ class SyncManager extends BaseManager {
                     
                     try {
                         this.onThemeChangeCallback(newTheme);
-                        this._log('Тема изменена из storage', { newTheme });
+                        this._log({ key: 'logs.theme.sync.themeChanged' }, { newTheme });
                     } catch (error) {
                         this.statistics.errors++;
-                        this._logError('Ошибка в callback изменения темы', error);
+                        this._logError({ key: 'logs.theme.sync.callbackError' }, error);
                     }
                 }
             };
 
             chrome.storage.onChanged.addListener(this.storageListener);
-            this._log('Слушатель изменений темы установлен');
+            this._log({ key: 'logs.theme.sync.listenerSet' });
             return true;
         } catch (error) {
             this.statistics.errors++;
-            this._logError('Ошибка установки слушателя темы', error);
+            this._logError({ key: 'logs.theme.sync.listenerSetupError' }, error);
             return false;
         }
     }
@@ -121,13 +122,13 @@ class SyncManager extends BaseManager {
             if (this.storageListener && this._isStorageAvailable()) {
                 chrome.storage.onChanged.removeListener(this.storageListener);
                 this.storageListener = null;
-                this._log('Слушатель изменений темы удален');
+                this._log({ key: 'logs.theme.sync.listenerRemoved' });
                 return true;
             }
             return false;
         } catch (error) {
             this.statistics.errors++;
-            this._logError('Ошибка удаления слушателя', error);
+            this._logError({ key: 'logs.theme.sync.removeListenerError' }, error);
             return false;
         }
     }
@@ -159,14 +160,14 @@ class SyncManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this._log('Очистка ресурсов SyncManager');
+        this._log({ key: 'logs.theme.sync.cleanupStart' });
         
         try {
             this.stopListening();
             this.onThemeChangeCallback = null;
-            this._log('SyncManager уничтожен');
+            this._log({ key: 'logs.theme.sync.destroyed' });
         } catch (error) {
-            this._logError('Ошибка при уничтожении SyncManager', error);
+            this._logError({ key: 'logs.theme.sync.destroyError' }, error);
         }
 
         super.destroy();
@@ -176,8 +177,4 @@ class SyncManager extends BaseManager {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SyncManager;
     module.exports.default = SyncManager;
-}
-
-if (typeof window !== 'undefined') {
-    window.ThemeSyncManager = SyncManager;
 }

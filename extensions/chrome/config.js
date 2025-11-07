@@ -146,7 +146,10 @@ const CONFIG = {
         TRACKING_ENABLED: 'mindful_tracking_enabled',
         
         // Settings
-        SETTINGS: 'mindful_settings'
+        SETTINGS: 'mindful_settings',
+        
+        // Theme
+        THEME: 'mindful_theme'
     },
 
     /**
@@ -167,6 +170,21 @@ const CONFIG = {
         I18N_ATTRIBUTE: 'data-i18n',
         // Атрибут для указания целевого атрибута элемента
         I18N_ATTR_ATTRIBUTE: 'data-i18n-attr'
+    },
+
+    /**
+     * Настройки темы
+     */
+    THEME: {
+        DEFAULT: 'light',
+        AVAILABLE: ['light', 'dark'],
+        STORAGE_KEY: 'mindful_theme',
+        CACHE_KEY: 'mindful_theme_cache',
+        ATTRIBUTE: 'data-theme',
+        THEMES: {
+            LIGHT: 'light',
+            DARK: 'dark'
+        }
     },
 
     /**
