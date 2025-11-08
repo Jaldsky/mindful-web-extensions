@@ -199,13 +199,9 @@ describe('BackendManager', () => {
         });
     });
 
-    describe('getBackendUrl / getUserId', () => {
+    describe('getBackendUrl', () => {
         test('getBackendUrl должен возвращать текущий URL', () => {
             expect(backendManager.getBackendUrl()).toBe('http://test.com/api');
-        });
-
-        test('getUserId должен возвращать текущий userId', () => {
-            expect(backendManager.getUserId()).toBe('test-user-id');
         });
     });
 

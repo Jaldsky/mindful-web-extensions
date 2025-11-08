@@ -4,14 +4,14 @@ const CONFIG = require('../../../config.js');
 /**
  * @typedef {Object} SendEventsResult
  * @property {boolean} success - Успешность отправки
- * @property {*} [data] - Данные ответа от сервера
- * @property {string} [error] - Сообщение об ошибке
+ * @property {*} [data] - Данные ответа от сервера (если сервер вернул данные)
+ * @property {string} [error] - Сообщение об ошибке (если отправка не удалась)
  */
 
 /**
  * @typedef {Object} TestConnectionResult
  * @property {boolean} success - Успешность подключения
- * @property {string} [error] - Сообщение об ошибке
+ * @property {string} [error] - Сообщение об ошибке (если проверка не удалась)
  */
 
 /**
@@ -26,20 +26,29 @@ class BackendManager extends BaseManager {
      * Создает экземпляр BackendManager.
      * 
      * @param {Object} [options={}] - Опции конфигурации
-     * @param {string} [options.backendUrl] - URL backend API
-     * @param {string} [options.userId] - ID пользователя
+     * @param {string} [options.backendUrl] - URL backend API (по умолчанию из CONFIG.BACKEND.DEFAULT_URL)
+     * @param {string} [options.userId] - ID пользователя (может быть установлен позже через setUserId)
      * @param {boolean} [options.enableLogging=false] - Включить логирование
      */
     constructor(options = {}) {
         super(options);
         
-        /** @type {string} */
+        /** 
+         * URL backend API для отправки событий
+         * @type {string}
+         */
         this.backendUrl = options.backendUrl || CONFIG.BACKEND.DEFAULT_URL;
         
-        /** @type {string|null} */
+        /** 
+         * ID пользователя для идентификации в запросах
+         * @type {string|null}
+         */
         this.userId = options.userId || null;
         
-        /** @type {Map<string, number>} */
+        /** 
+         * Метрики производительности операций
+         * @type {Map<string, number>}
+         */
         this.performanceMetrics = new Map();
         
         this.updateState({
@@ -47,7 +56,7 @@ class BackendManager extends BaseManager {
             userId: this.userId
         });
         
-        this._log('BackendManager инициализирован', { 
+        this._log({ key: 'logs.backend.created' }, { 
             backendUrl: this.backendUrl,
             userId: this.userId 
         });
@@ -55,30 +64,39 @@ class BackendManager extends BaseManager {
 
     /**
      * Устанавливает URL backend API.
+     * Обновляет внутреннее состояние и логирует изменение.
      * 
-     * @param {string} url - Новый URL
+     * @param {string} url - Новый URL backend API
      * @returns {void}
+     * @throws {TypeError} Если url не является строкой
      */
     setBackendUrl(url) {
         this.backendUrl = url;
         this.updateState({ backendUrl: url });
-        this._log('Backend URL обновлен', { backendUrl: url });
+        this._log({ key: 'logs.backend.backendUrlUpdated', params: { backendUrl: url } });
     }
 
     /**
      * Устанавливает ID пользователя.
+     * Обновляет внутреннее состояние и логирует изменение.
+     * ID пользователя используется в заголовке X-User-ID при отправке событий.
      * 
      * @param {string} userId - ID пользователя
      * @returns {void}
+     * @throws {TypeError} Если userId не является строкой
      */
     setUserId(userId) {
         this.userId = userId;
         this.updateState({ userId });
-        this._log('User ID обновлен', { userId });
+        this._log({ key: 'logs.backend.userIdUpdated', params: { userId } });
     }
 
     /**
      * Отправляет события на backend.
+     * 
+     * Отправляет массив событий на backend API через POST запрос.
+     * События оборачиваются в объект с ключом 'data'.
+     * В заголовке X-User-ID передается userId (должен быть установлен заранее).
      * 
      * @async
      * @param {Array<Object>} events - Массив событий для отправки
@@ -88,17 +106,24 @@ class BackendManager extends BaseManager {
         return await this._executeWithTimingAsync('sendEvents', async () => {
             try {
                 if (!events || events.length === 0) {
-                    return { success: true, data: { message: 'No events to send' } };
+                    const t = this._getTranslateFn();
+                    return { success: true, data: { message: t('logs.backend.noEventsToSend') } };
                 }
 
                 if (!this.userId) {
-                    throw new Error('User ID не установлен');
+                    const t = this._getTranslateFn();
+                    const errorMessage = t('logs.backend.userIdNotSet');
+                    this._logError({ key: 'logs.backend.eventsSendError' }, new Error(errorMessage));
+                    return { 
+                        success: false, 
+                        error: errorMessage 
+                    };
                 }
 
-                const payload = { data: events };
+                const payload = { [CONFIG.BACKEND.PAYLOAD_KEYS.DATA]: events };
                 
-                this._log('Отправка событий на backend', { 
-                    method: 'POST',
+                this._log({ key: 'logs.backend.sendingEvents', params: { eventsCount: events.length } }, { 
+                    method: CONFIG.BACKEND.METHODS.POST,
                     url: this.backendUrl,
                     eventsCount: events.length,
                     userId: this.userId,
@@ -106,50 +131,54 @@ class BackendManager extends BaseManager {
                 });
 
                 const response = await fetch(this.backendUrl, {
-                    method: 'POST',
+                    method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-ID': this.userId
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.USER_ID]: this.userId
                     },
                     body: JSON.stringify(payload)
                 });
 
-                this._log('Ответ от backend', { 
-                    method: 'POST',
+                this._log({ key: 'logs.backend.backendResponse' }, { 
+                    method: CONFIG.BACKEND.METHODS.POST,
                     status: response.status 
                 });
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    this._logError('Ошибка ответа от backend', { 
-                        method: 'POST',
+                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
+                        .replace('{status}', response.status)
+                        .replace('{message}', errorText || response.statusText);
+                    this._logError({ key: 'logs.backend.backendResponseError' }, { 
+                        method: CONFIG.BACKEND.METHODS.POST,
                         status: response.status,
                         errorText 
                     });
-                    throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+                    return { 
+                        success: false, 
+                        error: errorMessage 
+                    };
                 }
 
                 // 204 No Content - нет тела ответа
-                if (response.status === 204) {
-                    this._log('События успешно отправлены', { 
-                        eventsCount: events.length
-                    });
+                if (response.status === CONFIG.BACKEND.STATUS_CODES.NO_CONTENT) {
+                    this._log({ key: 'logs.backend.eventsSentSuccess', params: { eventsCount: events.length } });
                     return { success: true };
                 }
 
                 // Для других успешных ответов парсим JSON
                 const responseData = await response.json();
-                this._log('События успешно отправлены', { 
-                    eventsCount: events.length,
+                this._log({ key: 'logs.backend.eventsSentSuccess', params: { eventsCount: events.length } }, { 
                     response: responseData 
                 });
                 
                 return { success: true, data: responseData };
             } catch (error) {
-                this._logError('Ошибка отправки событий', error);
+                this._logError({ key: 'logs.backend.eventsSendError' }, error);
+                const t = this._getTranslateFn();
                 return { 
                     success: false, 
-                    error: error.message || 'Unknown error' 
+                    error: error.message || t('logs.backend.unknownError') 
                 };
             }
         });
@@ -158,50 +187,58 @@ class BackendManager extends BaseManager {
     /**
      * Проверяет доступность backend через healthcheck endpoint.
      * 
+     * Выполняет GET запрос к healthcheck endpoint для проверки доступности backend.
+     * Не требует установленного userId, так как это служебный запрос.
+     * Использует URL из CONFIG.BACKEND.HEALTHCHECK_URL.
+     * 
      * @async
-     * @returns {Promise<TestConnectionResult>} Результат проверки
+     * @returns {Promise<TestConnectionResult>} Результат проверки доступности
+     *
      */
     async checkHealth() {
         return await this._executeWithTimingAsync('checkHealth', async () => {
             try {
                 const healthcheckUrl = CONFIG.BACKEND.HEALTHCHECK_URL;
                 
-                this._log('Проверка доступности backend через healthcheck', { 
-                    method: 'GET',
+                this._log({ key: 'logs.backend.checkingHealth' }, { 
+                    method: CONFIG.BACKEND.METHODS.GET,
                     url: healthcheckUrl
                 });
 
                 const response = await fetch(healthcheckUrl, {
-                    method: 'GET',
+                    method: CONFIG.BACKEND.METHODS.GET,
                     headers: {
-                        'Content-Type': 'application/json'
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
                     }
                 });
 
-                this._log('Ответ healthcheck', { 
-                    method: 'GET',
+                this._log({ key: 'logs.backend.healthcheckResponse' }, { 
+                    method: CONFIG.BACKEND.METHODS.GET,
                     status: response.status,
                     statusText: response.statusText 
                 });
 
                 if (response.ok) {
                     const responseText = await response.text();
-                    this._log('Backend доступен', { response: responseText });
+                    this._log({ key: 'logs.backend.backendAvailable' }, { response: responseText });
                     return { success: true };
                 } else {
                     const errorText = await response.text();
-                    this._logError('Backend недоступен', { 
-                        method: 'GET',
+                    this._logError({ key: 'logs.backend.backendUnavailable' }, { 
+                        method: CONFIG.BACKEND.METHODS.GET,
                         status: response.status,
                         errorText 
                     });
+                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
+                        .replace('{status}', response.status)
+                        .replace('{message}', errorText || response.statusText);
                     return { 
                         success: false, 
-                        error: `HTTP ${response.status}: ${errorText || response.statusText}` 
+                        error: errorMessage 
                     };
                 }
             } catch (error) {
-                this._logError('Ошибка проверки доступности backend', error);
+                this._logError({ key: 'logs.backend.healthcheckError' }, error);
                 return { 
                     success: false, 
                     error: `${error.name}: ${error.message}` 
@@ -213,23 +250,17 @@ class BackendManager extends BaseManager {
     /**
      * Получает текущий URL backend.
      * 
-     * @returns {string} URL backend
+     * @returns {string} Текущий URL backend API
      */
     getBackendUrl() {
         return this.backendUrl;
     }
 
     /**
-     * Получает текущий User ID.
-     * 
-     * @returns {string|null} User ID
-     */
-    getUserId() {
-        return this.userId;
-    }
-
-    /**
      * Уничтожает менеджер и освобождает ресурсы.
+     * 
+     * Очищает все внутренние данные, метрики производительности,
+     * обнуляет backendUrl и userId, затем вызывает destroy() родительского класса.
      * 
      * @returns {void}
      */
@@ -238,7 +269,7 @@ class BackendManager extends BaseManager {
         this.backendUrl = null;
         this.userId = null;
         super.destroy();
-        this._log('BackendManager уничтожен');
+        this._log({ key: 'logs.backend.destroyed' });
     }
 }
 

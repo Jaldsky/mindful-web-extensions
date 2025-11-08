@@ -28,7 +28,31 @@ const CONFIG = {
         HEALTHCHECK_URL: 'http://localhost:8000/api/v1/healthcheck',
         TIMEOUT: 10000, // Таймаут запроса (мс)
         RETRY_ATTEMPTS: 3, // Количество попыток повтора
-        RETRY_DELAY: 20000 // Задержка между попытками (мс)
+        RETRY_DELAY: 20000, // Задержка между попытками (мс)
+        // HTTP методы
+        METHODS: {
+            POST: 'POST',
+            GET: 'GET'
+        },
+        // HTTP заголовки
+        HEADERS: {
+            CONTENT_TYPE: 'Content-Type',
+            USER_ID: 'X-User-ID'
+        },
+        // Значения заголовков
+        HEADER_VALUES: {
+            CONTENT_TYPE_JSON: 'application/json'
+        },
+        // HTTP статусы
+        STATUS_CODES: {
+            NO_CONTENT: 204 // No Content - нет тела ответа
+        },
+        // Ключи для payload
+        PAYLOAD_KEYS: {
+            DATA: 'data'
+        },
+        // Шаблон сообщения об ошибке HTTP
+        ERROR_MESSAGE_TEMPLATE: 'HTTP {status}: {message}'
     },
 
     /**

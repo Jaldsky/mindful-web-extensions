@@ -611,6 +611,25 @@ const RU = {
                 storageLoadError: 'Ошибка загрузки темы из storage',
                 initError: 'Ошибка инициализации темы'
             }
+        },
+        backend: {
+            created: 'BackendManager инициализирован',
+            backendUrlUpdated: 'Backend URL обновлен',
+            userIdUpdated: 'User ID обновлен',
+            sendingEvents: 'Отправка событий на backend',
+            backendResponse: 'Ответ от backend',
+            backendResponseError: 'Ошибка ответа от backend',
+            eventsSentSuccess: 'События успешно отправлены',
+            eventsSendError: 'Ошибка отправки событий',
+            checkingHealth: 'Проверка доступности backend через healthcheck',
+            healthcheckResponse: 'Ответ healthcheck',
+            backendAvailable: 'Backend доступен',
+            backendUnavailable: 'Backend недоступен',
+            healthcheckError: 'Ошибка проверки доступности backend',
+            userIdNotSet: 'User ID не установлен',
+            noEventsToSend: 'Нет событий для отправки',
+            unknownError: 'Неизвестная ошибка',
+            destroyed: 'BackendManager уничтожен'
         }
     },
 
