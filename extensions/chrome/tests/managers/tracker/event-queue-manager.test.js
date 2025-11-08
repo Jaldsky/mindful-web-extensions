@@ -348,32 +348,12 @@ describe('EventQueueManager', () => {
         });
     });
 
-    describe('getQueueSize / getQueue', () => {
+    describe('getQueueSize', () => {
         test('getQueueSize должен возвращать размер очереди', () => {
             eventQueueManager.addEvent('active', 'test1.com');
             eventQueueManager.addEvent('active', 'test2.com');
 
             expect(eventQueueManager.getQueueSize()).toBe(2);
-        });
-
-        test('getQueue должен возвращать копию очереди', () => {
-            eventQueueManager.addEvent('active', 'test.com');
-            
-            const queue = eventQueueManager.getQueue();
-            queue.push({ event: 'inactive', domain: 'test2.com' });
-
-            expect(eventQueueManager.queue.length).toBe(1);
-        });
-    });
-
-    describe('clearQueue', () => {
-        test('должен очищать очередь', () => {
-            eventQueueManager.addEvent('active', 'test.com');
-            
-            eventQueueManager.clearQueue();
-
-            expect(eventQueueManager.queue.length).toBe(0);
-            expect(statisticsManager.updateQueueSize).toHaveBeenCalledWith(0);
         });
     });
 

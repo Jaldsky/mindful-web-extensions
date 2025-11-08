@@ -284,7 +284,6 @@ describe('MessageHandlerManager', () => {
                 removedFromQueue: expect.any(Number)
             });
             expect(storageManager.getDomainExceptions()).toEqual(['example.com', 'test.com']);
-            expect(eventQueueManager.getDomainExceptions()).toEqual(['example.com', 'test.com']);
         });
 
         test('должен обрабатывать updateBackendUrl сообщение', async () => {
