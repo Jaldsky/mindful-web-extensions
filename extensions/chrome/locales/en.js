@@ -611,6 +611,25 @@ const EN = {
                 storageLoadError: 'Error loading theme from storage',
                 initError: 'Theme initialization error'
             }
+        },
+        backend: {
+            created: 'BackendManager initialized',
+            backendUrlUpdated: 'Backend URL updated',
+            userIdUpdated: 'User ID updated',
+            sendingEvents: 'Sending events to backend',
+            backendResponse: 'Response from backend',
+            backendResponseError: 'Backend response error',
+            eventsSentSuccess: 'Events sent successfully',
+            eventsSendError: 'Error sending events',
+            checkingHealth: 'Checking backend availability via healthcheck',
+            healthcheckResponse: 'Healthcheck response',
+            backendAvailable: 'Backend available',
+            backendUnavailable: 'Backend unavailable',
+            healthcheckError: 'Error checking backend availability',
+            userIdNotSet: 'User ID is not set',
+            noEventsToSend: 'No events to send',
+            unknownError: 'Unknown error',
+            destroyed: 'BackendManager destroyed'
         }
     },
 
