@@ -70,63 +70,117 @@ class EventQueueManager extends BaseManager {
     constructor(dependencies, options = {}) {
         super(options);
 
-        // Проверка зависимостей
         if (!dependencies || !dependencies.backendManager || !dependencies.statisticsManager || !dependencies.storageManager) {
-            throw new Error('EventQueueManager требует backendManager, statisticsManager и storageManager');
+            const t = this._getTranslateFn();
+            throw new Error(t('logs.eventQueue.dependenciesRequired') || 'EventQueueManager requires backendManager, statisticsManager and storageManager');
         }
 
-        /** @type {Object} */
+        /** 
+         * Менеджер backend для отправки событий
+         * @type {Object}
+         */
         this.backendManager = dependencies.backendManager;
         
-        /** @type {Object} */
+        /** 
+         * Менеджер статистики для отслеживания событий
+         * @type {Object}
+         */
         this.statisticsManager = dependencies.statisticsManager;
         
-        /** @type {Object} */
+        /** 
+         * Менеджер хранилища для сохранения/загрузки очереди
+         * @type {Object}
+         */
         this.storageManager = dependencies.storageManager;
         
-        /** @type {Object|null} */
+        /** 
+         * Контроллер трекера для управления состоянием отслеживания
+         * @type {Object|null}
+         */
         this.trackingController = dependencies.trackingController || null;
 
-        /** @type {Array<Event>} */
+        /** 
+         * Очередь событий для отправки
+         * @type {Array<Event>}
+         */
         this.queue = [];
         
-        /** @type {number} */
+        /** 
+         * Размер батча событий для отправки
+         * @type {number}
+         */
         this.batchSize = options.batchSize || EventQueueManager.DEFAULT_BATCH_SIZE;
         
-        /** @type {number} */
+        /** 
+         * Таймаут батча в миллисекундах (интервал между отправками)
+         * @type {number}
+         */
         this.batchTimeout = options.batchTimeout || EventQueueManager.DEFAULT_BATCH_TIMEOUT;
         
-        /** @type {number} */
+        /** 
+         * Задержка перед повторной попыткой отправки в миллисекундах
+         * @type {number}
+         */
         this.retryDelay = options.retryDelay || EventQueueManager.DEFAULT_RETRY_DELAY;
         
-        /** @type {number} */
+        /** 
+         * Максимальный размер очереди событий
+         * @type {number}
+         */
         this.maxQueueSize = options.maxQueueSize || EventQueueManager.DEFAULT_MAX_QUEUE_SIZE;
         
-        /** @type {boolean} */
+        /** 
+         * Статус подключения (true - онлайн, false - офлайн)
+         * @type {boolean}
+         */
         this.isOnline = true;
         
-        /** @type {number|null} */
+        /** 
+         * ID интервала для периодической обработки батчей
+         * @type {number|null}
+         */
         this.batchInterval = null;
 
-        /** @type {number|null} */
+        /** 
+         * ID таймера для повторной попытки отправки
+         * @type {number|null}
+         */
         this.retryTimeoutId = null;
         
-        /** @type {Map<string, number>} */
+        /** 
+         * Метрики производительности операций
+         * @type {Map<string, number>}
+         */
         this.performanceMetrics = new Map();
 
-        /** @type {Set<string>} */
+        /** 
+         * Множество исключенных доменов (не отслеживаются)
+         * @type {Set<string>}
+         */
         this.domainExceptions = new Set();
 
-        /** @type {number} */
+        /** 
+         * Счетчик последовательных неудачных отправок
+         * @type {number}
+         */
         this.consecutiveFailures = 0;
 
-        /** @type {boolean} */
+        /** 
+         * Флаг достижения порога ошибок (трекер будет отключен)
+         * @type {boolean}
+         */
         this.failureThresholdReached = false;
 
-        /** @type {boolean} */
+        /** 
+         * Флаг процесса отключения трекера (защита от повторных вызовов)
+         * @type {boolean}
+         */
         this.disableInProgress = false;
 
-        /** @type {number} */
+        /** 
+         * Максимальное количество последовательных неудач перед отключением трекера
+         * @type {number}
+         */
         this.maxFailuresBeforeDisable = options.maxFailuresBeforeDisable || EventQueueManager.DEFAULT_MAX_FAILURES_BEFORE_DISABLE;
         
         this.updateState({
@@ -138,13 +192,20 @@ class EventQueueManager extends BaseManager {
             failureThresholdReached: this.failureThresholdReached
         });
         
-        this._log('EventQueueManager инициализирован', { 
+        this._log({ key: 'logs.eventQueue.created' }, { 
             batchSize: this.batchSize,
             batchTimeout: this.batchTimeout,
             maxQueueSize: this.maxQueueSize
         });
     }
 
+    /**
+     * Проверяет, исключен ли домен из отслеживания.
+     * 
+     * @private
+     * @param {string} domain - Домен для проверки
+     * @returns {boolean} true, если домен исключен
+     */
     _isDomainExcluded(domain) {
         if (!domain) {
             return false;
@@ -156,6 +217,14 @@ class EventQueueManager extends BaseManager {
         return this.domainExceptions.has(normalized);
     }
 
+    /**
+     * Устанавливает список исключенных доменов.
+     * Удаляет события из очереди для исключенных доменов.
+     * 
+     * @async
+     * @param {Array<string>} domains - Массив доменов для исключения
+     * @returns {Promise<Object>} Результат операции с количеством исключений и удаленных из очереди событий
+     */
     async setDomainExceptions(domains) {
         const normalized = normalizeDomainList(domains || []);
         this.domainExceptions = new Set(normalized);
@@ -173,24 +242,17 @@ class EventQueueManager extends BaseManager {
                 try {
                     await this.storageManager.saveEventQueue(this.queue);
                 } catch (error) {
-                    this._logError('Ошибка сохранения очереди после применения исключений доменов', error);
+                    this._logError({ key: 'logs.eventQueue.domainExceptionsSaveError' }, error);
                 }
             }
         }
 
-        this._log('Исключения доменов обновлены', {
-            count: this.domainExceptions.size,
-            removedFromQueue
-        });
+        this._log({ key: 'logs.eventQueue.domainExceptionsUpdated', params: { count: this.domainExceptions.size, removedFromQueue } });
 
         return {
             count: this.domainExceptions.size,
             removedFromQueue
         };
-    }
-
-    getDomainExceptions() {
-        return Array.from(this.domainExceptions);
     }
 
     /**
@@ -211,7 +273,7 @@ class EventQueueManager extends BaseManager {
             };
 
             if (this._isDomainExcluded(domain)) {
-                this._log('Событие пропущено из-за исключения домена', {
+                this._log({ key: 'logs.eventQueue.eventSkipped' }, {
                     domain,
                     eventType
                 });
@@ -219,12 +281,12 @@ class EventQueueManager extends BaseManager {
             }
 
             if (this.queue.length >= this.maxQueueSize) {
-                this._logError('КРИТИЧЕСКАЯ ОШИБКА: Очередь достигла максимального размера! Удаляем старые события.', {
+                this._logError({ key: 'logs.eventQueue.queueMaxSizeReached' }, {
                     queueSize: this.queue.length,
                     maxQueueSize: this.maxQueueSize
                 });
-                // Удаляем 10% самых старых событий
-                const removeCount = Math.floor(this.maxQueueSize * 0.1);
+
+                const removeCount = Math.floor(this.maxQueueSize * CONFIG.TRACKER.OLD_EVENTS_REMOVAL_PERCENT);
                 this.queue.splice(0, removeCount);
             }
 
@@ -234,15 +296,13 @@ class EventQueueManager extends BaseManager {
             
             this.updateState({ queueSize: this.queue.length });
             
-            this._log('Событие добавлено в очередь', { 
+            this._log({ key: 'logs.eventQueue.eventAdded' }, { 
                 event,
                 queueSize: this.queue.length 
             });
 
-            // Защита от переполнения: если очередь превысила BATCH_SIZE, отправляем немедленно
-            // Это аварийная мера, в нормальных условиях события отправляются по таймеру
             if (this.queue.length >= this.batchSize) {
-                this._log('ВНИМАНИЕ: Размер очереди превысил BATCH_SIZE, аварийная отправка', { 
+                this._log({ key: 'logs.eventQueue.queueExceededBatchSize' }, { 
                     queueSize: this.queue.length,
                     batchSize: this.batchSize 
                 });
@@ -262,24 +322,18 @@ class EventQueueManager extends BaseManager {
      */
     startBatchProcessor() {
         if (this.batchInterval) {
-            this._log('Batch processor уже запущен');
+            this._log({ key: 'logs.eventQueue.batchProcessorAlreadyStarted' });
             return;
         }
 
         this.batchInterval = setInterval(() => {
             if (this.queue.length > 0) {
-                this._log('Периодическая обработка батча (основной механизм)', { 
-                    queueSize: this.queue.length,
-                    interval: `${this.batchTimeout / 1000}s`
-                });
+                this._log({ key: 'logs.eventQueue.periodicBatchProcessing', params: { queueSize: this.queue.length, interval: `${this.batchTimeout / 1000}s` } });
                 this.processQueue();
             }
         }, this.batchTimeout);
 
-        this._log('Batch processor запущен', { 
-            interval: this.batchTimeout,
-            intervalSeconds: `${this.batchTimeout / 1000}s`
-        });
+        this._log({ key: 'logs.eventQueue.batchProcessorStarted', params: { interval: this.batchTimeout, intervalSeconds: `${this.batchTimeout / 1000}s` } });
     }
 
     /**
@@ -291,7 +345,7 @@ class EventQueueManager extends BaseManager {
         if (this.batchInterval) {
             clearInterval(this.batchInterval);
             this.batchInterval = null;
-            this._log('Batch processor остановлен');
+            this._log({ key: 'logs.eventQueue.batchProcessorStopped' });
         }
     }
 
@@ -299,18 +353,21 @@ class EventQueueManager extends BaseManager {
      * Обрабатывает очередь событий.
      * Отправляет батч событий на backend.
      * 
+     * Фильтрует события по списку исключенных доменов, отправляет оставшиеся события,
+     * обрабатывает ошибки и планирует повторные попытки при необходимости.
+     * 
      * @async
      * @returns {Promise<void>}
      */
     async processQueue() {
         await this._executeWithTimingAsync('processQueue', async () => {
             if (this.queue.length === 0) {
-                this._log('Очередь пуста, нечего обрабатывать');
+                this._log({ key: 'logs.eventQueue.queueEmpty' });
                 return;
             }
 
             if (!this.isOnline) {
-                this._log('Нет подключения, обработка отложена');
+                this._log({ key: 'logs.eventQueue.noConnection' });
                 await this._registerSendFailure({ reason: 'offline' });
                 return;
             }
@@ -319,24 +376,18 @@ class EventQueueManager extends BaseManager {
             this.updateState({ queueSize: this.queue.length });
             this.statisticsManager.updateQueueSize(this.queue.length);
             
-            this._log('Обработка батча событий', { 
-                eventsCount: eventsToSend.length,
-                remainingInQueue: this.queue.length 
-            });
+            this._log({ key: 'logs.eventQueue.batchProcessing', params: { eventsCount: eventsToSend.length, remainingInQueue: this.queue.length } });
 
             const filteredEvents = eventsToSend.filter(event => !this._isDomainExcluded(event.domain));
             const skippedDueToExclusions = eventsToSend.length - filteredEvents.length;
 
             if (skippedDueToExclusions > 0) {
-                this._log('События исключены из-за списка доменов', {
-                    skippedDueToExclusions,
-                    remainingToSend: filteredEvents.length
-                });
+                this._log({ key: 'logs.eventQueue.eventsExcluded', params: { skippedDueToExclusions, remainingToSend: filteredEvents.length } });
             }
 
             if (filteredEvents.length === 0) {
-                this._log('После применения исключений доменов событий для отправки не осталось');
-                // сохраняем очередь, чтобы исключенные события не вернулись
+                this._log({ key: 'logs.eventQueue.noEventsAfterExclusions' });
+
                 await this.storageManager.saveEventQueue(this.queue);
                 return;
             }
@@ -345,24 +396,50 @@ class EventQueueManager extends BaseManager {
                 const result = await this.backendManager.sendEvents(filteredEvents);
                 
                 if (result.success) {
-                    this._log('Батч успешно отправлен', { eventsCount: filteredEvents.length, skippedDueToExclusions });
-                    // Сохраняем обновленную очередь
+                    this._log({ key: 'logs.eventQueue.batchSentSuccess', params: { eventsCount: filteredEvents.length, skippedDueToExclusions } });
+
                     await this.storageManager.saveEventQueue(this.queue);
                     this._resetFailureCounters();
                 } else {
-                    throw new Error(result.error || 'Неизвестная ошибка отправки');
+                    const t = this._getTranslateFn();
+                    const errorMessage = result.error || t('logs.backend.unknownError');
+                    const error = new Error(errorMessage);
+                    
+                    this._logError({ key: 'logs.eventQueue.batchProcessingError' }, error);
+
+                    this.queue.unshift(...filteredEvents);
+                    this.updateState({ queueSize: this.queue.length });
+                    this.statisticsManager.updateQueueSize(this.queue.length);
+                    
+                    this._log({ key: 'logs.eventQueue.eventsReturnedToQueue', params: { queueSize: this.queue.length } });
+
+                    await this._registerSendFailure({
+                        reason: 'sendError',
+                        error: errorMessage
+                    });
+
+                    if (!this.failureThresholdReached) {
+                        if (this.retryTimeoutId) {
+                            clearTimeout(this.retryTimeoutId);
+                        }
+                        this.retryTimeoutId = setTimeout(() => {
+                            this.retryTimeoutId = null;
+                            this._log({ key: 'logs.eventQueue.retryProcessing' });
+                            this.processQueue();
+                        }, this.retryDelay);
+                    } else {
+                        this._log({ key: 'logs.eventQueue.retryNotScheduled' });
+                    }
                 }
             } catch (error) {
-                this._logError('Ошибка обработки батча', error);
-                
-                // Возвращаем события в очередь для повторной попытки
+                this._logError({ key: 'logs.eventQueue.batchProcessingError' }, error);
+
                 this.queue.unshift(...filteredEvents);
                 this.updateState({ queueSize: this.queue.length });
                 this.statisticsManager.updateQueueSize(this.queue.length);
                 
-                this._log('События возвращены в очередь', { queueSize: this.queue.length });
-                
-                // Планируем повторную попытку, если не достигнут лимит неудач
+                this._log({ key: 'logs.eventQueue.eventsReturnedToQueue', params: { queueSize: this.queue.length } });
+
                 await this._registerSendFailure({
                     reason: 'sendError',
                     error: error instanceof Error ? error.message : String(error)
@@ -374,11 +451,11 @@ class EventQueueManager extends BaseManager {
                     }
                     this.retryTimeoutId = setTimeout(() => {
                         this.retryTimeoutId = null;
-                        this._log('Повторная попытка обработки очереди');
+                        this._log({ key: 'logs.eventQueue.retryProcessing' });
                         this.processQueue();
                     }, this.retryDelay);
                 } else {
-                    this._log('Повторная попытка не запланирована: трекер отключен из-за повторных ошибок');
+                    this._log({ key: 'logs.eventQueue.retryNotScheduled' });
                 }
             }
         });
@@ -406,6 +483,9 @@ class EventQueueManager extends BaseManager {
     /**
      * Сбрасывает состояние неудачных отправок (публичный метод).
      * 
+     * Используется для сброса счетчика неудачных попыток и флага превышения порога ошибок.
+     * Вызывается при успешной отправке событий или при ручном сбросе состояния.
+     * 
      * @returns {void}
      */
     resetFailureState() {
@@ -415,19 +495,18 @@ class EventQueueManager extends BaseManager {
     /**
      * Регистрирует неудачную попытку отправки событий.
      * 
+     * Увеличивает счетчик последовательных неудач. Если достигнут порог ошибок,
+     * автоматически отключает трекер через _disableTrackingDueToFailures.
+     * 
      * @private
-     * @param {Object} context - Контекст ошибки
+     * @param {Object} [context={}] - Контекст ошибки (reason, error и т.д.)
      * @returns {Promise<void>}
      */
     async _registerSendFailure(context = {}) {
         this.consecutiveFailures += 1;
         this.updateState({ consecutiveFailures: this.consecutiveFailures });
 
-        this._log('Неудачная попытка отправки событий', {
-            consecutiveFailures: this.consecutiveFailures,
-            threshold: this.maxFailuresBeforeDisable,
-            ...context
-        });
+        this._log({ key: 'logs.eventQueue.sendFailure', params: { consecutiveFailures: this.consecutiveFailures, threshold: this.maxFailuresBeforeDisable } }, context);
 
         if (this.consecutiveFailures >= this.maxFailuresBeforeDisable && !this.failureThresholdReached) {
             this.failureThresholdReached = true;
@@ -445,12 +524,12 @@ class EventQueueManager extends BaseManager {
      */
     async _disableTrackingDueToFailures(context = {}) {
         if (!this.trackingController) {
-            this._log('Трекер не может быть отключен автоматически: отсутствует trackingController', context);
+            this._log({ key: 'logs.eventQueue.trackerCannotBeDisabled' }, context);
             return;
         }
 
         if (this.disableInProgress) {
-            this._log('Отключение трекера уже выполняется, пропуск повторного вызова');
+            this._log({ key: 'logs.eventQueue.disableInProgress' });
             return;
         }
 
@@ -464,14 +543,11 @@ class EventQueueManager extends BaseManager {
         this.stopBatchProcessor();
 
         try {
-            this._log('Отключение трекера из-за повторных ошибок отправки', {
-                consecutiveFailures: this.consecutiveFailures,
-                ...context
-            });
+            this._log({ key: 'logs.eventQueue.disablingTracker', params: { consecutiveFailures: this.consecutiveFailures } }, context);
             await this.trackingController.disableTracking();
             await this.storageManager.saveEventQueue(this.queue);
         } catch (error) {
-            this._logError('Ошибка при автоматическом отключении трекера', error);
+            this._logError({ key: 'logs.eventQueue.disableError' }, error);
         } finally {
             this.disableInProgress = false;
         }
@@ -480,22 +556,27 @@ class EventQueueManager extends BaseManager {
     /**
      * Восстанавливает очередь из хранилища.
      * 
+     * Загружает сохраненную очередь событий из chrome.storage и восстанавливает
+     * внутреннее состояние менеджера. Используется при инициализации трекера.
+     * 
      * @async
      * @returns {Promise<void>}
      */
     async restoreQueue() {
         await this._executeWithTimingAsync('restoreQueue', async () => {
-            const restoredQueue = await this.storageManager.restoreEventQueue();
-            this.queue = restoredQueue;
+            this.queue = await this.storageManager.restoreEventQueue();
             this.updateState({ queueSize: this.queue.length });
             this.statisticsManager.updateQueueSize(this.queue.length);
             
-            this._log('Очередь восстановлена', { queueSize: this.queue.length });
+            this._log({ key: 'logs.eventQueue.queueRestored', params: { queueSize: this.queue.length } });
         });
     }
 
     /**
      * Сохраняет текущую очередь в хранилище.
+     * 
+     * Сохраняет текущее состояние очереди событий в chrome.storage для восстановления
+     * после перезапуска расширения. Вызывается периодически и при критических операциях.
      * 
      * @async
      * @returns {Promise<void>}
@@ -503,14 +584,15 @@ class EventQueueManager extends BaseManager {
     async saveQueue() {
         await this._executeWithTimingAsync('saveQueue', async () => {
             await this.storageManager.saveEventQueue(this.queue);
-            this._log('Очередь сохранена', { queueSize: this.queue.length });
+            this._log({ key: 'logs.eventQueue.queueSaved', params: { queueSize: this.queue.length } });
         });
     }
 
     /**
-     * Устанавливает статус онлайн.
+     * Устанавливает статус онлайн/офлайн.
+     * При восстановлении подключения автоматически запускает обработку очереди.
      * 
-     * @param {boolean} isOnline - Статус подключения
+     * @param {boolean} isOnline - Статус подключения (true - онлайн, false - офлайн)
      * @returns {void}
      */
     setOnlineStatus(isOnline) {
@@ -518,11 +600,10 @@ class EventQueueManager extends BaseManager {
         this.isOnline = isOnline;
         this.updateState({ isOnline });
         
-        this._log('Статус подключения изменен', { isOnline });
-        
-        // Если статус изменился с офлайн на онлайн, обрабатываем очередь
+        this._log({ key: 'logs.eventQueue.connectionStatusChanged', params: { isOnline } });
+
         if (!wasOnline && isOnline && this.queue.length > 0) {
-            this._log('Подключение восстановлено, запуск обработки очереди');
+            this._log({ key: 'logs.eventQueue.connectionRestored' });
             this.processQueue();
         }
     }
@@ -530,35 +611,17 @@ class EventQueueManager extends BaseManager {
     /**
      * Получает текущий размер очереди.
      * 
-     * @returns {number} Размер очереди
+     * @returns {number} Текущее количество событий в очереди
      */
     getQueueSize() {
         return this.queue.length;
     }
 
     /**
-     * Получает копию текущей очереди.
-     * 
-     * @returns {Array<Event>} Копия очереди
-     */
-    getQueue() {
-        return [...this.queue];
-    }
-
-    /**
-     * Очищает очередь.
-     * 
-     * @returns {void}
-     */
-    clearQueue() {
-        this.queue = [];
-        this.updateState({ queueSize: 0 });
-        this.statisticsManager.updateQueueSize(0);
-        this._log('Очередь очищена');
-    }
-
-    /**
      * Уничтожает менеджер и освобождает ресурсы.
+     * 
+     * Останавливает batch processor, очищает таймеры, очередь событий,
+     * метрики производительности, исключения доменов и сбрасывает все счетчики.
      * 
      * @returns {void}
      */
@@ -575,7 +638,7 @@ class EventQueueManager extends BaseManager {
         this.consecutiveFailures = 0;
         this.failureThresholdReached = false;
         super.destroy();
-        this._log('EventQueueManager уничтожен');
+        this._log({ key: 'logs.eventQueue.destroyed' });
     }
 }
 
