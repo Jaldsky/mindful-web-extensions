@@ -65,7 +65,12 @@ const CONFIG = {
         MAX_QUEUE_SIZE: 30, // Максимальный размер очереди
         FAILURE_DISABLE_THRESHOLD: 5, // Количество неудачных отправок перед отключением трекера
         // Процент старых событий для удаления при переполнении очереди
-        OLD_EVENTS_REMOVAL_PERCENT: 0.1 // 10% самых старых событий
+        OLD_EVENTS_REMOVAL_PERCENT: 0.1, // 10% самых старых событий
+        // Типы событий
+        EVENT_TYPES: {
+            ACTIVE: 'active', // Событие активности
+            INACTIVE: 'inactive' // Событие неактивности
+        }
     },
 
     /**

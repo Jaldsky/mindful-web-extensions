@@ -67,7 +67,7 @@ class DebugHandlerManager extends BaseManager {
                     continue;
                 }
                 generated.add(domain);
-                this.statisticsManager.addEvent('active', domain);
+                this.statisticsManager.addEvent(CONFIG.TRACKER.EVENT_TYPES.ACTIVE, domain);
             }
             this._log({ key: 'logs.debugHandler.domainsGenerated', params: { count: generated.size } });
             sendResponse({ success: true, generated: generated.size });

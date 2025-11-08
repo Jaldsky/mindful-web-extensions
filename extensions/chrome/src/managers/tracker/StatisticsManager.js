@@ -1,4 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
+const CONFIG = require('../../../config.js');
 
 /**
  * @typedef {Object} Statistics
@@ -40,22 +41,22 @@ class StatisticsManager extends BaseManager {
         /** @type {boolean} */
         this.isTracking = true;
         
-        /** @type {Map<string, number>} */
-        this.performanceMetrics = new Map();
-        
         this.updateState({
             eventsTracked: this.eventsTracked,
             domainsVisited: this.domainsVisited.size,
             isTracking: this.isTracking
         });
         
-        this._log('StatisticsManager инициализирован');
+        this._log({ key: 'logs.statistics.created' });
     }
 
     /**
      * Добавляет событие в статистику.
      * 
-     * @param {string} eventType - Тип события ('active' или 'inactive')
+     * Увеличивает счетчики событий, добавляет домен в список посещенных доменов
+     * и обновляет состояние менеджера.
+     * 
+     * @param {string} eventType - Тип события (CONFIG.TRACKER.EVENT_TYPES.ACTIVE или CONFIG.TRACKER.EVENT_TYPES.INACTIVE)
      * @param {string} domain - Домен
      * @returns {void}
      */
@@ -64,9 +65,9 @@ class StatisticsManager extends BaseManager {
             this.eventsTracked++;
             this.domainsVisited.add(domain);
             
-            if (eventType === 'active') {
+            if (eventType === CONFIG.TRACKER.EVENT_TYPES.ACTIVE) {
                 this.activeEvents++;
-            } else if (eventType === 'inactive') {
+            } else if (eventType === CONFIG.TRACKER.EVENT_TYPES.INACTIVE) {
                 this.inactiveEvents++;
             }
             
@@ -77,17 +78,15 @@ class StatisticsManager extends BaseManager {
                 inactiveEvents: this.inactiveEvents
             });
             
-            this._log('Событие добавлено в статистику', { 
-                eventType, 
-                domain, 
-                totalEvents: this.eventsTracked,
-                totalDomains: this.domainsVisited.size
-            });
+            this._log({ key: 'logs.statistics.eventAdded', params: { eventType, domain, totalEvents: this.eventsTracked, totalDomains: this.domainsVisited.size } });
         });
     }
 
     /**
      * Обновляет размер очереди в статистике.
+     * 
+     * Обновляет размер очереди событий в состоянии менеджера.
+     * Используется для синхронизации статистики с текущим состоянием очереди.
      * 
      * @param {number} queueSize - Текущий размер очереди
      * @returns {void}
@@ -98,6 +97,10 @@ class StatisticsManager extends BaseManager {
 
     /**
      * Получает текущую статистику.
+     * 
+     * Возвращает объект с текущими значениями статистики:
+     * количество отслеженных событий, количество посещенных доменов,
+     * количество активных/неактивных событий, размер очереди и статус отслеживания.
      * 
      * @returns {Statistics} Объект со статистикой
      */
@@ -115,7 +118,10 @@ class StatisticsManager extends BaseManager {
     /**
      * Получает подробную статистику с доменами.
      * 
-     * @returns {Object} Подробная статистика
+     * Возвращает расширенную статистику, включающую список всех посещенных доменов
+     * в дополнение к базовой статистике.
+     * 
+     * @returns {Object} Подробная статистика с полем domains (массив доменов)
      */
     getDetailedStatistics() {
         return {
@@ -127,23 +133,27 @@ class StatisticsManager extends BaseManager {
     /**
      * Включает отслеживание.
      * 
+     * Устанавливает флаг отслеживания в true и обновляет состояние менеджера.
+     * 
      * @returns {void}
      */
     enableTracking() {
         this.isTracking = true;
         this.updateState({ isTracking: true });
-        this._log('Отслеживание включено');
+        this._log({ key: 'logs.statistics.trackingEnabled' });
     }
 
     /**
      * Выключает отслеживание.
+     * 
+     * Устанавливает флаг отслеживания в false и обновляет состояние менеджера.
      * 
      * @returns {void}
      */
     disableTracking() {
         this.isTracking = false;
         this.updateState({ isTracking: false });
-        this._log('Отслеживание выключено');
+        this._log({ key: 'logs.statistics.trackingDisabled' });
     }
 
     /**
@@ -157,6 +167,9 @@ class StatisticsManager extends BaseManager {
 
     /**
      * Сбрасывает статистику.
+     * 
+     * Обнуляет все счетчики событий, очищает список посещенных доменов
+     * и обновляет состояние менеджера.
      * 
      * @returns {void}
      */
@@ -175,20 +188,21 @@ class StatisticsManager extends BaseManager {
                 queueSize: 0
             });
             
-            this._log('Статистика сброшена');
+            this._log({ key: 'logs.statistics.reset' });
         });
     }
 
     /**
      * Уничтожает менеджер и освобождает ресурсы.
      * 
+     * Очищает список посещенных доменов и освобождает все внутренние данные.
+     * 
      * @returns {void}
      */
     destroy() {
         this.domainsVisited.clear();
-        this.performanceMetrics.clear();
         super.destroy();
-        this._log('StatisticsManager уничтожен');
+        this._log({ key: 'logs.statistics.destroyed' });
     }
 }
 

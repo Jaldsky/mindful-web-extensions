@@ -76,7 +76,7 @@ class SettingsHandlerManager extends BaseManager {
             const t = this._getTranslateFn();
             sendResponse({ 
                 success: false, 
-                error: t('logs.settingsHandler.urlRequired') || 'URL is required' 
+                error: t('logs.settingsHandler.urlRequired')
             });
             return;
         }
@@ -179,7 +179,7 @@ class SettingsHandlerManager extends BaseManager {
                 const t = this._getTranslateFn();
                 sendResponse({
                     success: false,
-                    error: t('logs.settingsHandler.enabledRequired') || 'enabled flag is required'
+                    error: t('logs.settingsHandler.enabledRequired')
                 });
                 return;
             }
