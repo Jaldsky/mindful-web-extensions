@@ -690,6 +690,67 @@ const RU = {
             started: 'Batch processor запущен',
             stopped: 'Batch processor остановлен',
             destroyed: 'BatchProcessor уничтожен'
+        },
+        messageHandler: {
+            created: 'MessageHandlerManager инициализирован',
+            dependenciesRequired: 'MessageHandlerManager требует все менеджеры',
+            listenerConfigured: 'Слушатель сообщений настроен',
+            messageReceived: 'Получено сообщение',
+            messageBlocked: 'Сообщение заблокировано',
+            unknownMessageType: 'Неизвестный тип сообщения: {messageType}',
+            messageProcessingError: 'Ошибка обработки сообщения',
+            listenerRemoved: 'Слушатель сообщений удален',
+            destroyed: 'MessageHandlerManager уничтожен'
+        },
+        statusHandler: {
+            created: 'StatusHandlerManager инициализирован',
+            dependenciesRequired: 'StatusHandlerManager требует statisticsManager и eventQueueManager',
+            pingReceived: 'Ping запрос получен',
+            pongMessage: 'pong',
+            statusSent: 'Отправка статуса',
+            statsSent: 'Отправка статистики',
+            detailedStatsSent: 'Отправка подробной статистики',
+            destroyed: 'StatusHandlerManager уничтожен'
+        },
+        connectionHandler: {
+            created: 'ConnectionHandlerManager инициализирован',
+            dependenciesRequired: 'ConnectionHandlerManager требует backendManager и eventQueueManager',
+            healthcheckChecking: 'Проверка доступности (healthcheck)',
+            healthcheckResult: 'Результат healthcheck',
+            healthcheckError: 'Ошибка healthcheck',
+            queueEmpty: 'Очередь пуста, проверяем healthcheck',
+            queueEmptyMessage: 'Нет событий в очереди, backend доступен',
+            forceSendEvents: 'Принудительная отправка событий из очереди',
+            eventsSentSuccess: 'События успешно отправлены',
+            eventsSentSuccessMessage: 'Успешно отправлено {sent} событий',
+            eventsSendError: 'Ошибка отправки событий',
+            destroyed: 'ConnectionHandlerManager уничтожен'
+        },
+        settingsHandler: {
+            created: 'SettingsHandlerManager инициализирован',
+            dependenciesRequired: 'SettingsHandlerManager требует backendManager, storageManager, eventQueueManager и trackingController',
+            urlNotProvided: 'URL не предоставлен в запросе',
+            urlRequired: 'URL обязателен',
+            backendUrlUpdating: 'Обновление Backend URL',
+            backendUrlUpdated: 'Backend URL успешно обновлен',
+            backendUrlSaveError: 'Ошибка сохранения Backend URL',
+            backendUrlUpdateError: 'Ошибка обновления Backend URL',
+            domainExceptionsUpdating: 'Обновление исключений доменов',
+            domainExceptionsUpdateError: 'Ошибка обновления исключений доменов',
+            domainExceptionsRequestError: 'Ошибка обработки запроса исключений доменов',
+            enabledFieldMissing: 'Поле enabled отсутствует в запросе изменения отслеживания',
+            enabledRequired: 'Флаг enabled обязателен',
+            trackingStateChanging: 'Запрос изменения состояния отслеживания',
+            trackingStateChangeError: 'Ошибка изменения состояния отслеживания',
+            trackingStateRequestError: 'Ошибка обработки запроса изменения отслеживания',
+            destroyed: 'SettingsHandlerManager уничтожен'
+        },
+        debugHandler: {
+            created: 'DebugHandlerManager инициализирован',
+            dependenciesRequired: 'DebugHandlerManager требует statisticsManager',
+            domainsGenerated: 'Сгенерированы домены',
+            domainsGenerationError: 'Ошибка генерации доменов',
+            destroyed: 'DebugHandlerManager уничтожен'
         }
     },
 
