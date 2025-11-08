@@ -664,6 +664,32 @@ const RU = {
             connectionStatusChanged: 'Статус подключения изменен',
             connectionRestored: 'Подключение восстановлено, запуск обработки очереди',
             destroyed: 'EventQueueManager уничтожен'
+        },
+        domainExceptions: {
+            created: 'DomainExceptionsManager инициализирован',
+            updated: 'Исключения доменов обновлены',
+            cleared: 'Исключения доменов очищены',
+            destroyed: 'DomainExceptionsManager уничтожен'
+        },
+        failure: {
+            created: 'FailureManager инициализирован',
+            countersReset: 'Счетчики ошибок сброшены',
+            sendFailure: 'Неудачная попытка отправки событий',
+            trackerCannotBeDisabled: 'Трекер не может быть отключен автоматически: отсутствует trackingController',
+            disableInProgress: 'Отключение трекера уже выполняется, пропуск повторного вызова',
+            disablingTracker: 'Отключение трекера из-за повторных ошибок отправки',
+            disableError: 'Ошибка при автоматическом отключении трекера',
+            saveQueueError: 'Ошибка сохранения очереди при отключении трекера',
+            destroyed: 'FailureManager уничтожен'
+        },
+        batchProcessor: {
+            created: 'BatchProcessor инициализирован',
+            dependenciesRequired: 'BatchProcessor требует функцию processQueueFn',
+            alreadyStarted: 'Batch processor уже запущен',
+            periodicProcessing: 'Периодическая обработка батча (основной механизм)',
+            started: 'Batch processor запущен',
+            stopped: 'Batch processor остановлен',
+            destroyed: 'BatchProcessor уничтожен'
         }
     },
 

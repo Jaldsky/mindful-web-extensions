@@ -95,7 +95,7 @@ describe('EventQueueManager', () => {
             expect(eventQueueManager.isOnline).toBe(true);
         });
 
-        test('должен иметь performanceMetrics Map', () => {
+        test('должен иметь performanceMetrics Map из BaseManager', () => {
             expect(eventQueueManager.performanceMetrics).toBeInstanceOf(Map);
         });
     });
@@ -166,25 +166,25 @@ describe('EventQueueManager', () => {
             
             eventQueueManager.startBatchProcessor();
 
-            expect(eventQueueManager.batchInterval).toBeDefined();
+            expect(eventQueueManager.batchProcessor.batchInterval).toBeDefined();
         });
 
         test('должен останавливать периодическую обработку', () => {
             eventQueueManager.startBatchProcessor();
-            expect(eventQueueManager.batchInterval).toBeDefined();
+            expect(eventQueueManager.batchProcessor.batchInterval).toBeDefined();
 
             eventQueueManager.stopBatchProcessor();
-            expect(eventQueueManager.batchInterval).toBeNull();
+            expect(eventQueueManager.batchProcessor.batchInterval).toBeNull();
         });
 
         test('не должен запускать дважды', () => {
             eventQueueManager.stopBatchProcessor();
             
             eventQueueManager.startBatchProcessor();
-            const interval1 = eventQueueManager.batchInterval;
+            const interval1 = eventQueueManager.batchProcessor.batchInterval;
 
             eventQueueManager.startBatchProcessor();
-            const interval2 = eventQueueManager.batchInterval;
+            const interval2 = eventQueueManager.batchProcessor.batchInterval;
 
             expect(interval1).toBe(interval2);
         });
@@ -364,7 +364,7 @@ describe('EventQueueManager', () => {
 
             eventQueueManager.destroy();
 
-            expect(eventQueueManager.batchInterval).toBeNull();
+            expect(eventQueueManager.batchProcessor.batchInterval).toBeNull();
             expect(eventQueueManager.queue.length).toBe(0);
             expect(eventQueueManager.performanceMetrics.size).toBe(0);
         });

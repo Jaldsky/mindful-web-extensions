@@ -664,6 +664,32 @@ const EN = {
             connectionStatusChanged: 'Connection status changed',
             connectionRestored: 'Connection restored, starting queue processing',
             destroyed: 'EventQueueManager destroyed'
+        },
+        domainExceptions: {
+            created: 'DomainExceptionsManager initialized',
+            updated: 'Domain exceptions updated',
+            cleared: 'Domain exceptions cleared',
+            destroyed: 'DomainExceptionsManager destroyed'
+        },
+        failure: {
+            created: 'FailureManager initialized',
+            countersReset: 'Failure counters reset',
+            sendFailure: 'Failed attempt to send events',
+            trackerCannotBeDisabled: 'Tracker cannot be disabled automatically: trackingController missing',
+            disableInProgress: 'Tracker disabling already in progress, skipping duplicate call',
+            disablingTracker: 'Disabling tracker due to repeated send errors',
+            disableError: 'Error during automatic tracker disabling',
+            saveQueueError: 'Error saving queue during tracker disabling',
+            destroyed: 'FailureManager destroyed'
+        },
+        batchProcessor: {
+            created: 'BatchProcessor initialized',
+            dependenciesRequired: 'BatchProcessor requires processQueueFn function',
+            alreadyStarted: 'Batch processor already started',
+            periodicProcessing: 'Periodic batch processing (main mechanism)',
+            started: 'Batch processor started',
+            stopped: 'Batch processor stopped',
+            destroyed: 'BatchProcessor destroyed'
         }
     },
 
