@@ -690,6 +690,67 @@ const EN = {
             started: 'Batch processor started',
             stopped: 'Batch processor stopped',
             destroyed: 'BatchProcessor destroyed'
+        },
+        messageHandler: {
+            created: 'MessageHandlerManager initialized',
+            dependenciesRequired: 'MessageHandlerManager requires all managers',
+            listenerConfigured: 'Message listener configured',
+            messageReceived: 'Message received',
+            messageBlocked: 'Message blocked',
+            unknownMessageType: 'Unknown message type: {messageType}',
+            messageProcessingError: 'Error processing message',
+            listenerRemoved: 'Message listener removed',
+            destroyed: 'MessageHandlerManager destroyed'
+        },
+        statusHandler: {
+            created: 'StatusHandlerManager initialized',
+            dependenciesRequired: 'StatusHandlerManager requires statisticsManager and eventQueueManager',
+            pingReceived: 'Ping request received',
+            pongMessage: 'pong',
+            statusSent: 'Status sent',
+            statsSent: 'Statistics sent',
+            detailedStatsSent: 'Detailed statistics sent',
+            destroyed: 'StatusHandlerManager destroyed'
+        },
+        connectionHandler: {
+            created: 'ConnectionHandlerManager initialized',
+            dependenciesRequired: 'ConnectionHandlerManager requires backendManager and eventQueueManager',
+            healthcheckChecking: 'Checking availability (healthcheck)',
+            healthcheckResult: 'Healthcheck result',
+            healthcheckError: 'Healthcheck error',
+            queueEmpty: 'Queue is empty, checking healthcheck',
+            queueEmptyMessage: 'No events in queue, backend is available',
+            forceSendEvents: 'Force sending events from queue',
+            eventsSentSuccess: 'Events sent successfully',
+            eventsSentSuccessMessage: 'Successfully sent {sent} events',
+            eventsSendError: 'Error sending events',
+            destroyed: 'ConnectionHandlerManager destroyed'
+        },
+        settingsHandler: {
+            created: 'SettingsHandlerManager initialized',
+            dependenciesRequired: 'SettingsHandlerManager requires backendManager, storageManager, eventQueueManager and trackingController',
+            urlNotProvided: 'URL not provided in request',
+            urlRequired: 'URL is required',
+            backendUrlUpdating: 'Updating Backend URL',
+            backendUrlUpdated: 'Backend URL updated successfully',
+            backendUrlSaveError: 'Error saving Backend URL',
+            backendUrlUpdateError: 'Error updating Backend URL',
+            domainExceptionsUpdating: 'Updating domain exceptions',
+            domainExceptionsUpdateError: 'Error updating domain exceptions',
+            domainExceptionsRequestError: 'Error processing domain exceptions request',
+            enabledFieldMissing: 'enabled field missing in tracking change request',
+            enabledRequired: 'enabled flag is required',
+            trackingStateChanging: 'Tracking state change request',
+            trackingStateChangeError: 'Error changing tracking state',
+            trackingStateRequestError: 'Error processing tracking state change request',
+            destroyed: 'SettingsHandlerManager destroyed'
+        },
+        debugHandler: {
+            created: 'DebugHandlerManager initialized',
+            dependenciesRequired: 'DebugHandlerManager requires statisticsManager',
+            domainsGenerated: 'Domains generated',
+            domainsGenerationError: 'Error generating domains',
+            destroyed: 'DebugHandlerManager destroyed'
         }
     },
 

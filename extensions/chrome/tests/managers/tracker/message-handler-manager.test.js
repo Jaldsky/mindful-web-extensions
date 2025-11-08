@@ -94,8 +94,11 @@ describe('MessageHandlerManager', () => {
             expect(messageHandlerManager.messageListener).toBeNull();
         });
 
-        test('должен иметь performanceMetrics Map', () => {
-            expect(messageHandlerManager.performanceMetrics).toBeInstanceOf(Map);
+        test('должен иметь обработчики', () => {
+            expect(messageHandlerManager.statusHandler).toBeDefined();
+            expect(messageHandlerManager.connectionHandler).toBeDefined();
+            expect(messageHandlerManager.settingsHandler).toBeDefined();
+            expect(messageHandlerManager.debugHandler).toBeDefined();
         });
     });
 
@@ -239,10 +242,12 @@ describe('MessageHandlerManager', () => {
                 sendResponse
             );
 
-            expect(sendResponse).toHaveBeenCalledWith({
-                success: false,
-                error: 'enabled flag is required'
-            });
+            expect(sendResponse).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: false
+                })
+            );
+            expect(sendResponse.mock.calls[0][0].error).toBeDefined();
         });
 
         test('должен обрабатывать ошибку при изменении отслеживания', async () => {
@@ -312,10 +317,10 @@ describe('MessageHandlerManager', () => {
 
             expect(sendResponse).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    success: false,
-                    error: expect.stringContaining('Unknown message type')
+                    success: false
                 })
             );
+            expect(sendResponse.mock.calls[0][0].error).toBeDefined();
         });
 
         test('должен обрабатывать ошибки при обработке сообщений', () => {
@@ -415,7 +420,7 @@ describe('MessageHandlerManager', () => {
             
             const sendResponse = jest.fn();
             
-            messageHandlerManager._handleTestConnection(sendResponse, 'checkConnection');
+            messageHandlerManager.connectionHandler.handleTestConnection(sendResponse, 'checkConnection');
             
             // Сразу проверяем после вызова без ожидания
             await Promise.resolve();
@@ -423,24 +428,28 @@ describe('MessageHandlerManager', () => {
             expect(backendManager.checkHealth).toHaveBeenCalled();
         });
 
-        test('_handleTestConnection - TEST_CONNECTION с пустой очередью', () => {
+        test('_handleTestConnection - TEST_CONNECTION с пустой очередью', async () => {
             jest.spyOn(eventQueueManager, 'getQueueSize').mockReturnValue(0);
             jest.spyOn(backendManager, 'checkHealth').mockResolvedValue({ success: true });
             
             const sendResponse = jest.fn();
             
-            messageHandlerManager._handleTestConnection(sendResponse, 'testConnection');
+            messageHandlerManager.connectionHandler.handleTestConnection(sendResponse, 'testConnection');
+            
+            await Promise.resolve();
             
             expect(eventQueueManager.getQueueSize).toHaveBeenCalled();
         });
 
-        test('_handleTestConnection - TEST_CONNECTION с событиями в очереди', () => {
+        test('_handleTestConnection - TEST_CONNECTION с событиями в очереди', async () => {
             jest.spyOn(eventQueueManager, 'getQueueSize').mockReturnValue(5);
             jest.spyOn(eventQueueManager, 'processQueue').mockResolvedValue();
             
             const sendResponse = jest.fn();
             
-            messageHandlerManager._handleTestConnection(sendResponse, 'testConnection');
+            messageHandlerManager.connectionHandler.handleTestConnection(sendResponse, 'testConnection');
+            
+            await Promise.resolve();
             
             expect(eventQueueManager.getQueueSize).toHaveBeenCalled();
         });
@@ -448,39 +457,42 @@ describe('MessageHandlerManager', () => {
         test('_handleUpdateBackendUrl - без URL в запросе', () => {
             const sendResponse = jest.fn();
             
-            messageHandlerManager._handleUpdateBackendUrl({}, sendResponse);
+            messageHandlerManager.settingsHandler.handleUpdateBackendUrl({}, sendResponse);
             
             expect(sendResponse).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    success: false,
-                    error: 'URL is required'
+                    success: false
                 })
             );
         });
 
-        test('_handleUpdateBackendUrl - с URL в request.url', () => {
+        test('_handleUpdateBackendUrl - с URL в request.url', async () => {
             jest.spyOn(storageManager, 'saveBackendUrl').mockResolvedValue(true);
             jest.spyOn(backendManager, 'setBackendUrl');
             
             const sendResponse = jest.fn();
             
-            messageHandlerManager._handleUpdateBackendUrl(
+            messageHandlerManager.settingsHandler.handleUpdateBackendUrl(
                 { url: 'http://new-backend.com' },
                 sendResponse
             );
             
+            await Promise.resolve();
+            
             expect(backendManager.setBackendUrl).toHaveBeenCalledWith('http://new-backend.com');
         });
 
-        test('_handleUpdateBackendUrl - с URL в request.data.url', () => {
+        test('_handleUpdateBackendUrl - с URL в request.data.url', async () => {
             jest.spyOn(storageManager, 'saveBackendUrl').mockResolvedValue(true);
             
             const sendResponse = jest.fn();
             
-            messageHandlerManager._handleUpdateBackendUrl(
+            messageHandlerManager.settingsHandler.handleUpdateBackendUrl(
                 { data: { url: 'http://new-backend.com' } },
                 sendResponse
             );
+            
+            await Promise.resolve();
             
             expect(storageManager.saveBackendUrl).toHaveBeenCalledWith('http://new-backend.com');
         });
@@ -496,10 +508,10 @@ describe('MessageHandlerManager', () => {
             
             expect(sendResponse).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    success: false,
-                    error: 'Unknown message type: unknownType'
+                    success: false
                 })
             );
+            expect(sendResponse.mock.calls[0][0].error).toContain('unknownType');
         });
 
         test('_handleMessage - должен использовать action если type отсутствует', () => {

@@ -1,6 +1,9 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../../config.js');
-const { normalizeDomainList } = require('../../utils/domainUtils.js');
+const StatusHandlerManager = require('./StatusHandlerManager.js');
+const ConnectionHandlerManager = require('./ConnectionHandlerManager.js');
+const SettingsHandlerManager = require('./SettingsHandlerManager.js');
+const DebugHandlerManager = require('./DebugHandlerManager.js');
 
 /**
  * @typedef {Object} MessageResponse
@@ -12,6 +15,7 @@ const { normalizeDomainList } = require('../../utils/domainUtils.js');
 /**
  * Менеджер для обработки сообщений от других компонентов расширения.
  * Отвечает за коммуникацию между Service Worker и UI компонентами.
+ * Использует композицию для разделения ответственности между специализированными обработчиками.
  * 
  * @class MessageHandlerManager
  * @extends BaseManager
@@ -32,82 +36,150 @@ class MessageHandlerManager extends BaseManager {
      * @param {Object} dependencies.eventQueueManager - Менеджер очереди событий
      * @param {Object} dependencies.backendManager - Менеджер backend
      * @param {Object} dependencies.storageManager - Менеджер хранилища
+     * @param {Object} dependencies.trackingController - Контроллер трекера
      * @param {Object} [options={}] - Опции конфигурации
      * @param {boolean} [options.enableLogging=false] - Включить логирование
      */
     constructor(dependencies, options = {}) {
         super(options);
 
-        // Проверка зависимостей
         if (!dependencies || !dependencies.statisticsManager || !dependencies.eventQueueManager || 
             !dependencies.backendManager || !dependencies.storageManager || !dependencies.trackingController) {
-            throw new Error('MessageHandlerManager требует все менеджеры');
+            const t = this._getTranslateFn();
+            throw new Error(t('logs.messageHandler.dependenciesRequired') || 'MessageHandlerManager requires all managers');
         }
 
-        /** @type {Object} */
+        /** 
+         * Менеджер статистики для получения статистики
+         * @type {Object}
+         */
         this.statisticsManager = dependencies.statisticsManager;
         
-        /** @type {Object} */
+        /** 
+         * Менеджер очереди событий для управления очередью
+         * @type {Object}
+         */
         this.eventQueueManager = dependencies.eventQueueManager;
         
-        /** @type {Object} */
+        /** 
+         * Менеджер backend для отправки событий и проверки соединения
+         * @type {Object}
+         */
         this.backendManager = dependencies.backendManager;
         
-        /** @type {Object} */
+        /** 
+         * Менеджер хранилища для сохранения/загрузки данных
+         * @type {Object}
+         */
         this.storageManager = dependencies.storageManager;
 
-        /** @type {Object} */
+        /** 
+         * Контроллер трекера для управления состоянием отслеживания
+         * @type {Object}
+         */
         this.trackingController = dependencies.trackingController;
         
-        /** @type {Function|null} */
+        /** 
+         * Функция-слушатель сообщений Chrome API
+         * @type {Function|null}
+         */
         this.messageListener = null;
+
+        /** 
+         * Менеджер обработки статуса и статистики
+         * @type {StatusHandlerManager}
+         */
+        this.statusHandler = new StatusHandlerManager(
+            {
+                statisticsManager: this.statisticsManager,
+                eventQueueManager: this.eventQueueManager
+            },
+            { enableLogging: this.enableLogging }
+        );
+
+        /** 
+         * Менеджер обработки проверки соединения
+         * @type {ConnectionHandlerManager}
+         */
+        this.connectionHandler = new ConnectionHandlerManager(
+            {
+                backendManager: this.backendManager,
+                eventQueueManager: this.eventQueueManager
+            },
+            { enableLogging: this.enableLogging }
+        );
+
+        /** 
+         * Менеджер обработки настроек
+         * @type {SettingsHandlerManager}
+         */
+        this.settingsHandler = new SettingsHandlerManager(
+            {
+                backendManager: this.backendManager,
+                storageManager: this.storageManager,
+                eventQueueManager: this.eventQueueManager,
+                trackingController: this.trackingController
+            },
+            { enableLogging: this.enableLogging }
+        );
+
+        /** 
+         * Менеджер обработки отладочных функций
+         * @type {DebugHandlerManager}
+         */
+        this.debugHandler = new DebugHandlerManager(
+            {
+                statisticsManager: this.statisticsManager
+            },
+            { enableLogging: this.enableLogging }
+        );
         
-        /** @type {Map<string, number>} */
-        this.performanceMetrics = new Map();
-        
-        this._log('MessageHandlerManager инициализирован');
+        this._log({ key: 'logs.messageHandler.created' });
     }
 
     /**
      * Инициализирует обработчик сообщений.
-     * Настраивает слушатель сообщений Chrome API.
+     * Настраивает слушатель сообщений Chrome API для обработки входящих сообщений
+     * от других компонентов расширения (Service Worker, UI компоненты).
+     * 
+     * Если слушатель уже существует, он удаляется перед созданием нового.
      * 
      * @returns {void}
      */
     init() {
         this._executeWithTiming('init', () => {
-            // Удаляем старый слушатель, если есть
             if (this.messageListener) {
                 chrome.runtime.onMessage.removeListener(this.messageListener);
             }
 
-            // Создаем новый слушатель
             this.messageListener = (request, sender, sendResponse) => {
                 this._handleMessage(request, sender, sendResponse);
-                return true; // Асинхронный ответ
+                return true;
             };
 
             chrome.runtime.onMessage.addListener(this.messageListener);
-            this._log('Слушатель сообщений настроен');
+            this._log({ key: 'logs.messageHandler.listenerConfigured' });
         });
     }
 
     /**
      * Обрабатывает входящее сообщение.
      * 
+     * Проверяет тип сообщения, блокирует неслужебные сообщения при отключенном трекинге
+     * или офлайн режиме, и направляет сообщение соответствующему обработчику.
+     * 
      * @private
-     * @param {Object} request - Объект запроса
-     * @param {Object} sender - Отправитель сообщения
+     * @param {Object} request - Объект запроса с полями type/action и data
+     * @param {Object} sender - Отправитель сообщения (Chrome API)
      * @param {Function} sendResponse - Функция для отправки ответа
      * @returns {void}
      */
     _handleMessage(request, sender, sendResponse) {
-        this._log('Получено сообщение', { type: request.type || request.action, request });
+        this._log({ key: 'logs.messageHandler.messageReceived' }, { type: request.type || request.action, request });
 
         try {
             const messageType = request.type || request.action;
 
-            // Проверяем статус отслеживания и подключения для неслужебных сообщений
             const blockCheck = this._shouldBlockMessage(
                 messageType,
                 MessageHandlerManager.MESSAGE_TYPES,
@@ -119,10 +191,7 @@ class MessageHandlerManager extends BaseManager {
                 const isTracking = this.statisticsManager.isTrackingEnabled();
                 const isOnline = this.eventQueueManager.state.isOnline;
                 
-                this._log('Сообщение заблокировано', { 
-                    messageType, 
-                    reason: blockCheck.reason 
-                });
+                this._log({ key: 'logs.messageHandler.messageBlocked', params: { messageType, reason: blockCheck.reason } });
                 
                 sendResponse({ 
                     success: false, 
@@ -135,52 +204,54 @@ class MessageHandlerManager extends BaseManager {
 
             switch (messageType) {
                 case MessageHandlerManager.MESSAGE_TYPES.PING:
-                    this._handlePing(sendResponse);
+                    this.statusHandler.handlePing(sendResponse);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.GET_STATUS:
                 case MessageHandlerManager.MESSAGE_TYPES.GET_TRACKING_STATUS:
-                    this._handleGetStatus(sendResponse);
+                    this.statusHandler.handleGetStatus(sendResponse);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.GET_TODAY_STATS:
-                    this._handleGetTodayStats(sendResponse);
+                    this.statusHandler.handleGetTodayStats(sendResponse);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.GET_DETAILED_STATS:
-                    this._handleGetDetailedStats(sendResponse);
+                    this.statusHandler.handleGetDetailedStats(sendResponse);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.TEST_CONNECTION:
                 case MessageHandlerManager.MESSAGE_TYPES.CHECK_CONNECTION:
-                    this._handleTestConnection(sendResponse, messageType);
+                    this.connectionHandler.handleTestConnection(sendResponse, messageType);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.GENERATE_RANDOM_DOMAINS:
-                    this._handleGenerateRandomDomains(request, sendResponse);
+                    this.debugHandler.handleGenerateRandomDomains(request, sendResponse);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.UPDATE_BACKEND_URL:
-                    this._handleUpdateBackendUrl(request, sendResponse);
+                    this.settingsHandler.handleUpdateBackendUrl(request, sendResponse);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.UPDATE_DOMAIN_EXCEPTIONS:
-                    this._handleUpdateDomainExceptions(request, sendResponse);
+                    this.settingsHandler.handleUpdateDomainExceptions(request, sendResponse);
                     break;
 
                 case MessageHandlerManager.MESSAGE_TYPES.SET_TRACKING_ENABLED:
-                    this._handleSetTrackingEnabled(request, sendResponse);
+                    this.settingsHandler.handleSetTrackingEnabled(request, sendResponse);
                     break;
 
-                default:
-                    this._log('Неизвестный тип сообщения', { messageType });
+                default: {
+                    this._log({ key: 'logs.messageHandler.unknownMessageType', params: { messageType } });
+                    const t = this._getTranslateFn();
                     sendResponse({ 
                         success: false, 
-                        error: `Unknown message type: ${messageType}` 
+                        error: t('logs.messageHandler.unknownMessageType', { messageType }) 
                     });
+                }
             }
         } catch (error) {
-            this._logError('Ошибка обработки сообщения', error);
+            this._logError({ key: 'logs.messageHandler.messageProcessingError' }, error);
             sendResponse({ 
                 success: false, 
                 error: error.message 
@@ -189,327 +260,10 @@ class MessageHandlerManager extends BaseManager {
     }
 
     /**
-     * Обрабатывает ping запрос.
-     * 
-     * @private
-     * @param {Function} sendResponse - Функция для отправки ответа
-     * @returns {void}
-     */
-    _handlePing(sendResponse) {
-        this._log('Ping запрос получен');
-        sendResponse({ 
-            success: true, 
-            message: 'pong' 
-        });
-    }
-
-    /**
-     * Обрабатывает запрос статуса.
-     * 
-     * @private
-     * @param {Function} sendResponse - Функция для отправки ответа
-     * @returns {void}
-     */
-    _handleGetStatus(sendResponse) {
-        const stats = this.statisticsManager.getStatistics();
-        const isOnline = this.eventQueueManager.state.isOnline;
-        
-        const response = {
-            isOnline: isOnline,
-            isTracking: stats.isTracking,
-            stats: {
-                eventsTracked: stats.eventsTracked,
-                domainsVisited: stats.domainsVisited,
-                queueSize: this.eventQueueManager.getQueueSize()
-            }
-        };
-
-        this._log('Отправка статуса', response);
-        sendResponse(response);
-    }
-
-    /**
-     * Обрабатывает запрос статистики за сегодня.
-     * 
-     * @private
-     * @param {Function} sendResponse - Функция для отправки ответа
-     * @returns {void}
-     */
-    _handleGetTodayStats(sendResponse) {
-        const stats = this.statisticsManager.getStatistics();
-        
-        const response = {
-            events: stats.eventsTracked,
-            domains: stats.domainsVisited,
-            queue: this.eventQueueManager.getQueueSize()
-        };
-
-        this._log('Отправка статистики', response);
-        sendResponse(response);
-    }
-
-    /**
-     * Генерирует случайные домены и добавляет события (для отладки).
-     * @private
-     * @param {{data?:{count?:number}}} request
-     * @param {Function} sendResponse
-     */
-    _handleGenerateRandomDomains(request, sendResponse) {
-        try {
-            const count = Math.max(1, Math.min(1000, Number(request?.data?.count) || 100));
-            const generated = new Set();
-            const tlds = ['com', 'net', 'org', 'io', 'app', 'dev', 'site'];
-            const randStr = (len) => Array.from({ length: len }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
-            for (let i = 0; i < count; i++) {
-                const domain = `${randStr(5 + Math.floor(Math.random() * 5))}.${tlds[Math.floor(Math.random() * tlds.length)]}`;
-                if (generated.has(domain)) {
-                    i--; // ensure uniqueness
-                    continue;
-                }
-                generated.add(domain);
-                this.statisticsManager.addEvent('active', domain);
-            }
-            this._log('Сгенерированы домены', { count: generated.size });
-            sendResponse({ success: true, generated: generated.size });
-        } catch (error) {
-            this._logError('Ошибка генерации доменов', error);
-            sendResponse({ success: false, error: error.message });
-        }
-    }
-
-    /**
-     * Обрабатывает запрос подробной статистики за сегодня.
-     * 
-     * @private
-     * @param {Function} sendResponse - Функция для отправки ответа
-     * @returns {void}
-     */
-    _handleGetDetailedStats(sendResponse) {
-        const detailed = this.statisticsManager.getDetailedStatistics();
-        const response = {
-            eventsTracked: detailed.eventsTracked,
-            activeEvents: detailed.activeEvents,
-            inactiveEvents: detailed.inactiveEvents,
-            domainsVisited: detailed.domainsVisited,
-            domains: detailed.domains || [],
-            queueSize: this.eventQueueManager.getQueueSize(),
-            isTracking: detailed.isTracking
-        };
-
-        this._log('Отправка подробной статистики', response);
-        sendResponse(response);
-    }
-
-    /**
-     * Обрабатывает запрос проверки/тестирования соединения.
-     * 
-     * CHECK_CONNECTION - использует healthcheck (не отправляет события)
-     * TEST_CONNECTION - отправляет накопленные реальные события из очереди
-     * 
-     * @private
-     * @param {Function} sendResponse - Функция для отправки ответа
-     * @param {string} messageType - Тип сообщения
-     * @returns {void}
-     */
-    _handleTestConnection(sendResponse, messageType) {
-        const isCheckConnection = messageType === MessageHandlerManager.MESSAGE_TYPES.CHECK_CONNECTION;
-        
-        if (isCheckConnection) {
-            // Легковесная проверка через healthcheck
-            this._log('Проверка доступности (healthcheck)');
-            
-            this.backendManager.checkHealth()
-                .then(result => {
-                    this._log('Результат healthcheck', result);
-                    sendResponse(result);
-                })
-                .catch(error => {
-                    this._logError('Ошибка healthcheck', error);
-                    sendResponse({ 
-                        success: false, 
-                        error: error.message 
-                    });
-                });
-        } else {
-            // TEST_CONNECTION - отправляем накопленные реальные события
-            const queueSize = this.eventQueueManager.getQueueSize();
-            
-            if (queueSize === 0) {
-                this._log('Очередь пуста, проверяем healthcheck');
-                // Если нет событий, просто проверим healthcheck
-                this.backendManager.checkHealth()
-                    .then(result => {
-                        sendResponse({ 
-                            success: result.success, 
-                            message: 'No events in queue, backend is available',
-                            queueSize: 0
-                        });
-                    })
-                    .catch(error => {
-                        sendResponse({ 
-                            success: false, 
-                            error: error.message 
-                        });
-                    });
-            } else {
-                this._log('Принудительная отправка событий из очереди', { queueSize });
-                
-                // Отправляем все накопленные события
-                this.eventQueueManager.processQueue()
-                    .then(() => {
-                        const remainingQueueSize = this.eventQueueManager.getQueueSize();
-                        this._log('События успешно отправлены', { 
-                            sent: queueSize - remainingQueueSize,
-                            remaining: remainingQueueSize 
-                        });
-                        sendResponse({ 
-                            success: true,
-                            message: `Successfully sent ${queueSize - remainingQueueSize} events`,
-                            sentEvents: queueSize - remainingQueueSize,
-                            remainingInQueue: remainingQueueSize
-                        });
-                    })
-                    .catch(error => {
-                        this._logError('Ошибка отправки событий', error);
-                        sendResponse({ 
-                            success: false, 
-                            error: error.message,
-                            queueSize: this.eventQueueManager.getQueueSize()
-                        });
-                    });
-            }
-        }
-    }
-
-    /**
-     * Обрабатывает запрос обновления URL backend.
-     * 
-     * @private
-     * @param {Object} request - Объект запроса
-     * @param {Function} sendResponse - Функция для отправки ответа
-     * @returns {void}
-     */
-    _handleUpdateBackendUrl(request, sendResponse) {
-        const url = request.url || request.data?.url;
-        
-        if (!url) {
-            this._log('URL не предоставлен в запросе');
-            sendResponse({ 
-                success: false, 
-                error: 'URL is required' 
-            });
-            return;
-        }
-
-        this._log('Обновление Backend URL', { url });
-        
-        // Обновляем URL в BackendManager
-        this.backendManager.setBackendUrl(url);
-        
-        // Сохраняем в storage
-        this.storageManager.saveBackendUrl(url)
-            .then(success => {
-                if (success) {
-                    this._log('Backend URL успешно обновлен');
-                    sendResponse({ success: true });
-                } else {
-                    this._log('Ошибка сохранения Backend URL');
-                    sendResponse({ 
-                        success: false, 
-                        error: 'Failed to save URL' 
-                    });
-                }
-            })
-            .catch(error => {
-                this._logError('Ошибка обновления Backend URL', error);
-                sendResponse({ 
-                    success: false, 
-                    error: error.message 
-                });
-            });
-    }
-
-    _handleUpdateDomainExceptions(request, sendResponse) {
-        try {
-            const incoming = Array.isArray(request.domains)
-                ? request.domains
-                : (Array.isArray(request.data?.domains) ? request.data.domains : []);
-
-            const normalized = normalizeDomainList(incoming);
-            this._log('Обновление исключений доменов', { count: normalized.length });
-
-            this.storageManager.saveDomainExceptions(normalized)
-                .then(success => {
-                    if (!success) {
-                        throw new Error('Failed to save domain exceptions');
-                    }
-                    return this.eventQueueManager.setDomainExceptions(normalized);
-                })
-                .then(result => {
-                    sendResponse({
-                        success: true,
-                        count: normalized.length,
-                        removedFromQueue: result?.removedFromQueue || 0
-                    });
-                })
-                .catch(error => {
-                    this._logError('Ошибка обновления исключений доменов', error);
-                    sendResponse({
-                        success: false,
-                        error: error.message
-                    });
-                });
-        } catch (error) {
-            this._logError('Ошибка обработки запроса исключений доменов', error);
-            sendResponse({
-                success: false,
-                error: error.message
-            });
-        }
-    }
-
-    _handleSetTrackingEnabled(request, sendResponse) {
-        try {
-            const enabled = typeof request.enabled === 'boolean'
-                ? request.enabled
-                : (typeof request.data?.enabled === 'boolean' ? request.data.enabled : null);
-
-            if (enabled === null) {
-                this._log('Поле enabled отсутствует в запросе изменения отслеживания');
-                sendResponse({
-                    success: false,
-                    error: 'enabled flag is required'
-                });
-                return;
-            }
-
-            this._log('Запрос изменения состояния отслеживания', { enabled });
-
-            this.trackingController.setTrackingEnabled(enabled)
-                .then(result => {
-                    sendResponse({
-                        success: Boolean(result?.success),
-                        isTracking: Boolean(result?.isTracking)
-                    });
-                })
-                .catch(error => {
-                    this._logError('Ошибка изменения состояния отслеживания', error);
-                    sendResponse({
-                        success: false,
-                        error: error.message
-                    });
-                });
-        } catch (error) {
-            this._logError('Ошибка обработки запроса изменения отслеживания', error);
-            sendResponse({
-                success: false,
-                error: error.message
-            });
-        }
-    }
-
-    /**
      * Удаляет слушатель сообщений.
+     * 
+     * Удаляет зарегистрированный слушатель сообщений Chrome API.
+     * Используется при уничтожении менеджера или переинициализации.
      * 
      * @returns {void}
      */
@@ -517,20 +271,36 @@ class MessageHandlerManager extends BaseManager {
         if (this.messageListener) {
             chrome.runtime.onMessage.removeListener(this.messageListener);
             this.messageListener = null;
-            this._log('Слушатель сообщений удален');
+            this._log({ key: 'logs.messageHandler.listenerRemoved' });
         }
     }
 
     /**
      * Уничтожает менеджер и освобождает ресурсы.
      * 
+     * Удаляет слушатель сообщений Chrome API и очищает все внутренние данные.
+     * Уничтожает все вложенные обработчики.
+     * 
      * @returns {void}
      */
     destroy() {
         this.removeListener();
-        this.performanceMetrics.clear();
+        
+        if (this.statusHandler) {
+            this.statusHandler.destroy();
+        }
+        if (this.connectionHandler) {
+            this.connectionHandler.destroy();
+        }
+        if (this.settingsHandler) {
+            this.settingsHandler.destroy();
+        }
+        if (this.debugHandler) {
+            this.debugHandler.destroy();
+        }
+        
         super.destroy();
-        this._log('MessageHandlerManager уничтожен');
+        this._log({ key: 'logs.messageHandler.destroyed' });
     }
 }
 

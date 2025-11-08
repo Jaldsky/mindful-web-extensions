@@ -160,13 +160,11 @@ class BackendManager extends BaseManager {
                     };
                 }
 
-                // 204 No Content - нет тела ответа
                 if (response.status === CONFIG.BACKEND.STATUS_CODES.NO_CONTENT) {
                     this._log({ key: 'logs.backend.eventsSentSuccess', params: { eventsCount: events.length } });
                     return { success: true };
                 }
 
-                // Для других успешных ответов парсим JSON
                 const responseData = await response.json();
                 this._log({ key: 'logs.backend.eventsSentSuccess', params: { eventsCount: events.length } }, { 
                     response: responseData 

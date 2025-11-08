@@ -137,8 +137,7 @@ class FailureManager extends BaseManager {
         try {
             this._log({ key: 'logs.failure.disablingTracker', params: { consecutiveFailures: this.consecutiveFailures } }, context);
             await this.trackingController.disableTracking();
-            
-            // Сохраняем очередь, если предоставлена функция сохранения
+
             if (context.saveQueueFn && typeof context.saveQueueFn === 'function') {
                 try {
                     await context.saveQueueFn();
