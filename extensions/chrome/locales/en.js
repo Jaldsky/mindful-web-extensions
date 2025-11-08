@@ -751,6 +751,14 @@ const EN = {
             domainsGenerated: 'Domains generated',
             domainsGenerationError: 'Error generating domains',
             destroyed: 'DebugHandlerManager destroyed'
+        },
+        statistics: {
+            created: 'StatisticsManager initialized',
+            eventAdded: 'Event added to statistics',
+            trackingEnabled: 'Tracking enabled',
+            trackingDisabled: 'Tracking disabled',
+            reset: 'Statistics reset',
+            destroyed: 'StatisticsManager destroyed'
         }
     },
 

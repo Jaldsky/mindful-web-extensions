@@ -751,6 +751,14 @@ const RU = {
             domainsGenerated: 'Сгенерированы домены',
             domainsGenerationError: 'Ошибка генерации доменов',
             destroyed: 'DebugHandlerManager уничтожен'
+        },
+        statistics: {
+            created: 'StatisticsManager инициализирован',
+            eventAdded: 'Событие добавлено в статистику',
+            trackingEnabled: 'Отслеживание включено',
+            trackingDisabled: 'Отслеживание выключено',
+            reset: 'Статистика сброшена',
+            destroyed: 'StatisticsManager уничтожен'
         }
     },
 
