@@ -442,7 +442,7 @@ const CONFIG = {
         GRID_X_COUNT: 3, // Количество делений по Ox
         HISTORY_MAX_MS: 24 * 60 * 60 * 1000, // 24 часа хранения истории
         RANGES: {
-            '1m': 1 * 60 * 1000,
+            '1m': 60 * 1000,
             '5m': 5 * 60 * 1000,
             '15m': 15 * 60 * 1000,
             '30m': 30 * 60 * 1000,
@@ -536,6 +536,7 @@ const CONFIG = {
 // Экспорт для использования в других модулях
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
+    module.exports.default = CONFIG;
 }
 
 // Для использования в браузере
