@@ -787,6 +787,25 @@ const EN = {
             allDataCleared: 'All data cleared from storage',
             clearAllError: 'Error clearing data',
             destroyed: 'StorageManager destroyed'
+        },
+        tabTracking: {
+            created: 'TabTrackingManager initialized',
+            dependenciesRequired: 'TabTrackingManager requires eventQueueManager',
+            alreadyActive: 'Tab tracking is already active',
+            started: 'Tab tracking started',
+            listenersConfigured: 'Event listeners configured',
+            previousTabInitialized: 'Previous tab initialized',
+            previousTabInitError: 'Error initializing previous tab',
+            tabActivated: 'Tab activated',
+            tabActivatedError: 'Error handling tab activation',
+            tabUpdated: 'Tab updated',
+            tabRemoved: 'Tab removed',
+            tabRemovedError: 'Error handling tab removal',
+            windowLostFocus: 'Window lost focus',
+            windowGainedFocus: 'Window gained focus',
+            windowFocusChangedError: 'Error handling window focus change',
+            stopped: 'Tab tracking stopped',
+            destroyed: 'TabTrackingManager destroyed'
         }
     },
 
