@@ -70,10 +70,6 @@ describe('StorageManager (Tracker)', () => {
             expect(storageManager.userId).toBeNull();
             expect(storageManager.backendUrl).toBe('http://localhost:8000/api/v1/events/send');
         });
-
-        test('должен иметь performanceMetrics Map', () => {
-            expect(storageManager.performanceMetrics).toBeInstanceOf(Map);
-        });
     });
 
     describe('getOrCreateUserId', () => {
@@ -284,12 +280,16 @@ describe('StorageManager (Tracker)', () => {
     describe('destroy', () => {
         test('должен очищать ресурсы', () => {
             storageManager.userId = 'test-id';
-            storageManager.performanceMetrics.set('test', 100);
+            storageManager.backendUrl = 'http://test.com';
+            storageManager.domainExceptions = ['example.com'];
+            storageManager.trackingEnabled = true;
 
             storageManager.destroy();
 
-            expect(storageManager.performanceMetrics.size).toBe(0);
             expect(storageManager.userId).toBeNull();
+            expect(storageManager.backendUrl).toBeNull();
+            expect(storageManager.domainExceptions).toEqual([]);
+            expect(storageManager.trackingEnabled).toBe(true);
         });
     });
 

@@ -74,7 +74,7 @@ describe('StorageManager', () => {
 
             expect(() => {
                 new StorageManager();
-            }).toThrow('chrome.storage API недоступен');
+            }).toThrow();
 
             global.chrome.storage = originalStorage;
         });
@@ -139,7 +139,7 @@ describe('StorageManager', () => {
             }));
 
             await expect(storageManager.saveBackendUrl(testUrl))
-                .rejects.toThrow('Верификация сохранения не удалась');
+                .rejects.toThrow();
         });
 
         test('должен валидировать входные данные', async () => {

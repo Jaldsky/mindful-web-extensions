@@ -66,11 +66,15 @@ const CONFIG = {
         FAILURE_DISABLE_THRESHOLD: 5, // Количество неудачных отправок перед отключением трекера
         // Процент старых событий для удаления при переполнении очереди
         OLD_EVENTS_REMOVAL_PERCENT: 0.1, // 10% самых старых событий
+        // Статус отслеживания по умолчанию
+        DEFAULT_TRACKING_ENABLED: true, // Включено по умолчанию
         // Типы событий
         EVENT_TYPES: {
             ACTIVE: 'active', // Событие активности
             INACTIVE: 'inactive' // Событие неактивности
-        }
+        },
+        // Шаблон для генерации UUID v4
+        UUID_TEMPLATE: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx' // Шаблон UUID v4
     },
 
     /**
