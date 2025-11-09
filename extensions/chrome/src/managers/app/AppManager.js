@@ -74,7 +74,6 @@ class AppManager extends BaseManager {
         }
 
         try {
-            this._log({ key: 'logs.app.initStart' });
 
             await this.localeManager.init();
 
@@ -89,7 +88,6 @@ class AppManager extends BaseManager {
             });
 
             this.isInitialized = true;
-            this._log({ key: 'logs.app.initSuccess' });
         } catch (error) {
             this._logError({ key: 'logs.app.initError' }, error);
             this.notificationManager.showNotification(
@@ -119,7 +117,6 @@ class AppManager extends BaseManager {
             const stats = await this.serviceWorkerManager.getTodayStats();
             this.domManager.updateCounters(stats);
             
-            this._log({ key: 'logs.app.initialStatusLoaded' }, { isOnline, trackingStatus, stats });
         } catch (error) {
             this._logError({ key: 'logs.app.initialStatusError' }, error);
             this.notificationManager.showNotification(
@@ -136,7 +133,6 @@ class AppManager extends BaseManager {
      * @returns {void}
      */
     setupEventHandlers() {
-        this._log({ key: 'logs.app.handlersSetup' });
 
         if (this.domManager.elements.openSettings) {
             const handler = () => {
@@ -163,7 +159,8 @@ class AppManager extends BaseManager {
             this.eventHandlers.set('toggleTracking', handler);
         }
 
-        this._log({ key: 'logs.app.handlersCount', params: { count: this.eventHandlers.size } });
+        // Логирование убрано - неинформативное сообщение, техническое подтверждение количества обработчиков
+        // this._log({ key: 'logs.app.handlersCount', params: { count: this.eventHandlers.size } });
     }
 
     /**

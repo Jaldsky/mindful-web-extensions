@@ -419,7 +419,7 @@ describe('DOMManager', () => {
         test('should count total elements correctly', () => {
             const stats = domManager.getElementsStatistics();
             
-            expect(stats.total).toBe(8); // 8 элементов в app_manager (удалили reloadExtension и runDiagnostics)
+            expect(stats.total).toBe(7); // 7 элементов в app_manager (удалили queueSize, reloadExtension и runDiagnostics)
             expect(stats.available).toBeGreaterThan(0);
         });
 

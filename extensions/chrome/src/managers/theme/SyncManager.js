@@ -102,7 +102,6 @@ class SyncManager extends BaseManager {
             };
 
             chrome.storage.onChanged.addListener(this.storageListener);
-            this._log({ key: 'logs.theme.sync.listenerSet' });
             return true;
         } catch (error) {
             this.statistics.errors++;

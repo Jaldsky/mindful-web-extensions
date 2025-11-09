@@ -71,7 +71,6 @@ class ThemeManager extends BaseManager {
                 const cachedTheme = this.storageManager.getThemeFromCache();
                 if (cachedTheme && this.applicationManager.isValidTheme(cachedTheme)) {
                     this.applicationManager.applyTheme(cachedTheme);
-                    this._log({ key: 'logs.theme.themeManager.appliedFromCache' }, { theme: cachedTheme });
                 }
 
                 // Затем загружаем из chrome.storage (авторитетный источник)
@@ -91,7 +90,6 @@ class ThemeManager extends BaseManager {
                     lastLoadTime: Date.now()
                 });
 
-                this._log({ key: 'logs.theme.themeManager.loadedAndApplied' }, { theme });
                 return theme;
             } catch (error) {
                 this._logError({ key: 'logs.theme.themeManager.loadError' }, error);

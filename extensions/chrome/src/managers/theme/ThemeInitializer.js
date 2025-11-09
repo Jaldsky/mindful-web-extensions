@@ -16,16 +16,15 @@ class ThemeInitializer extends BaseManager {
      * @param {Object} [options={}] - Опции конфигурации
      * @param {boolean} [options.enableLogging=true] - Включить логирование
      */
-    constructor(options = {}) {
-        super({
-            enableLogging: options.enableLogging !== undefined 
-                ? options.enableLogging 
-                : CONFIG.THEME.INIT.ENABLE_LOGGING,
-            ...options
-        });
+        constructor(options = {}) {
+            super({
+                enableLogging: options.enableLogging !== undefined 
+                    ? options.enableLogging 
+                    : CONFIG.THEME.INIT.ENABLE_LOGGING,
+                ...options
+            });
 
-        this._log({ key: 'logs.theme.init.created' });
-    }
+        }
 
     /**
      * Проверяет доступность localStorage.
@@ -145,7 +144,6 @@ class ThemeInitializer extends BaseManager {
                 if (this._isValidTheme(theme)) {
                     this._saveThemeToCache(theme);
                     this._applyTheme(theme);
-                    this._log({ key: 'logs.theme.init.themeLoadedFromStorage' }, { theme });
                 }
             } catch (e) {
                 this._logError({ key: 'logs.theme.init.storageLoadError' }, e);
@@ -164,7 +162,6 @@ class ThemeInitializer extends BaseManager {
             const cachedTheme = this._getThemeFromCache();
             if (cachedTheme && this._isValidTheme(cachedTheme)) {
                 this._applyTheme(cachedTheme);
-                this._log({ key: 'logs.theme.init.themeAppliedFromCache' }, { theme: cachedTheme });
             }
 
             this._loadThemeFromStorage();

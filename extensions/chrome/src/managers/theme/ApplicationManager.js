@@ -84,7 +84,6 @@ class ApplicationManager extends BaseManager {
                     lastApplyTime: Date.now() 
                 });
                 
-                this._log({ key: 'logs.theme.application.themeApplied' }, { theme });
                 return true;
             } catch (error) {
                 this.statistics.errors++;

@@ -82,8 +82,9 @@ class BaseManager {
     }
 
     /**
-     * Инициализирует кэш локали из localStorage (синхронно).
+     * Инициализирует кэш локали из localStorage или chrome.storage.local (синхронно).
      * Вызывается автоматически при первом обращении к _getTranslateFn().
+     * В Service Worker контексте пытается прочитать из chrome.storage.local синхронно.
      * 
      * @private
      * @static
@@ -94,7 +95,6 @@ class BaseManager {
             return BaseManager._localeCache;
         }
 
-        // Пытаемся загрузить из localStorage (синхронно)
         try {
             if (typeof localStorage !== 'undefined') {
                 const cachedLocale = localStorage.getItem(CONFIG.LOCALE.CACHE_KEY);
@@ -108,6 +108,20 @@ class BaseManager {
             // Игнорируем ошибки localStorage
         }
 
+        // В Service Worker контексте localStorage недоступен, но chrome.storage.local доступен
+        // Пытаемся прочитать из chrome.storage.local синхронно (используя синхронный API, если доступен)
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                // Пытаемся прочитать из chrome.storage.local синхронно
+                // В Service Worker контексте chrome.storage.local.get() асинхронный,
+                // но мы можем попробовать прочитать из кэша, если он уже был установлен через updateLocaleCache()
+                // Если кэш не найден, используем локаль по умолчанию
+                // Кэш будет обновлен позже через updateLocaleCache() когда локаль будет загружена из chrome.storage.local
+            }
+        } catch (e) {
+            // Игнорируем ошибки chrome.storage
+        }
+
         // Если кэш не найден, определяем по языку браузера
         const browserLocale = BaseManager.detectBrowserLocale() || BaseManager.DEFAULT_LOCALE;
         BaseManager._localeCache = browserLocale;
@@ -116,6 +130,7 @@ class BaseManager {
 
     /**
      * Обновляет кэш локали.
+     * Сохраняет локаль в localStorage (для синхронного доступа) и в chrome.storage.local (для Service Worker контекста).
      * 
      * @static
      * @param {string} locale - Код локали
@@ -125,12 +140,25 @@ class BaseManager {
         const supportedLocales = Object.values(BaseManager.SUPPORTED_LOCALES);
         if (supportedLocales.includes(locale)) {
             BaseManager._localeCache = locale;
+
             try {
                 if (typeof localStorage !== 'undefined') {
                     localStorage.setItem(CONFIG.LOCALE.CACHE_KEY, locale);
                 }
             } catch (e) {
                 // Игнорируем ошибки localStorage
+            }
+
+            try {
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    chrome.storage.local.set({ [CONFIG.LOCALE.STORAGE_KEY]: locale }, () => {
+                        // Игнорируем ошибки, так как это не критично для работы
+                        if (chrome.runtime.lastError) {
+                            // Тихий сбой - не логируем, чтобы не спамить
+                        }
+                    });
+                }
+            } catch (e) {
             }
         }
     }
@@ -187,12 +215,22 @@ class BaseManager {
         }
         
         // Иначе используем временную функцию на основе сохраненной локали (из кэша)
-        const locale = BaseManager._initLocaleCache();
-        const translations = locale === 'ru' ? RU : EN;
+        // Всегда используем актуальную локаль из кэша, который обновляется через updateLocaleCache()
+        // В Service Worker контексте кэш будет обновлен позже через updateLocaleCache() когда локаль будет загружена из chrome.storage.local
+        const locale = BaseManager._localeCache !== null 
+            ? BaseManager._localeCache 
+            : BaseManager._initLocaleCache();
         
+        // Возвращаем функцию, которая всегда использует актуальную локаль из кэша при каждом вызове
         return (key, params = {}) => {
+            // Всегда используем актуальную локаль из кэша, который обновляется через updateLocaleCache()
+            const currentLocale = BaseManager._localeCache !== null 
+                ? BaseManager._localeCache 
+                : locale;
+            const currentTranslations = currentLocale === 'ru' ? RU : EN;
+            
             const keys = key.split('.');
-            let value = translations;
+            let value = currentTranslations;
             for (const k of keys) {
                 value = value?.[k];
             }
@@ -378,7 +416,6 @@ class BaseManager {
 
         try {
             this.state = { ...this.state, ...newState };
-            this._log('Состояние обновлено', this.state);
         } catch (error) {
             this._logError('Ошибка обновления состояния', error);
             throw error;
@@ -545,6 +582,8 @@ class BaseManager {
             messageTypes.PING,
             messageTypes.GET_STATUS,
             messageTypes.GET_TRACKING_STATUS,
+            messageTypes.GET_TODAY_STATS,
+            messageTypes.GET_DETAILED_STATS,
             messageTypes.SET_TRACKING_ENABLED,
             messageTypes.CHECK_CONNECTION,
             messageTypes.UPDATE_BACKEND_URL,

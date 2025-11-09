@@ -166,7 +166,7 @@ class SettingsManager {
                 return false;
             }
 
-            const domainExceptions = manager.domainExceptionsManager.getDomainExceptions();
+            const domainExceptions = manager.uiManager.getDomainExceptions();
             const domainsSaved = await manager.storageManager.saveDomainExceptions(domainExceptions);
 
             if (!domainsSaved) {
@@ -263,7 +263,7 @@ class SettingsManager {
                 return false;
             }
 
-            manager.domainExceptionsManager.setDomainExceptions(defaultDomainExceptions);
+            manager.uiManager.setDomainExceptions(defaultDomainExceptions);
 
             const uiUpdateSuccess = manager.domManager.setBackendUrlValue(defaultUrl);
 
@@ -290,7 +290,7 @@ class SettingsManager {
                 totalTime: `${totalTime}мс`,
                 uiUpdateSuccess,
                 backgroundNotified: notifySuccess,
-                domainExceptionsCount: manager.domainExceptionsManager.domainExceptions.size,
+                domainExceptionsCount: manager.uiManager.getDomainExceptions().length,
                 domainNotification: notifyDomainSuccess,
                 statusDisplayed: false,
                 statusMetrics: manager.statusManager.getPerformanceMetrics(),

@@ -55,9 +55,6 @@ class LocaleManager extends BaseManager {
             currentLocale: this.translationManager.getCurrentLocale()
         });
 
-        this._log({ key: 'logs.locale.created' }, { 
-            currentLocale: this.translationManager.getCurrentLocale() 
-        });
     }
 
     /**
@@ -75,7 +72,6 @@ class LocaleManager extends BaseManager {
 
         await this._executeWithTimingAsync('init', async () => {
             try {
-                this._log({ key: 'logs.locale.initStart' });
 
                 const savedLocale = await this.storageManager.loadLocale();
                 
@@ -141,9 +137,6 @@ class LocaleManager extends BaseManager {
         }
 
         this.listeners.push(listener);
-        this._log({ key: 'logs.locale.listenerAdded' }, {
-            listenersCount: this.listeners.length
-        });
 
         return () => {
             const index = this.listeners.indexOf(listener);

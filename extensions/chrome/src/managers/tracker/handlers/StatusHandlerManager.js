@@ -81,7 +81,6 @@ class StatusHandlerManager extends BaseManager {
             }
         };
 
-        this._log({ key: 'logs.statusHandler.statusSent' }, response);
         sendResponse(response);
     }
 
@@ -103,7 +102,6 @@ class StatusHandlerManager extends BaseManager {
             queue: this.eventQueueManager.getQueueSize()
         };
 
-        this._log({ key: 'logs.statusHandler.statsSent' }, response);
         sendResponse(response);
     }
 
@@ -128,7 +126,6 @@ class StatusHandlerManager extends BaseManager {
             isTracking: detailed.isTracking
         };
 
-        this._log({ key: 'logs.statusHandler.detailedStatsSent' }, response);
         sendResponse(response);
     }
 

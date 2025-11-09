@@ -71,7 +71,6 @@ class ServiceWorkerManager extends BaseManager {
         this.translateFn = options.translateFn || (() => '');
         
         this._setupMessageListener();
-        this._log({ key: 'logs.serviceWorker.created' }, { messageTimeout: this.messageTimeout });
     }
 
     /**
@@ -92,7 +91,6 @@ class ServiceWorkerManager extends BaseManager {
 
         try {
             chrome.runtime.onMessage.addListener(this.messageListener);
-            this._log({ key: 'logs.serviceWorker.messageListenerSetup' });
         } catch (error) {
             this._logError({ key: 'logs.serviceWorker.messageListenerSetupError' }, error);
             throw error;
@@ -133,7 +131,10 @@ class ServiceWorkerManager extends BaseManager {
 
         const actualTimeout = timeout || this.messageTimeout;
         
-        this._log({ key: 'logs.serviceWorker.messageSending', params: { type } }, { data, timeout: actualTimeout });
+        const isSystemMessage = this._isSystemMessage(type, ServiceWorkerManager.MESSAGE_TYPES);
+        if (!isSystemMessage) {
+            this._log({ key: 'logs.serviceWorker.messageSending', params: { type } }, { data, timeout: actualTimeout });
+        }
 
         try {
             const timeoutPromise = new Promise((_resolve, reject) => {
@@ -146,7 +147,9 @@ class ServiceWorkerManager extends BaseManager {
 
             const response = await Promise.race([messagePromise, timeoutPromise]);
             
-            this._log({ key: 'logs.serviceWorker.messageReceived', params: { type } }, response);
+            if (!isSystemMessage) {
+                this._log({ key: 'logs.serviceWorker.messageReceived', params: { type } }, response);
+            }
             
             return response;
         } catch (error) {
@@ -167,7 +170,6 @@ class ServiceWorkerManager extends BaseManager {
             );
             
             const isConnected = response?.success || false;
-            this._log({ key: 'logs.serviceWorker.connectionStatus', params: { status: isConnected } });
             
             return isConnected;
         } catch (error) {
@@ -195,7 +197,6 @@ class ServiceWorkerManager extends BaseManager {
                     isOnline: Boolean(response.isOnline)
                 };
                 
-                this._log({ key: 'logs.serviceWorker.trackingStatusReceived' }, status);
                 this.updateState(status);
                 return status;
             }
@@ -274,7 +275,6 @@ class ServiceWorkerManager extends BaseManager {
                     queue: Number(response.queue) || 0
                 };
                 
-                this._log({ key: 'logs.serviceWorker.statsReceived' }, stats);
                 return stats;
             }
             
@@ -320,7 +320,6 @@ class ServiceWorkerManager extends BaseManager {
                     isTracking: Boolean(response.isTracking)
                 };
 
-                this._log({ key: 'logs.serviceWorker.detailedStatsReceived' }, stats);
                 return stats;
             }
 

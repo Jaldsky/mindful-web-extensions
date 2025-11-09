@@ -153,7 +153,6 @@ class StatisticsManager extends BaseManager {
     disableTracking() {
         this.isTracking = false;
         this.updateState({ isTracking: false });
-        this._log({ key: 'logs.statistics.trackingDisabled' });
     }
 
     /**
