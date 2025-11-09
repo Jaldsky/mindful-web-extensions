@@ -1,5 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
-const CONFIG = require('../../../config.js');
+const CONFIG = require('../../config/config.js');
 const DOMManager = require('./DOMManager.js');
 const NotificationManager = require('./NotificationManager.js');
 const ServiceWorkerManager = require('./ServiceWorkerManager.js');

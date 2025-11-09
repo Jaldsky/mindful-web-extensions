@@ -4,7 +4,7 @@
  */
 
 const DOMManager = require('../../../src/managers/locale/DOMManager.js');
-const CONFIG = require('../../../config.js');
+const CONFIG = require('../../../src/config/config.js');
 
 describe('DOMManager (locale_manager)', () => {
     let domManager;

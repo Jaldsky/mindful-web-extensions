@@ -4,7 +4,7 @@
  */
 
 const DOMManager = require('../../../src/managers/app/DOMManager.js');
-const EN = require('../../../locales/en.js');
+const EN = require('../../../src/locales/en.js');
 
 // Создаем mock функцию локализации, которая возвращает английские строки
 const createMockTranslateFn = () => {

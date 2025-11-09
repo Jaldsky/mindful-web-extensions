@@ -1,6 +1,6 @@
 const BaseManager = require('../../base/BaseManager.js');
-const EN = require('../../../locales/en.js');
-const RU = require('../../../locales/ru.js');
+const EN = require('../../locales/en.js');
+const RU = require('../../locales/ru.js');
 
 /**
  * Менеджер для работы с переводами.

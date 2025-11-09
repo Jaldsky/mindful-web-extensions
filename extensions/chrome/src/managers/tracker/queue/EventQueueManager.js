@@ -1,5 +1,5 @@
 const BaseManager = require('../../../base/BaseManager.js');
-const CONFIG = require('../../../../config.js');
+const CONFIG = require('../../../config/config.js');
 const DomainExceptionsManager = require('./DomainExceptionsManager.js');
 const FailureManager = require('./FailureManager.js');
 const BatchProcessor = require('./BatchProcessor.js');

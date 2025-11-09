@@ -24,11 +24,11 @@ module.exports = (env, argv) => {
       new CopyPlugin({
         patterns: [
           { from: 'manifest.json', to: 'manifest.json' },
-          { from: 'app.html', to: 'app.html' },
-          { from: 'options.html', to: 'options.html' },
+          { from: 'public/app.html', to: 'app.html' },
+          { from: 'public/options.html', to: 'options.html' },
           { from: 'src/theme-init.js', to: 'theme-init.js' },
-          { from: 'icons', to: 'icons' },
-          { from: 'styles', to: 'styles' }
+          { from: 'public/icons', to: 'icons' },
+          { from: 'public/styles', to: 'styles' }
         ]
       })
     ],

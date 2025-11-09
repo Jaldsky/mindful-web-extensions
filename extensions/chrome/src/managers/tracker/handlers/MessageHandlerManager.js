@@ -1,5 +1,5 @@
 const BaseManager = require('../../../base/BaseManager.js');
-const CONFIG = require('../../../../config.js');
+const CONFIG = require('../../../config/config.js');
 const StatusHandlerManager = require('./StatusHandlerManager.js');
 const ConnectionHandlerManager = require('./ConnectionHandlerManager.js');
 const SettingsHandlerManager = require('./SettingsHandlerManager.js');

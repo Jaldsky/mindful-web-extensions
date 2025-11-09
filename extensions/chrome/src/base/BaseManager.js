@@ -1,6 +1,6 @@
-const CONFIG = require('../../config.js');
-const EN = require('../../locales/en.js');
-const RU = require('../../locales/ru.js');
+const CONFIG = require('../config/config.js');
+const EN = require('../locales/en.js');
+const RU = require('../locales/ru.js');
 
 /**
  * @typedef {Object} ManagerState
