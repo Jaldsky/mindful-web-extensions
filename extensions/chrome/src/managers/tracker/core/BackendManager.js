@@ -51,6 +51,18 @@ class BackendManager extends BaseManager {
          */
         this.performanceMetrics = new Map();
         
+        /** 
+         * Время последнего вызова checkHealth
+         * @type {number|null}
+         */
+        this.lastHealthCheckTime = null;
+        
+        /** 
+         * Минимальный интервал между проверками здоровья (мс)
+         * @type {number}
+         */
+        this.healthCheckInterval = CONFIG.BASE.UPDATE_INTERVAL;
+        
         this.updateState({
             backendUrl: this.backendUrl,
             userId: this.userId
@@ -189,11 +201,30 @@ class BackendManager extends BaseManager {
      * Не требует установленного userId, так как это служебный запрос.
      * Использует URL из CONFIG.BACKEND.HEALTHCHECK_URL.
      * 
+     * Throttling: ограничивает частоту вызовов до одного раза в UPDATE_INTERVAL (20 секунд).
+     * Если запрос был выполнен недавно, пропускает выполнение и возвращает ошибку "too frequent".
+     * 
      * @async
+     * @param {boolean} [force=false] - Принудительно выполнить запрос, игнорируя throttling
      * @returns {Promise<TestConnectionResult>} Результат проверки доступности
      *
      */
-    async checkHealth() {
+    async checkHealth(force = false) {
+        const now = Date.now();
+        
+        // Проверяем throttling: если запрос был выполнен недавно, пропускаем выполнение
+        if (!force && this.lastHealthCheckTime !== null) {
+            const timeSinceLastCheck = now - this.lastHealthCheckTime;
+            if (timeSinceLastCheck < this.healthCheckInterval) {
+                // Пропускаем выполнение запроса, так как он был выполнен недавно
+                return { 
+                    success: false, 
+                    tooFrequent: true,
+                    error: 'Health check request too frequent. Please wait before retrying.' 
+                };
+            }
+        }
+        
         return await this._executeWithTimingAsync('checkHealth', async () => {
             try {
                 const healthcheckUrl = CONFIG.BACKEND.HEALTHCHECK_URL;
@@ -216,10 +247,12 @@ class BackendManager extends BaseManager {
                     statusText: response.statusText 
                 });
 
+                let result;
+                
                 if (response.ok) {
                     const responseText = await response.text();
                     this._log({ key: 'logs.backend.backendAvailable' }, { response: responseText });
-                    return { success: true };
+                    result = { success: true };
                 } else {
                     const errorText = await response.text();
                     this._logError({ key: 'logs.backend.backendUnavailable' }, { 
@@ -230,17 +263,27 @@ class BackendManager extends BaseManager {
                     const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
                         .replace('{status}', response.status)
                         .replace('{message}', errorText || response.statusText);
-                    return { 
+                    result = { 
                         success: false, 
                         error: errorMessage 
                     };
                 }
+                
+                // Обновляем время последнего вызова (без кэширования результата)
+                this.lastHealthCheckTime = Date.now();
+                
+                return result;
             } catch (error) {
                 this._logError({ key: 'logs.backend.healthcheckError' }, error);
-                return { 
+                const result = { 
                     success: false, 
                     error: `${error.name}: ${error.message}` 
                 };
+                
+                // Обновляем время последнего вызова (без кэширования результата)
+                this.lastHealthCheckTime = Date.now();
+                
+                return result;
             }
         });
     }

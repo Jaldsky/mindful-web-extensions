@@ -106,8 +106,23 @@ class AppManager extends BaseManager {
      */
     async loadInitialStatus() {
         try {
-            const isOnline = await this.serviceWorkerManager.checkConnection();
-            this.domManager.updateConnectionStatus(isOnline);
+            const connectionResult = await this.serviceWorkerManager.checkConnection();
+
+            if (connectionResult.tooFrequent) {
+                const lastStatus = await this._loadConnectionStatusFromStorage();
+                if (lastStatus !== null) {
+                    this.domManager.updateConnectionStatus(lastStatus);
+                    this.updateState({ isOnline: lastStatus });
+                } else {
+                    const fallbackStatus = this.state?.isOnline ?? false;
+                    this.domManager.updateConnectionStatus(fallbackStatus);
+                }
+            } else {
+                const isOnline = connectionResult.success;
+                this.domManager.updateConnectionStatus(isOnline);
+                this.updateState({ isOnline });
+                await this._saveConnectionStatusToStorage(isOnline);
+            }
 
             const trackingStatus = await this.serviceWorkerManager.getTrackingStatus();
             this.domManager.updateTrackingStatus(trackingStatus.isTracking);
@@ -158,9 +173,6 @@ class AppManager extends BaseManager {
             this.domManager.elements.toggleTracking.addEventListener('click', handler);
             this.eventHandlers.set('toggleTracking', handler);
         }
-
-        // Логирование убрано - неинформативное сообщение, техническое подтверждение количества обработчиков
-        // this._log({ key: 'logs.app.handlersCount', params: { count: this.eventHandlers.size } });
     }
 
     /**
@@ -185,15 +197,29 @@ class AppManager extends BaseManager {
             const minDelay = new Promise(resolve => setTimeout(resolve, 500));
             const connectionCheck = this.serviceWorkerManager.checkConnection();
             
-            const [isOnline] = await Promise.all([connectionCheck, minDelay]);
+            const [connectionResult] = await Promise.all([connectionCheck, minDelay]);
+            const isOnline = connectionResult.success;
 
-            this.updateState({ isOnline });
-            this.domManager.updateConnectionStatus(isOnline);
-
-            const message = isOnline
-                ? this.localeManager.t('app.status.connectionSuccess')
-                : this.localeManager.t('app.status.connectionFailed');
-            this.domManager.showConnectionStatusMessage(message, isOnline ? 'success' : 'error');
+            let message;
+            let messageType;
+            if (isOnline) {
+                this.updateState({ isOnline });
+                this.domManager.updateConnectionStatus(isOnline);
+                await this._saveConnectionStatusToStorage(isOnline);
+                message = this.localeManager.t('app.status.connectionSuccess');
+                messageType = 'success';
+            } else if (connectionResult.tooFrequent) {
+                message = this.localeManager.t('app.status.requestTooFrequent');
+                messageType = 'warning';
+            } else {
+                this.updateState({ isOnline });
+                this.domManager.updateConnectionStatus(isOnline);
+                await this._saveConnectionStatusToStorage(isOnline);
+                message = this.localeManager.t('app.status.connectionFailed');
+                messageType = 'error';
+            }
+            
+            this.domManager.showConnectionStatusMessage(message, messageType);
             this._log({ key: isOnline ? 'logs.app.testConnection.success' : 'logs.app.testConnection.fail' });
 
             return isOnline;
@@ -201,6 +227,7 @@ class AppManager extends BaseManager {
             this._logError({ key: 'logs.app.testConnection.error' }, error);
             this.domManager.updateConnectionStatus(false);
             this.updateState({ isOnline: false });
+            await this._saveConnectionStatusToStorage(false);
             this.domManager.showConnectionStatusMessage(
                 this.localeManager.t('app.status.connectionError'),
                 'error'
@@ -376,6 +403,57 @@ class AppManager extends BaseManager {
         } catch (error) {
             this._logError({ key: 'logs.app.eventHandlersRemoveError' }, error);
         }
+    }
+
+    /**
+     * Сохраняет статус подключения в chrome.storage.local.
+     * 
+     * @private
+     * @param {boolean} isOnline - Статус подключения
+     * @returns {Promise<void>}
+     */
+    async _saveConnectionStatusToStorage(isOnline) {
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                await new Promise((resolve, reject) => {
+                    chrome.storage.local.set({ mindful_connection_status: isOnline }, () => {
+                        if (chrome.runtime.lastError) {
+                            reject(new Error(chrome.runtime.lastError.message));
+                        } else {
+                            resolve();
+                        }
+                    });
+                });
+            }
+        } catch (error) {
+            this._logError({ key: 'logs.app.saveConnectionStatusError' }, error);
+        }
+    }
+
+    /**
+     * Загружает статус подключения из chrome.storage.local.
+     * 
+     * @private
+     * @returns {Promise<boolean|null>} Статус подключения или null, если не найден
+     */
+    async _loadConnectionStatusFromStorage() {
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                return await new Promise((resolve, reject) => {
+                    chrome.storage.local.get(['mindful_connection_status'], (result) => {
+                        if (chrome.runtime.lastError) {
+                            reject(new Error(chrome.runtime.lastError.message));
+                        } else {
+                            resolve(result.mindful_connection_status !== undefined ? result.mindful_connection_status : null);
+                        }
+                    });
+                });
+            }
+        } catch (error) {
+            // Игнорируем ошибки загрузки, это не критично
+            this._logError({ key: 'logs.app.loadConnectionStatusError' }, error);
+        }
+        return null;
     }
 
     /**

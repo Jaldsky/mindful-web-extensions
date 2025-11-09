@@ -185,40 +185,40 @@ describe('ServiceWorkerManager', () => {
     });
 
     describe('checkConnection', () => {
-        test('should return true when connection check succeeds', async () => {
+        test('should return object with success=true when connection check succeeds', async () => {
             mockChromeRuntime.sendMessage.mockResolvedValue({ success: true });
 
             const result = await serviceWorkerManager.checkConnection();
 
-            expect(result).toBe(true);
+            expect(result).toEqual({ success: true, tooFrequent: false, error: null });
             expect(mockChromeRuntime.sendMessage).toHaveBeenCalledWith({
                 type: 'checkConnection',
                 data: {}
             });
         });
 
-        test('should return false when connection check fails', async () => {
+        test('should return object with success=false when connection check fails', async () => {
             mockChromeRuntime.sendMessage.mockResolvedValue({ success: false });
 
             const result = await serviceWorkerManager.checkConnection();
 
-            expect(result).toBe(false);
+            expect(result).toEqual({ success: false, tooFrequent: false, error: null });
         });
 
-        test('should return false on error', async () => {
+        test('should return object with success=false on error', async () => {
             mockChromeRuntime.sendMessage.mockRejectedValue(new Error('Network error'));
 
             const result = await serviceWorkerManager.checkConnection();
 
-            expect(result).toBe(false);
+            expect(result).toEqual({ success: false, tooFrequent: false, error: 'Network error' });
         });
 
-        test('should return false for null response', async () => {
+        test('should return object with success=false for null response', async () => {
             mockChromeRuntime.sendMessage.mockResolvedValue(null);
 
             const result = await serviceWorkerManager.checkConnection();
 
-            expect(result).toBe(false);
+            expect(result).toEqual({ success: false, tooFrequent: false, error: null });
         });
     });
 
@@ -496,7 +496,7 @@ describe('ServiceWorkerManager', () => {
                 serviceWorkerManager.getTodayStats()
             ]);
 
-            expect(connection).toBe(true);
+            expect(connection.success).toBe(true);
             expect(status.isTracking).toBe(true);
             expect(stats.events).toBe(10);
         });

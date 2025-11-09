@@ -64,15 +64,21 @@ class ConnectionHandlerManager extends BaseManager {
         if (isCheckConnection) {
             this._log({ key: 'logs.connectionHandler.healthcheckChecking' });
             
-            this.backendManager.checkHealth()
+            this.backendManager.checkHealth(false)
                 .then(result => {
                     this._log({ key: 'logs.connectionHandler.healthcheckResult' }, result);
-                    sendResponse(result);
+                    // Убеждаемся, что tooFrequent передается в ответе
+                    sendResponse({
+                        success: result.success || false,
+                        tooFrequent: result.tooFrequent || false,
+                        error: result.error || null
+                    });
                 })
                 .catch(error => {
                     this._logError({ key: 'logs.connectionHandler.healthcheckError' }, error);
                     sendResponse({ 
-                        success: false, 
+                        success: false,
+                        tooFrequent: false,
                         error: error.message 
                     });
                 });
@@ -81,11 +87,13 @@ class ConnectionHandlerManager extends BaseManager {
             
             if (queueSize === 0) {
                 this._log({ key: 'logs.connectionHandler.queueEmpty' });
-                this.backendManager.checkHealth()
+                // Не передаем force = true, чтобы throttling работал и показывал "too frequent"
+                this.backendManager.checkHealth(false)
                     .then(result => {
                         const t = this._getTranslateFn();
                         sendResponse({ 
                             success: result.success, 
+                            tooFrequent: result.tooFrequent || false,
                             message: t('logs.connectionHandler.queueEmptyMessage'),
                             queueSize: 0
                         });
@@ -93,6 +101,7 @@ class ConnectionHandlerManager extends BaseManager {
                     .catch(error => {
                         sendResponse({ 
                             success: false, 
+                            tooFrequent: false,
                             error: error.message 
                         });
                     });

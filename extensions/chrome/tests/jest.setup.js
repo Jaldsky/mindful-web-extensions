@@ -62,10 +62,36 @@ global.chrome = {
     },
     storage: {
         local: {
-            get: jest.fn(),
-            set: jest.fn(),
-            remove: jest.fn(),
-            clear: jest.fn()
+            get: jest.fn((keys, callback) => {
+                const result = {};
+                if (callback) {
+                    // Вызываем callback синхронно для быстрого выполнения тестов
+                    callback(result);
+                } else {
+                    return Promise.resolve(result);
+                }
+            }),
+            set: jest.fn((items, callback) => {
+                if (callback) {
+                    callback();
+                } else {
+                    return Promise.resolve();
+                }
+            }),
+            remove: jest.fn((keys, callback) => {
+                if (callback) {
+                    callback();
+                } else {
+                    return Promise.resolve();
+                }
+            }),
+            clear: jest.fn((callback) => {
+                if (callback) {
+                    callback();
+                } else {
+                    return Promise.resolve();
+                }
+            })
         },
         sync: {
             get: jest.fn(),

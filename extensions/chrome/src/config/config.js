@@ -140,7 +140,8 @@ const CONFIG = {
             STATUS_ONLINE: 'status-value status-online',
             STATUS_OFFLINE: 'status-value status-offline',
             STATUS_ACTIVE: 'status-value status-active',
-            STATUS_INACTIVE: 'status-value status-inactive'
+            STATUS_INACTIVE: 'status-value status-inactive',
+            STATUS_WARNING: 'status-value status-warning'
         },
         // ID элементов DOM
         ELEMENT_IDS: {

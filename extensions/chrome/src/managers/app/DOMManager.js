@@ -70,6 +70,9 @@ class DOMManager extends BaseManager {
  
         this.CONSTANTS.CONNECTION_MESSAGE_TIMEOUT = this.CONSTANTS.CONNECTION_MESSAGE_TIMEOUT || 2000;
         this.connectionMessageTimer = null;
+        
+        /** @type {boolean|null} Последний известный статус подключения (для восстановления после временных сообщений) */
+        this.lastKnownConnectionStatus = null;
  
         try {
             this._validateDOMAvailability();
@@ -205,6 +208,8 @@ class DOMManager extends BaseManager {
         }
 
         try {
+            this.lastKnownConnectionStatus = isOnline;
+            
             this.updateState({ isOnline });
             this._clearConnectionMessageTimer();
             
@@ -246,7 +251,9 @@ class DOMManager extends BaseManager {
             ? DOMManager.CSS_CLASSES.STATUS_ONLINE
             : type === 'error'
                 ? DOMManager.CSS_CLASSES.STATUS_OFFLINE
-                : DOMManager.CSS_CLASSES.STATUS_INACTIVE;
+                : type === 'warning'
+                    ? DOMManager.CSS_CLASSES.STATUS_WARNING
+                    : DOMManager.CSS_CLASSES.STATUS_INACTIVE;
 
         element.textContent = message;
         element.className = '';
@@ -255,7 +262,9 @@ class DOMManager extends BaseManager {
         this._clearConnectionMessageTimer();
         this.connectionMessageTimer = setTimeout(() => {
             this._clearConnectionMessageTimer();
-            const isOnline = Boolean(this.state?.isOnline);
+            const isOnline = this.lastKnownConnectionStatus !== null 
+                ? this.lastKnownConnectionStatus 
+                : Boolean(this.state?.isOnline);
             this.updateConnectionStatus(isOnline);
         }, this.CONSTANTS.CONNECTION_MESSAGE_TIMEOUT || 2000);
     }

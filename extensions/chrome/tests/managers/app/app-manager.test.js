@@ -79,7 +79,7 @@ describe('AppManager', () => {
         };
 
         mockServiceWorkerManager = {
-            checkConnection: jest.fn().mockResolvedValue(true),
+            checkConnection: jest.fn().mockResolvedValue({ success: true, tooFrequent: false, error: null }),
             getTrackingStatus: jest.fn().mockResolvedValue({
                 isTracking: true,
                 isOnline: true
@@ -376,7 +376,7 @@ describe('AppManager', () => {
         });
 
         test('should show success notification when online', async () => {
-            mockServiceWorkerManager.checkConnection.mockResolvedValue(true);
+            mockServiceWorkerManager.checkConnection.mockResolvedValue({ success: true, tooFrequent: false, error: null });
             
             const testPromise = appManager.testConnection();
             jest.advanceTimersByTime(500);
@@ -389,7 +389,7 @@ describe('AppManager', () => {
         });
 
         test('should show error notification when offline', async () => {
-            mockServiceWorkerManager.checkConnection.mockResolvedValue(false);
+            mockServiceWorkerManager.checkConnection.mockResolvedValue({ success: false, tooFrequent: false, error: null });
             
             const testPromise = appManager.testConnection();
             jest.advanceTimersByTime(500);
@@ -402,7 +402,7 @@ describe('AppManager', () => {
         });
 
         test('should update state on success', async () => {
-            mockServiceWorkerManager.checkConnection.mockResolvedValue(true);
+            mockServiceWorkerManager.checkConnection.mockResolvedValue({ success: true, tooFrequent: false, error: null });
             
             const testPromise = appManager.testConnection();
             jest.advanceTimersByTime(500);
@@ -698,7 +698,7 @@ describe('AppManager', () => {
             jest.advanceTimersByTime(500);
             await test1;
             
-            mockServiceWorkerManager.checkConnection.mockResolvedValue(true);
+            mockServiceWorkerManager.checkConnection.mockResolvedValue({ success: true, tooFrequent: false, error: null });
             const test2 = appManager.testConnection();
             jest.advanceTimersByTime(500);
             const result = await test2;
