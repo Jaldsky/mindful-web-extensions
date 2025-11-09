@@ -1,5 +1,5 @@
-const BaseManager = require('../../base/BaseManager.js');
-const CONFIG = require('../../../config.js');
+const BaseManager = require('../../../base/BaseManager.js');
+const CONFIG = require('../../../../config.js');
 
 /**
  * @typedef {Object} SendEventsResult

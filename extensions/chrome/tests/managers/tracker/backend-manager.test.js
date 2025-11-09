@@ -2,7 +2,7 @@
  * Тесты для BackendManager
  */
 
-const BackendManager = require('../../../src/managers/tracker/BackendManager.js');
+const BackendManager = require('../../../src/managers/tracker/core/BackendManager.js');
 
 describe('BackendManager', () => {
     let backendManager;

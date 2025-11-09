@@ -1,11 +1,11 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../../config.js');
-const StorageManager = require('./StorageManager.js');
-const StatisticsManager = require('./StatisticsManager.js');
-const BackendManager = require('./BackendManager.js');
-const EventQueueManager = require('./EventQueueManager.js');
-const TabTrackingManager = require('./TabTrackingManager.js');
-const MessageHandlerManager = require('./MessageHandlerManager.js');
+const StorageManager = require('./core/StorageManager.js');
+const StatisticsManager = require('./core/StatisticsManager.js');
+const BackendManager = require('./core/BackendManager.js');
+const EventQueueManager = require('./queue/EventQueueManager.js');
+const TabTrackingManager = require('./tracking/TabTrackingManager.js');
+const MessageHandlerManager = require('./handlers/MessageHandlerManager.js');
 
 /**
  * Главный менеджер трекера, координирующий работу всех компонентов.

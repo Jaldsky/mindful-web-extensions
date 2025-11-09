@@ -1,4 +1,4 @@
-const BaseManager = require('../../base/BaseManager.js');
+const BaseManager = require('../../../base/BaseManager.js');
 
 /**
  * Менеджер для обработки запросов статуса и статистики.

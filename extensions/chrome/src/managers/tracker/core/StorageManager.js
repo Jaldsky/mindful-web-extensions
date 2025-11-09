@@ -1,6 +1,6 @@
-const BaseManager = require('../../base/BaseManager.js');
-const CONFIG = require('../../../config.js');
-const { normalizeDomainList } = require('../../utils/domainUtils.js');
+const BaseManager = require('../../../base/BaseManager.js');
+const CONFIG = require('../../../../config.js');
+const { normalizeDomainList } = require('../../../utils/domainUtils.js');
 
 /**
  * @typedef {Object} StorageKeys
