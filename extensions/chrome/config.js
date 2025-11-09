@@ -82,6 +82,11 @@ const CONFIG = {
             WWW: 'www.', // Префикс www
             CHROME_EXTENSION: 'chrome-extension://' // Префикс chrome extension
         },
+        // Причины установки расширения
+        INSTALL_REASONS: {
+            INSTALL: 'install', // Первая установка
+            UPDATE: 'update' // Обновление расширения
+        },
         // Шаблон для генерации UUID v4
         UUID_TEMPLATE: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx' // Шаблон UUID v4
     },
