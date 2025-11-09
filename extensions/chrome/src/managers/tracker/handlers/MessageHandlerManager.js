@@ -175,11 +175,14 @@ class MessageHandlerManager extends BaseManager {
      * @returns {void}
      */
     _handleMessage(request, sender, sendResponse) {
-        this._log({ key: 'logs.messageHandler.messageReceived' }, { type: request.type || request.action, request });
+        const messageType = request.type || request.action;
+        
+        const isSystemMessage = this._isSystemMessage(messageType, MessageHandlerManager.MESSAGE_TYPES);
+        if (!isSystemMessage) {
+            this._log({ key: 'logs.messageHandler.messageReceived' }, { type: messageType, request });
+        }
 
         try {
-            const messageType = request.type || request.action;
-
             const blockCheck = this._shouldBlockMessage(
                 messageType,
                 MessageHandlerManager.MESSAGE_TYPES,

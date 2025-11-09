@@ -5,7 +5,7 @@
 import ThemeInitializer from './managers/theme/ThemeInitializer.js';
 import CONFIG from './config/config.js';
 
-const themeInitializer = new ThemeInitializer({
-    enableLogging: CONFIG.THEME.INIT.ENABLE_LOGGING
-});
-themeInitializer.init();
+    const themeInitializer = new ThemeInitializer({
+        enableLogging: CONFIG.THEME.INIT.ENABLE_LOGGING
+    });
+    themeInitializer.init();

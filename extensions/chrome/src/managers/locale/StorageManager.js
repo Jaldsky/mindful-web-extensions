@@ -27,7 +27,6 @@ class StorageManager extends BaseManager {
             lastOperation: null
         };
 
-        this._log({ key: 'logs.localeStorage.created' });
     }
 
     /**

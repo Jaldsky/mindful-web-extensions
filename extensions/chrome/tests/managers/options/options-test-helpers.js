@@ -77,7 +77,9 @@ function createBaseOptionsManager() {
             onLocaleChange: jest.fn(),
             setThemeManager: jest.fn(),
             toggleTheme: jest.fn(),
-            updateThemeDisplay: jest.fn()
+            updateThemeDisplay: jest.fn(),
+            getDomainExceptions: jest.fn(() => []),
+            setDomainExceptions: jest.fn()
         },
         domainExceptionsManager: {
             getDomainExceptions: jest.fn(() => []),

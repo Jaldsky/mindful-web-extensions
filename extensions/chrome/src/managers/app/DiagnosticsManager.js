@@ -87,9 +87,6 @@ class DiagnosticsManager extends BaseManager {
         /** @type {boolean} */
         this.parallelExecution = options.parallelExecution !== false;
         
-        this._log({ key: 'logs.diagnostics.created' }, { 
-            parallelExecution: this.parallelExecution 
-        });
     }
 
     /**

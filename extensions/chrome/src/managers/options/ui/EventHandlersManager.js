@@ -189,7 +189,7 @@ class EventHandlersManager {
         if (addDomainBtn) {
             const handler = (event) => {
                 event.preventDefault();
-                manager.domainExceptionsManager.addDomainException();
+                manager.uiManager.addDomainException();
             };
             addDomainBtn.addEventListener('click', handler);
             manager.eventHandlers.set('addDomainExceptionBtn', handler);
@@ -201,7 +201,7 @@ class EventHandlersManager {
             const handler = (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    manager.domainExceptionsManager.addDomainException();
+                    manager.uiManager.addDomainException();
                 }
             };
             domainInput.addEventListener('keydown', handler);
@@ -218,7 +218,7 @@ class EventHandlersManager {
                 }
                 event.preventDefault();
                 const domain = button.getAttribute('data-domain');
-                manager.domainExceptionsManager.removeDomainException(domain);
+                manager.uiManager.removeDomainException(domain);
             };
             domainList.addEventListener('click', handler);
             manager.eventHandlers.set('domainExceptionsList', handler);

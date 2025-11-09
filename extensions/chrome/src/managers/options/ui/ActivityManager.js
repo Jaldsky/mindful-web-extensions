@@ -67,10 +67,6 @@ class ActivityManager {
                 }
             }
 
-            if (stats.domainsVisited > 0 || stats.eventsTracked > 0) {
-                manager._log({ key: 'logs.ui.activity.activityDataUpdated' }, { countDomains: stats.domainsVisited });
-            }
-
             this._updateActivityChart(stats.eventsTracked, true);
         } catch (error) {
             manager._logError({ key: 'logs.ui.activity.loadActivityStatsError' }, error);

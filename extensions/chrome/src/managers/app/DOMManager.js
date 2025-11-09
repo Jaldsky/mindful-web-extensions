@@ -7,7 +7,6 @@ const CONFIG = require('../../config/config.js');
  * @property {HTMLElement|null} trackingStatus - Элемент статуса отслеживания
  * @property {HTMLElement|null} eventsCount - Элемент счетчика событий
  * @property {HTMLElement|null} domainsCount - Элемент счетчика доменов
- * @property {HTMLElement|null} queueSize - Элемент размера очереди
  * @property {HTMLElement|null} openSettings - Кнопка открытия настроек
  * @property {HTMLElement|null} testConnection - Кнопка тестирования подключения
  * @property {HTMLElement|null} toggleTracking - Кнопка переключения отслеживания
@@ -109,7 +108,6 @@ class DOMManager extends BaseManager {
     _initializeElements() {
         try {
             this.elements = this._cacheDOMElements();
-            this._log({ key: 'logs.dom.elementsInitialized' }, this.elements);
 
             if (this.strictMode) {
                 this._validateElements();
@@ -142,7 +140,6 @@ class DOMManager extends BaseManager {
             trackingStatus: getElement(DOMManager.ELEMENT_IDS.TRACKING_STATUS),
             eventsCount: getElement(DOMManager.ELEMENT_IDS.EVENTS_COUNT),
             domainsCount: getElement(DOMManager.ELEMENT_IDS.DOMAINS_COUNT),
-            queueSize: getElement(DOMManager.ELEMENT_IDS.QUEUE_SIZE),
             openSettings: getElement(DOMManager.ELEMENT_IDS.OPEN_SETTINGS),
             testConnection: getElement(DOMManager.ELEMENT_IDS.TEST_CONNECTION),
             toggleTracking: getElement(DOMManager.ELEMENT_IDS.TOGGLE_TRACKING)
@@ -188,7 +185,6 @@ class DOMManager extends BaseManager {
 
         try {
             updateFn(element);
-            this._log({ key: 'logs.dom.elementUpdated', params: { elementName } });
             return true;
         } catch (error) {
             this._logError({ key: 'logs.dom.elementUpdateError', params: { elementName } }, error);
@@ -371,11 +367,10 @@ class DOMManager extends BaseManager {
             throw new TypeError(this.translateFn('logs.dom.validation.countersMustBeObject'));
         }
 
-        const { events = 0, domains = 0, queue = 0 } = counters;
+        const { events = 0, domains = 0 } = counters;
 
         const validEvents = Number.isFinite(events) ? Math.max(0, events) : 0;
         const validDomains = Number.isFinite(domains) ? Math.max(0, domains) : 0;
-        const validQueue = Number.isFinite(queue) ? Math.max(0, queue) : 0;
 
         const results = {
             events: this._safeUpdateElement(
@@ -387,16 +382,9 @@ class DOMManager extends BaseManager {
                 this.elements.domainsCount,
                 (element) => { element.textContent = validDomains.toString(); },
                 this.translateFn('logs.dom.elementNames.domainsCounter')
-            ),
-            queue: this._safeUpdateElement(
-                this.elements.queueSize,
-                (element) => { element.textContent = validQueue.toString(); },
-                this.translateFn('logs.dom.elementNames.queueSize')
             )
         };
 
-        this._log({ key: 'logs.dom.countersUpdated' }, { events: validEvents, domains: validDomains, queue: validQueue });
-        
         return results;
     }
 
@@ -490,7 +478,6 @@ class DOMManager extends BaseManager {
             throw new TypeError(t('logs.dom.validation.translateFnMustBeFunction'));
         }
         this.translateFn = translateFn;
-        this._log({ key: 'logs.dom.translateFnSet' });
     }
 
     /**

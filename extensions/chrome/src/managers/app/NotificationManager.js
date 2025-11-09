@@ -58,11 +58,6 @@ class NotificationManager extends BaseManager {
         /** @type {Function} Функция для получения переводов */
         this.translateFn = options.translateFn || (() => '');
 
-        this._log({ key: 'logs.notification.created' }, {
-            autoClear: this.autoClear,
-            maxNotifications: this.maxNotifications,
-            position: this.position
-        });
     }
 
     /**

@@ -39,7 +39,6 @@ class TranslationManager extends BaseManager {
             missingKeys: new Set()
         };
 
-        this._log({ key: 'logs.translation.created' }, { currentLocale: this.currentLocale });
     }
 
     /**
@@ -97,17 +96,23 @@ class TranslationManager extends BaseManager {
 
     /**
      * Подставляет параметры в строку.
-     * Поддерживает плейсхолдеры вида {{key}}.
+     * Поддерживает плейсхолдеры вида {key} и {{key}}.
      * 
      * @private
-     * @param {string} str - Строка с плейсхолдерами {{key}}
+     * @param {string} str - Строка с плейсхолдерами {key} или {{key}}
      * @param {Object} params - Параметры для подстановки
      * @returns {string} Строка с подставленными значениями
      */
     _interpolate(str, params) {
-        return str.replace(/\{\{(\w+)}}/g, (match, key) => {
+        let result = str.replace(/\{\{(\w+)}}/g, (match, key) => {
             return params[key] !== undefined ? params[key] : match;
         });
+        for (const key in params) {
+            if (Object.prototype.hasOwnProperty.call(params, key)) {
+                result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), params[key]);
+            }
+        }
+        return result;
     }
 
     /**

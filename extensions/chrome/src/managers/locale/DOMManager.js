@@ -49,7 +49,6 @@ class DOMManager extends BaseManager {
             lastLocalizationTime: null
         };
 
-        this._log({ key: 'logs.localeDom.created' });
     }
 
     /**
