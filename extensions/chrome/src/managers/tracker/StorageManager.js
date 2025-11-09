@@ -36,7 +36,7 @@ class StorageManager extends BaseManager {
      * @readonly
      * @static
      */
-    static DEFAULT_TRACKING_ENABLED = true;
+    static DEFAULT_TRACKING_ENABLED = CONFIG.TRACKER.DEFAULT_TRACKING_ENABLED;
 
     /**
      * Создает экземпляр StorageManager.
@@ -59,17 +59,18 @@ class StorageManager extends BaseManager {
         /** @type {boolean} */
         this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
         
-        /** @type {Map<string, number>} */
-        this.performanceMetrics = new Map();
-        
-        this._log('StorageManager инициализирован');
+        this._log({ key: 'logs.trackerStorage.created' });
     }
 
     /**
      * Получает или создает ID пользователя.
      * 
+     * Загружает ID пользователя из хранилища. Если ID не найден,
+     * генерирует новый UUID v4 и сохраняет его в хранилище.
+     * 
      * @async
      * @returns {Promise<string>} ID пользователя
+     * @throws {Error} Если произошла ошибка при работе с хранилищем
      */
     async getOrCreateUserId() {
         return await this._executeWithTimingAsync('getOrCreateUserId', async () => {
@@ -78,20 +79,20 @@ class StorageManager extends BaseManager {
                 
                 if (result[StorageManager.STORAGE_KEYS.USER_ID]) {
                     this.userId = result[StorageManager.STORAGE_KEYS.USER_ID];
-                    this._log('User ID загружен', { userId: this.userId });
+                    this._log({ key: 'logs.trackerStorage.userIdLoaded', params: { userId: this.userId } });
                 } else {
                     // Генерируем UUID v4
                     this.userId = this._generateUUID();
                     await chrome.storage.local.set({ 
                         [StorageManager.STORAGE_KEYS.USER_ID]: this.userId 
                     });
-                    this._log('User ID создан', { userId: this.userId });
+                    this._log({ key: 'logs.trackerStorage.userIdCreated', params: { userId: this.userId } });
                 }
                 
                 this.updateState({ userId: this.userId });
                 return this.userId;
             } catch (error) {
-                this._logError('Ошибка получения/создания User ID', error);
+                this._logError({ key: 'logs.trackerStorage.userIdError' }, error);
                 throw error;
             }
         });
@@ -104,15 +105,18 @@ class StorageManager extends BaseManager {
      * @returns {string} UUID
      */
     _generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        return CONFIG.TRACKER.UUID_TEMPLATE.replace(/[xy]/g, function(c) {
             const r = Math.random() * 16 | 0;
-            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
     }
 
     /**
      * Загружает URL backend из хранилища.
+     * 
+     * Загружает сохраненный URL backend из хранилища. Если URL не найден,
+     * использует значение по умолчанию из конфигурации.
      * 
      * @async
      * @returns {Promise<string>} URL backend
@@ -124,22 +128,31 @@ class StorageManager extends BaseManager {
                 
                 if (result[StorageManager.STORAGE_KEYS.BACKEND_URL]) {
                     this.backendUrl = result[StorageManager.STORAGE_KEYS.BACKEND_URL];
-                    this._log('Backend URL загружен', { backendUrl: this.backendUrl });
+                    this._log({ key: 'logs.trackerStorage.backendUrlLoaded', params: { backendUrl: this.backendUrl } });
                 } else {
                     this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
-                    this._log('Используется Backend URL по умолчанию', { backendUrl: this.backendUrl });
+                    this._log({ key: 'logs.trackerStorage.backendUrlDefault', params: { backendUrl: this.backendUrl } });
                 }
                 
                 this.updateState({ backendUrl: this.backendUrl });
                 return this.backendUrl;
             } catch (error) {
-                this._logError('Ошибка загрузки Backend URL', error);
+                this._logError({ key: 'logs.trackerStorage.backendUrlLoadError' }, error);
                 this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
                 return this.backendUrl;
             }
         });
     }
 
+    /**
+     * Загружает исключения доменов из хранилища.
+     * 
+     * Загружает список доменов, которые должны быть исключены из отслеживания.
+     * Домены нормализуются перед возвратом.
+     * 
+     * @async
+     * @returns {Promise<Array<string>>} Массив исключенных доменов
+     */
     async loadDomainExceptions() {
         return await this._executeWithTimingAsync('loadDomainExceptions', async () => {
             try {
@@ -147,16 +160,25 @@ class StorageManager extends BaseManager {
                 const domains = normalizeDomainList(result[StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS] || []);
                 this.domainExceptions = domains;
                 this.updateState({ domainExceptionsCount: domains.length });
-                this._log('Исключения доменов загружены', { count: domains.length });
+                this._log({ key: 'logs.trackerStorage.domainExceptionsLoaded', params: { count: domains.length } });
                 return domains;
             } catch (error) {
-                this._logError('Ошибка загрузки исключений доменов', error);
+                this._logError({ key: 'logs.trackerStorage.domainExceptionsLoadError' }, error);
                 this.domainExceptions = [];
                 return [];
             }
         });
     }
 
+    /**
+     * Загружает статус отслеживания из хранилища.
+     * 
+     * Загружает сохраненный статус отслеживания из хранилища. Если статус не найден
+     * или имеет неверный тип, использует значение по умолчанию.
+     * 
+     * @async
+     * @returns {Promise<boolean>} Статус отслеживания
+     */
     async loadTrackingEnabled() {
         return await this._executeWithTimingAsync('loadTrackingEnabled', async () => {
             try {
@@ -168,10 +190,10 @@ class StorageManager extends BaseManager {
                     : StorageManager.DEFAULT_TRACKING_ENABLED;
 
                 this.updateState({ trackingEnabled: this.trackingEnabled });
-                this._log('Статус отслеживания загружен', { trackingEnabled: this.trackingEnabled });
+                this._log({ key: 'logs.trackerStorage.trackingEnabledLoaded', params: { trackingEnabled: this.trackingEnabled } });
                 return this.trackingEnabled;
             } catch (error) {
-                this._logError('Ошибка загрузки статуса отслеживания', error);
+                this._logError({ key: 'logs.trackerStorage.trackingEnabledLoadError' }, error);
                 this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
                 return this.trackingEnabled;
             }
@@ -180,6 +202,8 @@ class StorageManager extends BaseManager {
 
     /**
      * Сохраняет URL backend в хранилище.
+     * 
+     * Сохраняет новый URL backend в хранилище и обновляет внутреннее состояние менеджера.
      * 
      * @async
      * @param {string} url - Новый URL backend
@@ -193,15 +217,25 @@ class StorageManager extends BaseManager {
                 });
                 this.backendUrl = url;
                 this.updateState({ backendUrl: this.backendUrl });
-                this._log('Backend URL сохранен', { backendUrl: url });
+                this._log({ key: 'logs.trackerStorage.backendUrlSaved', params: { backendUrl: url } });
                 return true;
             } catch (error) {
-                this._logError('Ошибка сохранения Backend URL', error);
+                this._logError({ key: 'logs.trackerStorage.backendUrlSaveError' }, error);
                 return false;
             }
         });
     }
 
+    /**
+     * Сохраняет исключения доменов в хранилище.
+     * 
+     * Сохраняет список доменов для исключения в хранилище. Домены нормализуются
+     * перед сохранением.
+     * 
+     * @async
+     * @param {Array<string>} domains - Массив доменов для исключения
+     * @returns {Promise<boolean>} Успешность операции
+     */
     async saveDomainExceptions(domains) {
         return await this._executeWithTimingAsync('saveDomainExceptions', async () => {
             const normalized = normalizeDomainList(domains || []);
@@ -211,18 +245,26 @@ class StorageManager extends BaseManager {
                 });
                 this.domainExceptions = normalized;
                 this.updateState({ domainExceptionsCount: normalized.length });
-                this._log('Исключения доменов сохранены', { count: normalized.length });
+                this._log({ key: 'logs.trackerStorage.domainExceptionsSaved', params: { count: normalized.length } });
                 return true;
             } catch (error) {
-                this._logError('Ошибка сохранения исключений доменов', error);
+                this._logError({ key: 'logs.trackerStorage.domainExceptionsSaveError' }, error);
                 return false;
             }
         });
     }
 
+    /**
+     * Сохраняет статус отслеживания в хранилище.
+     * 
+     * @async
+     * @param {boolean} isEnabled - Статус отслеживания
+     * @returns {Promise<boolean>} Успешность операции
+     * @throws {TypeError} Если isEnabled не является булевым значением
+     */
     async saveTrackingEnabled(isEnabled) {
         if (typeof isEnabled !== 'boolean') {
-            throw new TypeError('isEnabled должен быть булевым значением');
+            throw new TypeError(this._getTranslateFn()('logs.trackerStorage.trackingEnabledTypeError'));
         }
 
         return await this._executeWithTimingAsync('saveTrackingEnabled', async () => {
@@ -232,10 +274,10 @@ class StorageManager extends BaseManager {
                 });
                 this.trackingEnabled = isEnabled;
                 this.updateState({ trackingEnabled: this.trackingEnabled });
-                this._log('Статус отслеживания сохранен', { trackingEnabled: this.trackingEnabled });
+                this._log({ key: 'logs.trackerStorage.trackingEnabledSaved', params: { trackingEnabled: this.trackingEnabled } });
                 return true;
             } catch (error) {
-                this._logError('Ошибка сохранения статуса отслеживания', error);
+                this._logError({ key: 'logs.trackerStorage.trackingEnabledSaveError' }, error);
                 return false;
             }
         });
@@ -243,6 +285,9 @@ class StorageManager extends BaseManager {
 
     /**
      * Восстанавливает очередь событий из хранилища.
+     * 
+     * Загружает сохраненную очередь событий из хранилища. Если очередь не найдена,
+     * возвращает пустой массив.
      * 
      * @async
      * @returns {Promise<Array>} Восстановленная очередь событий
@@ -254,14 +299,14 @@ class StorageManager extends BaseManager {
                 
                 if (result[StorageManager.STORAGE_KEYS.EVENT_QUEUE]) {
                     const queue = result[StorageManager.STORAGE_KEYS.EVENT_QUEUE];
-                    this._log('Очередь событий восстановлена', { queueLength: queue.length });
+                    this._log({ key: 'logs.trackerStorage.eventQueueRestored', params: { queueLength: queue.length } });
                     return queue;
                 }
                 
-                this._log('Очередь событий пуста');
+                this._log({ key: 'logs.trackerStorage.eventQueueEmpty' });
                 return [];
             } catch (error) {
-                this._logError('Ошибка восстановления очереди событий', error);
+                this._logError({ key: 'logs.trackerStorage.eventQueueRestoreError' }, error);
                 return [];
             }
         });
@@ -269,6 +314,8 @@ class StorageManager extends BaseManager {
 
     /**
      * Сохраняет очередь событий в хранилище.
+     * 
+     * Сохраняет текущую очередь событий в хранилище для последующего восстановления.
      * 
      * @async
      * @param {Array} queue - Очередь событий для сохранения
@@ -280,10 +327,10 @@ class StorageManager extends BaseManager {
                 await chrome.storage.local.set({ 
                     [StorageManager.STORAGE_KEYS.EVENT_QUEUE]: queue 
                 });
-                this._log('Очередь событий сохранена', { queueLength: queue.length });
+                this._log({ key: 'logs.trackerStorage.eventQueueSaved', params: { queueLength: queue.length } });
                 return true;
             } catch (error) {
-                this._logError('Ошибка сохранения очереди событий', error);
+                this._logError({ key: 'logs.trackerStorage.eventQueueSaveError' }, error);
                 return false;
             }
         });
@@ -307,16 +354,20 @@ class StorageManager extends BaseManager {
         return this.backendUrl;
     }
 
+    /**
+     * Получает текущие исключения доменов.
+     * 
+     * @returns {Array<string>} Копия массива исключенных доменов
+     */
     getDomainExceptions() {
         return [...this.domainExceptions];
     }
 
-    getTrackingEnabled() {
-        return this.trackingEnabled;
-    }
-
     /**
      * Очищает все данные из хранилища.
+     * 
+     * Удаляет все данные трекера из хранилища и сбрасывает внутреннее состояние
+     * менеджера на значения по умолчанию.
      * 
      * @async
      * @returns {Promise<boolean>} Успешность операции
@@ -340,10 +391,10 @@ class StorageManager extends BaseManager {
                     domainExceptionsCount: 0
                 });
                 
-                this._log('Все данные очищены из хранилища');
+                this._log({ key: 'logs.trackerStorage.allDataCleared' });
                 return true;
             } catch (error) {
-                this._logError('Ошибка очистки данных', error);
+                this._logError({ key: 'logs.trackerStorage.clearAllError' }, error);
                 return false;
             }
         });
@@ -355,13 +406,12 @@ class StorageManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        this.performanceMetrics.clear();
         this.userId = null;
         this.backendUrl = null;
         this.domainExceptions = [];
         this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
         super.destroy();
-        this._log('StorageManager уничтожен');
+        this._log({ key: 'logs.trackerStorage.destroyed' });
     }
 }
 
