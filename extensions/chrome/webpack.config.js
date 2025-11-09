@@ -10,7 +10,8 @@ module.exports = (env, argv) => {
     entry: {
       tracker: './src/tracker.js',
       app: './src/app.js',
-      options: './src/options.js'
+      options: './src/options.js',
+      'theme-init': './src/theme-init.js'
     },
     resolve: {
       extensions: ['.js']
@@ -26,7 +27,6 @@ module.exports = (env, argv) => {
           { from: 'manifest.json', to: 'manifest.json' },
           { from: 'public/app.html', to: 'app.html' },
           { from: 'public/options.html', to: 'options.html' },
-          { from: 'src/theme-init.js', to: 'theme-init.js' },
           { from: 'public/icons', to: 'icons' },
           { from: 'public/styles', to: 'styles' }
         ]
