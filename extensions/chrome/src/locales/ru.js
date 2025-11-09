@@ -859,7 +859,8 @@ const RU = {
             inactive: 'Неактивно',
             connectionSuccess: 'Подключено',
             connectionFailed: 'Нет связи',
-            connectionError: 'Сбой связи'
+            connectionError: 'Сбой связи',
+            requestTooFrequent: 'Частый запрос'
         },
         
         // Секция статистики

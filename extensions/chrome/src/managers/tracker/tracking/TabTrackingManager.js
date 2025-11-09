@@ -210,7 +210,6 @@ class TabTrackingManager extends BaseManager {
                     this.previousActiveTab = tab;
                     this.updateState({ previousTabId: tab.id });
                     
-                    this._log({ key: 'logs.tabTracking.tabUpdated', params: { tabId: tab.id, domain } });
                 }
             }
         });

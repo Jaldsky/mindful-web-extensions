@@ -859,7 +859,8 @@ const EN = {
             inactive: 'Inactive',
             connectionSuccess: 'Connection successful',
             connectionFailed: 'Connection failed',
-            connectionError: 'Connection error'
+            connectionError: 'Connection error',
+            requestTooFrequent: 'Request too frequent'
         },
         
         // Stats section

@@ -165,6 +165,11 @@ button:focus {
     color: var(--color-error-text);
 }
 
+.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
 /* Common status message styles */
 .status-message {
     padding: var(--spacing-md);

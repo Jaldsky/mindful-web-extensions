@@ -161,7 +161,7 @@ class ServiceWorkerManager extends BaseManager {
     /**
      * Проверяет подключение к серверу.
      * 
-     * @returns {Promise<boolean>} Статус подключения
+     * @returns {Promise<Object>} Результат проверки подключения {success: boolean, tooFrequent?: boolean, error?: string}
      */
     async checkConnection() {
         try {
@@ -169,12 +169,19 @@ class ServiceWorkerManager extends BaseManager {
                 ServiceWorkerManager.MESSAGE_TYPES.CHECK_CONNECTION
             );
             
-            const isConnected = response?.success || false;
-            
-            return isConnected;
+            // Возвращаем полный объект ответа, чтобы можно было проверить tooFrequent
+            return {
+                success: response?.success || false,
+                tooFrequent: response?.tooFrequent || false,
+                error: response?.error || null
+            };
         } catch (error) {
             this._logError({ key: 'logs.serviceWorker.connectionCheckError' }, error);
-            return false;
+            return {
+                success: false,
+                tooFrequent: false,
+                error: error.message
+            };
         }
     }
 

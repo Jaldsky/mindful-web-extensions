@@ -65,10 +65,8 @@ class BaseManager {
                 return null;
             }
 
-            // Извлекаем первые две буквы (en-US -> en)
             const langCode = browserLang.substring(0, 2).toLowerCase();
-            
-            // Проверяем, поддерживается ли эта локаль
+
             const supportedLocales = Object.values(BaseManager.SUPPORTED_LOCALES);
             if (supportedLocales.includes(langCode)) {
                 return langCode;
@@ -76,7 +74,6 @@ class BaseManager {
 
             return null;
         } catch (error) {
-            // Игнорируем ошибки определения локали
             return null;
         }
     }
@@ -105,24 +102,18 @@ class BaseManager {
                 }
             }
         } catch (e) {
-            // Игнорируем ошибки localStorage
         }
 
-        // В Service Worker контексте localStorage недоступен, но chrome.storage.local доступен
-        // Пытаемся прочитать из chrome.storage.local синхронно (используя синхронный API, если доступен)
         try {
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                // Пытаемся прочитать из chrome.storage.local синхронно
                 // В Service Worker контексте chrome.storage.local.get() асинхронный,
-                // но мы можем попробовать прочитать из кэша, если он уже был установлен через updateLocaleCache()
-                // Если кэш не найден, используем локаль по умолчанию
-                // Кэш будет обновлен позже через updateLocaleCache() когда локаль будет загружена из chrome.storage.local
+                // синхронное чтение невозможно, поэтому блок пустой
+                // Кэш будет обновлен позже через updateLocaleCache() когда локаль будет загружена
             }
         } catch (e) {
             // Игнорируем ошибки chrome.storage
         }
 
-        // Если кэш не найден, определяем по языку браузера
         const browserLocale = BaseManager.detectBrowserLocale() || BaseManager.DEFAULT_LOCALE;
         BaseManager._localeCache = browserLocale;
         return browserLocale;
@@ -146,15 +137,13 @@ class BaseManager {
                     localStorage.setItem(CONFIG.LOCALE.CACHE_KEY, locale);
                 }
             } catch (e) {
-                // Игнорируем ошибки localStorage
             }
 
             try {
                 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                     chrome.storage.local.set({ [CONFIG.LOCALE.STORAGE_KEY]: locale }, () => {
-                        // Игнорируем ошибки, так как это не критично для работы
                         if (chrome.runtime.lastError) {
-                            // Тихий сбой - не логируем, чтобы не спамить
+                            // Игнорируем ошибки сохранения в chrome.storage.local
                         }
                     });
                 }
