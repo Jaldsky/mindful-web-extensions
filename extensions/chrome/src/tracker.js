@@ -1,7 +1,4 @@
-// Mindful Web Chrome Extension - Tracker Service Worker
-// Отслеживает события активности пользователя на вкладках браузера
-
-const TrackerManager = require('./src/managers/tracker/TrackerManager.js');
+const TrackerManager = require('./managers/tracker/TrackerManager.js');
 
 /**
  * Главный экземпляр трекера
@@ -27,10 +24,8 @@ function initializeTracker() {
     }
 }
 
-// Запускаем инициализацию
 initializeTracker();
 
-// Экспортируем для доступа из других модулей (если потребуется)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { tracker };
 }

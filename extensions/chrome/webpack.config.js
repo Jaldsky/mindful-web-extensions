@@ -8,7 +8,7 @@ module.exports = (env, argv) => {
     mode: argv.mode || 'development',
     devtool: isProduction ? false : 'cheap-module-source-map',
     entry: {
-      tracker: './tracker.js',
+      tracker: './src/tracker.js',
       app: './src/app.js',
       options: './src/options.js'
     },
