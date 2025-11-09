@@ -125,10 +125,10 @@ class EventHandlersManager {
 
         const rangeSelect = document.getElementById('activityRangeSelect');
         if (rangeSelect) {
-            rangeSelect.value = manager.activityManager.activityRangeKey;
+            rangeSelect.value = manager.uiManager.activityRangeKey;
             const handler = (e) => {
                 const key = e.target.value;
-                manager.activityManager.setActivityRangeByKey(key);
+                manager.uiManager.activityManager.setActivityRangeByKey(key);
             };
             rangeSelect.addEventListener('change', handler);
             manager.eventHandlers.set('activityRangeSelect', handler);
