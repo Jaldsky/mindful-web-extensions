@@ -787,6 +787,25 @@ const RU = {
             allDataCleared: 'Все данные очищены из хранилища',
             clearAllError: 'Ошибка очистки данных',
             destroyed: 'StorageManager уничтожен'
+        },
+        tabTracking: {
+            created: 'TabTrackingManager инициализирован',
+            dependenciesRequired: 'TabTrackingManager требует eventQueueManager',
+            alreadyActive: 'Отслеживание вкладок уже активно',
+            started: 'Отслеживание вкладок запущено',
+            listenersConfigured: 'Слушатели событий настроены',
+            previousTabInitialized: 'Предыдущая вкладка инициализирована',
+            previousTabInitError: 'Ошибка инициализации предыдущей вкладки',
+            tabActivated: 'Вкладка активирована',
+            tabActivatedError: 'Ошибка обработки активации вкладки',
+            tabUpdated: 'Вкладка обновлена',
+            tabRemoved: 'Вкладка закрыта',
+            tabRemovedError: 'Ошибка обработки закрытия вкладки',
+            windowLostFocus: 'Окно потеряло фокус',
+            windowGainedFocus: 'Окно получило фокус',
+            windowFocusChangedError: 'Ошибка обработки изменения фокуса окна',
+            stopped: 'Отслеживание вкладок остановлено',
+            destroyed: 'TabTrackingManager уничтожен'
         }
     },
 

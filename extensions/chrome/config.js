@@ -73,6 +73,15 @@ const CONFIG = {
             ACTIVE: 'active', // Событие активности
             INACTIVE: 'inactive' // Событие неактивности
         },
+        // Статусы вкладок
+        TAB_STATUS: {
+            COMPLETE: 'complete' // Вкладка полностью загружена
+        },
+        // Префиксы доменов
+        DOMAIN_PREFIXES: {
+            WWW: 'www.', // Префикс www
+            CHROME_EXTENSION: 'chrome-extension://' // Префикс chrome extension
+        },
         // Шаблон для генерации UUID v4
         UUID_TEMPLATE: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx' // Шаблон UUID v4
     },
