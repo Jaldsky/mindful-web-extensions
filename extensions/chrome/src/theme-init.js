@@ -8,7 +8,7 @@
  */
 
 const BaseManager = require('./base/BaseManager.js');
-const CONFIG = require('../config.js');
+const CONFIG = require('./config/config.js');
 
 (function() {
     'use strict';

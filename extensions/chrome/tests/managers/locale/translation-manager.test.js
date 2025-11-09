@@ -6,7 +6,7 @@
 const TranslationManager = require('../../../src/managers/locale/TranslationManager.js');
 
 // Мокируем модули локализации
-jest.mock('../../../locales/en.js', () => ({
+jest.mock('../../../src/locales/en.js', () => ({
     common: {
         languageName: 'English'
     },
@@ -21,7 +21,7 @@ jest.mock('../../../locales/en.js', () => ({
     }
 }), { virtual: true });
 
-jest.mock('../../../locales/ru.js', () => ({
+jest.mock('../../../src/locales/ru.js', () => ({
     common: {
         languageName: 'Русский'
     },

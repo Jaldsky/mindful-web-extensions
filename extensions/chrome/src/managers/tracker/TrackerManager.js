@@ -1,5 +1,5 @@
 const BaseManager = require('../../base/BaseManager.js');
-const CONFIG = require('../../../config.js');
+const CONFIG = require('../../config/config.js');
 const StorageManager = require('./core/StorageManager.js');
 const StatisticsManager = require('./core/StatisticsManager.js');
 const BackendManager = require('./core/BackendManager.js');

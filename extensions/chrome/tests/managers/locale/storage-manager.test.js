@@ -4,7 +4,7 @@
  */
 
 const StorageManager = require('../../../src/managers/locale/StorageManager.js');
-const CONFIG = require('../../../config.js');
+const CONFIG = require('../../../src/config/config.js');
 
 describe('StorageManager', () => {
     let storageManager;

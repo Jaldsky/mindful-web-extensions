@@ -1,4 +1,4 @@
-const CONFIG = require('../../../../config.js');
+const CONFIG = require('../../../config/config.js');
 
 /**
  * Менеджер для работы с логами.

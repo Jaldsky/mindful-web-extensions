@@ -4,7 +4,7 @@
  */
 
 const DiagnosticsManager = require('../../../src/managers/app/DiagnosticsManager.js');
-const RU = require('../../../locales/ru.js');
+const RU = require('../../../src/locales/ru.js');
 
 // Создаем mock функцию локализации, которая возвращает русские строки
 const createMockTranslateFn = () => {
