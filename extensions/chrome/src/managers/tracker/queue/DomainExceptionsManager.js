@@ -1,5 +1,5 @@
-const BaseManager = require('../../base/BaseManager.js');
-const { normalizeDomain, normalizeDomainList } = require('../../utils/domainUtils.js');
+const BaseManager = require('../../../base/BaseManager.js');
+const { normalizeDomain, normalizeDomainList } = require('../../../utils/domainUtils.js');
 
 /**
  * Менеджер для управления исключениями доменов.

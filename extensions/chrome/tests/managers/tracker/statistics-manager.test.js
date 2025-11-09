@@ -2,7 +2,7 @@
  * Тесты для StatisticsManager
  */
 
-const StatisticsManager = require('../../../src/managers/tracker/StatisticsManager.js');
+const StatisticsManager = require('../../../src/managers/tracker/core/StatisticsManager.js');
 
 describe('StatisticsManager', () => {
     let statisticsManager;

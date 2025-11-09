@@ -2,7 +2,7 @@
  * Тесты для StorageManager (tracker_manager)
  */
 
-const StorageManager = require('../../../src/managers/tracker/StorageManager.js');
+const StorageManager = require('../../../src/managers/tracker/core/StorageManager.js');
 
 describe('StorageManager (Tracker)', () => {
     let storageManager;
