@@ -133,8 +133,6 @@ class MessageHandlerManager extends BaseManager {
             },
             { enableLogging: this.enableLogging }
         );
-        
-        this._log({ key: 'logs.messageHandler.created' });
     }
 
     /**
@@ -158,7 +156,6 @@ class MessageHandlerManager extends BaseManager {
             };
 
             chrome.runtime.onMessage.addListener(this.messageListener);
-            this._log({ key: 'logs.messageHandler.listenerConfigured' });
         });
     }
 

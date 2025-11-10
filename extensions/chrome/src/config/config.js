@@ -25,7 +25,7 @@ const CONFIG = {
      */
     BACKEND: {
         DEFAULT_URL: 'http://localhost:8000/api/v1/events/send',
-        HEALTHCHECK_URL: 'http://localhost:8000/api/v1/healthcheck',
+        HEALTHCHECK_PATH: '/api/v1/healthcheck', // Путь для healthcheck endpoint
         TIMEOUT: 10000, // Таймаут запроса (мс)
         RETRY_ATTEMPTS: 3, // Количество попыток повтора
         RETRY_DELAY: 20000, // Задержка между попытками (мс)

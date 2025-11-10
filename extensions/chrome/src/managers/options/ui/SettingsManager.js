@@ -101,8 +101,6 @@ class SettingsManager {
         }
 
         try {
-            manager._log({ key: 'logs.ui.settings.saveSettingsStart' });
-
             const savingStartTime = performance.now();
             const buttonStateSet = manager.domManager.setButtonState(
                 saveBtn,
@@ -151,11 +149,6 @@ class SettingsManager {
                 backendInput.setCustomValidity('');
             }
 
-            manager._log({ key: 'logs.ui.settings.validationSuccess' }, {
-                url: validationResult.value.substring(0, CONFIG.UI.LOGGING.MAX_URL_LENGTH) + (validationResult.value.length > CONFIG.UI.LOGGING.MAX_URL_LENGTH ? '...' : ''),
-                validationMetrics: manager.validationManager.getPerformanceMetrics()
-            });
-
             const saveSuccess = await manager.storageManager.saveBackendUrl(validationResult.value);
 
             if (!saveSuccess) {
@@ -188,20 +181,6 @@ class SettingsManager {
             if (!notifyDomainSuccess) {
                 manager._log({ key: 'logs.ui.settings.domainExceptionsNotNotified' });
             }
-
-            const totalTime = Math.round(performance.now() - operationStartTime);
-
-            manager._log({ key: 'logs.ui.settings.settingsSaved' }, {
-                totalTime: `${totalTime}мс`,
-                backgroundNotified: notifySuccess,
-                domainExceptionsCount: domainExceptions.length,
-                domainNotification: notifyDomainSuccess,
-                statusDisplayed: false,
-                statusMetrics: manager.statusManager.getPerformanceMetrics(),
-                validationMetrics: manager.validationManager.getPerformanceMetrics(),
-                domMetrics: manager.domManager.getPerformanceMetrics(),
-                storageMetrics: manager.storageManager.getPerformanceMetrics()
-            });
 
             const elapsedSinceSaving = performance.now() - savingStartTime;
             if (elapsedSinceSaving < MIN_PROCESSING_FEEDBACK_MS) {
@@ -237,7 +216,6 @@ class SettingsManager {
         this._clearButtonFeedback('resetBtn');
 
         try {
-            manager._log({ key: 'logs.ui.settings.resetSettingsStart' });
 
             const resettingStartTime = performance.now();
             const buttonStateSet = manager.domManager.setButtonState(
@@ -282,21 +260,6 @@ class SettingsManager {
             if (!notifyDomainSuccess) {
                 manager._log({ key: 'logs.ui.settings.domainExceptionsNotNotified' });
             }
-
-            const totalTime = Math.round(performance.now() - operationStartTime);
-
-            manager._log({ key: 'logs.ui.settings.settingsReset' }, {
-                defaultUrl,
-                totalTime: `${totalTime}мс`,
-                uiUpdateSuccess,
-                backgroundNotified: notifySuccess,
-                domainExceptionsCount: manager.uiManager.getDomainExceptions().length,
-                domainNotification: notifyDomainSuccess,
-                statusDisplayed: false,
-                statusMetrics: manager.statusManager.getPerformanceMetrics(),
-                domMetrics: manager.domManager.getPerformanceMetrics(),
-                storageMetrics: manager.storageManager.getPerformanceMetrics()
-            });
 
             const elapsedSinceResetting = performance.now() - resettingStartTime;
             if (elapsedSinceResetting < MIN_PROCESSING_FEEDBACK_MS) {

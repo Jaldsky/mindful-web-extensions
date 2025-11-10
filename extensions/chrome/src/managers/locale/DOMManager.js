@@ -85,7 +85,6 @@ class DOMManager extends BaseManager {
                 this.statistics.elementsLocalized += count;
                 this.statistics.lastLocalizationTime = Date.now();
 
-                this._log({ key: 'logs.localeDom.localizedCount', params: { count } });
                 return count;
             } catch (error) {
                 this.statistics.errors++;

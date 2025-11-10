@@ -133,7 +133,7 @@ class ServiceWorkerManager extends BaseManager {
         
         const isSystemMessage = this._isSystemMessage(type, ServiceWorkerManager.MESSAGE_TYPES);
         if (!isSystemMessage) {
-            this._log({ key: 'logs.serviceWorker.messageSending', params: { type } }, { data, timeout: actualTimeout });
+        this._log({ key: 'logs.serviceWorker.messageSending', params: { type } }, { data, timeout: actualTimeout });
         }
 
         try {
@@ -148,7 +148,7 @@ class ServiceWorkerManager extends BaseManager {
             const response = await Promise.race([messagePromise, timeoutPromise]);
             
             if (!isSystemMessage) {
-                this._log({ key: 'logs.serviceWorker.messageReceived', params: { type } }, response);
+            this._log({ key: 'logs.serviceWorker.messageReceived', params: { type } }, response);
             }
             
             return response;

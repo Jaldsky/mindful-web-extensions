@@ -26,8 +26,6 @@ class EventHandlersManager {
         const setupStartTime = performance.now();
         let handlersCount = 0;
 
-        manager._log({ key: 'logs.ui.eventHandlers.setupEventHandlersStart' });
-
         if (manager.domManager.elements.settingsForm) {
             const formSubmitHandler = (e) => {
                 e.preventDefault();
@@ -272,13 +270,6 @@ class EventHandlersManager {
         handlersCount += 2;
 
         manager.developerToolsManager.restoreState();
-
-        const setupTime = Math.round(performance.now() - setupStartTime);
-        manager._log({ key: 'logs.ui.eventHandlers.eventHandlersSetup' }, {
-            setupTime: `${setupTime}мс`,
-            handlersCount,
-            domStatistics: manager.domManager.getElementsStatistics()
-        });
     }
 }
 

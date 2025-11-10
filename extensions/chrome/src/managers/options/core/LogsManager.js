@@ -430,9 +430,6 @@ class LogsManager {
             } catch (error) {
             }
         }, refreshInterval);
-
-        const timeUnit = manager.localeManager.t('common.timeUnitMs');
-        manager._log({ key: 'logs.logs.autoRefreshStarted', params: { interval: refreshInterval, timeUnit } });
     }
 
     /**
@@ -446,7 +443,6 @@ class LogsManager {
             clearInterval(manager.logsRefreshIntervalId);
             manager.logsRefreshIntervalId = null;
             this.removeSelectionChangeHandler();
-            manager._log({ key: 'logs.logs.autoRefreshStopped' });
         }
     }
 

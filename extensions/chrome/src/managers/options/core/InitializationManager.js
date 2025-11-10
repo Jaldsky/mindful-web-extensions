@@ -31,7 +31,6 @@ class InitializationManager {
         const initStartTime = performance.now();
 
         try {
-            manager._log({ key: 'logs.initialization.initStart' });
             await manager.localeManager.init();
             manager.localeManager.localizeDOM();
             manager.uiManager.updateLanguageDisplay();
@@ -67,16 +66,6 @@ class InitializationManager {
                 manager.uiManager.onLocaleChange();
             });
             manager.isInitialized = true;
-
-            const initTime = Math.round(performance.now() - initStartTime);
-            const timeUnit = manager.localeManager.t('common.timeUnitMs');
-            manager._log({ key: 'logs.initialization.initSuccess' }, {
-                initTime: `${initTime}${timeUnit}`,
-                storageMetrics: manager.storageManager.getPerformanceMetrics(),
-                domMetrics: manager.domManager.getPerformanceMetrics(),
-                domElements: manager.domManager.getElementsStatistics(),
-                validationMetrics: manager.validationManager.getPerformanceMetrics()
-            });
         } catch (error) {
             const initTime = Math.round(performance.now() - initStartTime);
             manager._logError({ key: 'logs.initialization.initError', params: { initTime } }, error);
@@ -106,8 +95,6 @@ class InitializationManager {
         const startTime = performance.now();
 
         try {
-            manager._log({ key: 'logs.initialization.loadStart' });
-
             const [backendUrl, domainExceptions] = await Promise.all([
                 manager.storageManager.loadBackendUrl(),
                 manager.storageManager.loadDomainExceptions()
@@ -135,14 +122,6 @@ class InitializationManager {
                 );
             }
 
-            const loadTime = Math.round(performance.now() - startTime);
-            const timeUnit = manager.localeManager.t('common.timeUnitMs');
-            manager._log({ key: 'logs.initialization.loadSuccess' }, {
-                backendUrl: backendUrl.substring(0, 50) + (backendUrl.length > 50 ? '...' : ''),
-                domainExceptionsCount: Array.isArray(domainExceptions) ? domainExceptions.length : 0,
-                loadTime: `${loadTime}${timeUnit}`,
-                uiUpdateSuccess: setSuccess
-            });
         } catch (error) {
             const loadTime = Math.round(performance.now() - startTime);
             manager._logError({ key: 'logs.initialization.loadError', params: { loadTime } }, error);

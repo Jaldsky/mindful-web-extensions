@@ -81,8 +81,6 @@ class TrackerManager extends BaseManager {
             trackingEnabled: this.trackingEnabled
         });
 
-        this._log({ key: 'logs.tracker.created' });
-
         this.init();
     }
 
@@ -101,31 +99,24 @@ class TrackerManager extends BaseManager {
 
         await this._executeWithTimingAsync('init', async () => {
             try {
-                this._log({ key: 'logs.tracker.initStart' });
-
+                // Локаль автоматически загружается в _log() и _logError() в Service Worker контексте
                 const userId = await this.storageManager.getOrCreateUserId();
                 this.backendManager.setUserId(userId);
-                this._log({ key: 'logs.tracker.userIdInitialized', params: { userId } });
 
                 const backendUrl = await this.storageManager.loadBackendUrl();
                 this.backendManager.setBackendUrl(backendUrl);
-                this._log({ key: 'logs.tracker.backendUrlLoaded', params: { backendUrl } });
 
                 const domainExceptions = await this.storageManager.loadDomainExceptions();
-                this._log({ key: 'logs.tracker.domainExceptionsLoaded', params: { count: domainExceptions.length } });
 
                 await this.eventQueueManager.restoreQueue();
                 this.eventQueueManager.resetFailureState();
-                this._log({ key: 'logs.tracker.eventQueueRestored' });
 
                 await this.eventQueueManager.setDomainExceptions(domainExceptions);
 
                 const trackingEnabled = await this.storageManager.loadTrackingEnabled();
                 this.trackingEnabled = trackingEnabled;
-                this._log({ key: 'logs.tracker.trackingStatusRestored', params: { trackingEnabled } });
 
                 this.messageHandlerManager.init();
-                this._log({ key: 'logs.tracker.messageHandlersConfigured' });
 
                 if (trackingEnabled) {
                     await this.tabTrackingManager.init();
@@ -137,13 +128,10 @@ class TrackerManager extends BaseManager {
                 }
 
                 this.eventQueueManager.startBatchProcessor();
-                this._log({ key: 'logs.tracker.batchProcessorStarted' });
 
                 this._setupOnlineMonitoring();
-                this._log({ key: 'logs.tracker.onlineMonitoringConfigured' });
 
                 this._setupLifecycleHandlers();
-                this._log({ key: 'logs.tracker.lifecycleHandlersConfigured' });
 
                 this.isInitialized = true;
                 this.updateState({
@@ -151,8 +139,6 @@ class TrackerManager extends BaseManager {
                     isTracking: trackingEnabled,
                     trackingEnabled
                 });
-
-                this._log({ key: 'logs.tracker.initSuccess', params: { userId, backendUrl, queueSize: this.eventQueueManager.getQueueSize(), trackingEnabled } });
             } catch (error) {
                 this._logError({ key: 'logs.tracker.initError' }, error);
                 throw error;
@@ -185,6 +171,7 @@ class TrackerManager extends BaseManager {
      * @returns {Promise<{success: boolean, isTracking: boolean}>} Результат операции
      */
     async enableTracking() {
+        // Локаль автоматически загружается в _log() и _logError() в Service Worker контексте
         if (this.trackingEnabled) {
             this._log({ key: 'logs.tracker.alreadyEnabled' });
             return { success: true, isTracking: true };
@@ -223,6 +210,7 @@ class TrackerManager extends BaseManager {
      * @returns {Promise<{success: boolean, isTracking: boolean}>} Результат операции
      */
     async disableTracking() {
+        // Локаль автоматически загружается в _log() и _logError() в Service Worker контексте
         if (!this.trackingEnabled) {
             this._log({ key: 'logs.tracker.alreadyDisabled' });
             return { success: true, isTracking: false };

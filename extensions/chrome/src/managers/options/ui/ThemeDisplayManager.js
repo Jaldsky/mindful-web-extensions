@@ -42,8 +42,6 @@ class ThemeDisplayManager {
                 return;
             }
 
-            manager._log({ key: 'logs.ui.themeDisplay.toggleThemeStart' });
-
             const currentTheme = manager.themeManager.getCurrentTheme();
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 

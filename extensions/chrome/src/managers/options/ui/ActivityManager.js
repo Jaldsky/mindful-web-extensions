@@ -124,7 +124,6 @@ class ActivityManager {
             manager.activityRefreshIntervalId = setInterval(() => {
                 this.loadActivityStats().catch(() => {});
             }, interval);
-            manager._log({ key: 'logs.ui.activity.activityAutoRefreshStarted', params: { interval } });
         } catch (error) {
             manager._logError({ key: 'logs.ui.activity.startActivityAutoRefreshError' }, error);
         }

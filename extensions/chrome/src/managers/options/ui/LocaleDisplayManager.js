@@ -71,8 +71,8 @@ class LocaleDisplayManager {
         try {
             manager.localeManager.localizeDOM();
             this.updateLanguageDisplay();
-            manager.themeDisplayManager.updateThemeDisplay();
-            manager.domainExceptionsManager.renderDomainExceptions();
+            manager.uiManager.updateThemeDisplay();
+            manager.uiManager.domainExceptionsManager.renderDomainExceptions();
 
             const diagnosticsLabel = document.querySelector('.diagnostics-status-label');
             if (diagnosticsLabel) {
@@ -94,9 +94,6 @@ class LocaleDisplayManager {
                 manager.diagnosticsWorkflowManager.updateStatus(currentStatus);
             }
 
-            manager._log({ key: 'logs.ui.localeDisplay.localeChanged' }, {
-                locale: manager.localeManager.getCurrentLocale()
-            });
         } catch (error) {
             manager._logError({ key: 'logs.ui.localeDisplay.localeChangeError' }, error);
         }

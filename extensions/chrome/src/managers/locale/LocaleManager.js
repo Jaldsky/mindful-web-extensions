@@ -97,11 +97,6 @@ class LocaleManager extends BaseManager {
                     isInitialized: true,
                     currentLocale: this.translationManager.getCurrentLocale()
                 });
-
-                this._log({ key: 'logs.locale.initSuccess' }, { 
-                    currentLocale: this.translationManager.getCurrentLocale(),
-                    performanceMetrics: this.getPerformanceMetrics()
-                });
             } catch (error) {
                 this._logError({ key: 'logs.locale.initError' }, error);
 
