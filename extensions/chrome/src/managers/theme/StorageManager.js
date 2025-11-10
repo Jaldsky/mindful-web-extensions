@@ -117,7 +117,6 @@ class StorageManager extends BaseManager {
         return this._executeWithTiming('saveThemeToCache', () => {
             try {
                 localStorage.setItem(CONFIG.THEME.CACHE_KEY, theme);
-                this._log({ key: 'logs.theme.storage.themeSavedToCache' }, { theme });
                 return true;
             } catch (error) {
                 this.statistics.errors++;
@@ -149,7 +148,6 @@ class StorageManager extends BaseManager {
                 this.statistics.lastOperation = 'load';
                 this.updateState({ lastLoadTime: Date.now() });
                 
-                this._log({ key: 'logs.theme.storage.themeLoaded' }, { theme });
                 return theme;
             } catch (error) {
                 this.statistics.errors++;

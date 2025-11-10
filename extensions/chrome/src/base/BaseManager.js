@@ -50,6 +50,14 @@ class BaseManager {
     static _localeCache = null;
 
     /**
+     * Флаг, указывающий, что локаль уже загружается из chrome.storage.local
+     * @private
+     * @static
+     * @type {Promise<void>|null}
+     */
+    static _localeLoadingPromise = null;
+
+    /**
      * Определяет локаль браузера.
      * 
      * @static
@@ -66,7 +74,7 @@ class BaseManager {
             }
 
             const langCode = browserLang.substring(0, 2).toLowerCase();
-
+            
             const supportedLocales = Object.values(BaseManager.SUPPORTED_LOCALES);
             if (supportedLocales.includes(langCode)) {
                 return langCode;
@@ -107,13 +115,15 @@ class BaseManager {
         try {
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 // В Service Worker контексте chrome.storage.local.get() асинхронный,
-                // синхронное чтение невозможно, поэтому блок пустой
-                // Кэш будет обновлен позже через updateLocaleCache() когда локаль будет загружена
+                // синхронное чтение невозможно, поэтому используем локаль браузера временно
+                // Кэш будет обновлен позже через updateLocaleCache() когда локаль будет загружена из chrome.storage.local
+                // Если в кеше нет локали, используем локаль браузера по умолчанию
             }
         } catch (e) {
             // Игнорируем ошибки chrome.storage
         }
 
+        // Если в кеше нет локали, используем локаль браузера по умолчанию
         const browserLocale = BaseManager.detectBrowserLocale() || BaseManager.DEFAULT_LOCALE;
         BaseManager._localeCache = browserLocale;
         return browserLocale;
@@ -149,6 +159,34 @@ class BaseManager {
                 }
             } catch (e) {
             }
+        }
+    }
+
+    /**
+     * Загружает локаль из chrome.storage.local для Service Worker контекста.
+     * Используется для обновления кэша локали перед логированием в Service Worker контексте.
+     * 
+     * @protected
+     * @async
+     * @returns {Promise<void>}
+     */
+    async _loadLocaleFromStorage() {
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                const result = await new Promise((resolve) => {
+                    chrome.storage.local.get([CONFIG.LOCALE.STORAGE_KEY], (items) => {
+                        resolve(items[CONFIG.LOCALE.STORAGE_KEY] || null);
+                    });
+                });
+                if (result && (result === 'en' || result === 'ru')) {
+                    BaseManager.updateLocaleCache(result);
+                }
+            }
+        } catch (e) {
+            // Игнорируем ошибки загрузки локали
+        } finally {
+            // Сбрасываем Promise после завершения загрузки, чтобы можно было загрузить локаль снова при необходимости
+            BaseManager._localeLoadingPromise = null;
         }
     }
 
@@ -244,6 +282,7 @@ class BaseManager {
 
     /**
      * Логирует сообщение, если логирование включено.
+     * Автоматически загружает локаль из chrome.storage.local перед логированием в Service Worker контексте.
      * 
      * @protected
      * @param {string|{key:string,params?:Object,fallback?:string}} message - Сообщение или объект перевода
@@ -252,24 +291,53 @@ class BaseManager {
      */
     _log(message, data) {
         if (this.enableLogging) {
-            const className = this.constructor.name;
-            const isConsoleEnabledInConfig = (CONFIG.LOGGING && CONFIG.LOGGING.CONSOLE_OUTPUT) === true;
-            const hasProcessEnv = typeof process !== 'undefined' && !!process.env;
-            const testModeValue = (CONFIG.MODES && CONFIG.MODES.TEST) || 'test';
-            const isTestEnv = hasProcessEnv && process.env.NODE_ENV === testModeValue;
-            const shouldConsole = isConsoleEnabledInConfig || isTestEnv;
-            const { resolvedMessage, messageKey, messageParams } = this._resolveMessage(message);
-            if (shouldConsole) {
-                // eslint-disable-next-line no-console
-                console.log(`[${className}] ${resolvedMessage}`, data !== undefined ? data : '');
+            // В Service Worker контексте загружаем локаль из chrome.storage.local перед логированием
+            // Используем существующий Promise, если локаль уже загружается
+            if (typeof localStorage === 'undefined' && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                if (!BaseManager._localeLoadingPromise) {
+                    BaseManager._localeLoadingPromise = this._loadLocaleFromStorage();
+                }
+                // Ждем завершения загрузки локали перед логированием
+                BaseManager._localeLoadingPromise.then(() => {
+                    this._doLog(message, data);
+                }).catch(() => {
+                    // Если загрузка не удалась, логируем с текущей локалью
+                    this._doLog(message, data);
+                });
+            } else {
+                // В обычном контексте логируем сразу
+                this._doLog(message, data);
             }
-            // Всегда сохраняем лог в storage для панели расширения
-            this._saveLogToStorage('INFO', resolvedMessage, data, messageKey, messageParams);
         }
     }
 
     /**
+     * Выполняет фактическое логирование сообщения.
+     * 
+     * @private
+     * @param {string|{key:string,params?:Object,fallback?:string}} message - Сообщение или объект перевода
+     * @param {*} [data] - Дополнительные данные
+     * @returns {void}
+     */
+    _doLog(message, data) {
+        const className = this.constructor.name;
+        const isConsoleEnabledInConfig = (CONFIG.LOGGING && CONFIG.LOGGING.CONSOLE_OUTPUT) === true;
+        const hasProcessEnv = typeof process !== 'undefined' && !!process.env;
+        const testModeValue = (CONFIG.MODES && CONFIG.MODES.TEST) || 'test';
+        const isTestEnv = hasProcessEnv && process.env.NODE_ENV === testModeValue;
+        const shouldConsole = isConsoleEnabledInConfig || isTestEnv;
+        const { resolvedMessage, messageKey, messageParams } = this._resolveMessage(message);
+        if (shouldConsole) {
+            // eslint-disable-next-line no-console
+            console.log(`[${className}] ${resolvedMessage}`, data !== undefined ? data : '');
+        }
+        // Всегда сохраняем лог в storage для панели расширения
+        this._saveLogToStorage('INFO', resolvedMessage, data, messageKey, messageParams);
+    }
+
+    /**
      * Логирует ошибку.
+     * Автоматически загружает локаль из chrome.storage.local перед логированием в Service Worker контексте.
      * 
      * @protected
      * @param {string|{key:string,params?:Object,fallback?:string}} message - Сообщение или объект перевода
@@ -277,6 +345,34 @@ class BaseManager {
      * @returns {void}
      */
     _logError(message, error) {
+        // В Service Worker контексте загружаем локаль из chrome.storage.local перед логированием
+        // Используем существующий Promise, если локаль уже загружается
+        if (typeof localStorage === 'undefined' && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            if (!BaseManager._localeLoadingPromise) {
+                BaseManager._localeLoadingPromise = this._loadLocaleFromStorage();
+            }
+            // Ждем завершения загрузки локали перед логированием
+            BaseManager._localeLoadingPromise.then(() => {
+                this._doLogError(message, error);
+            }).catch(() => {
+                // Если загрузка не удалась, логируем с текущей локалью
+                this._doLogError(message, error);
+            });
+        } else {
+            // В обычном контексте логируем сразу
+            this._doLogError(message, error);
+        }
+    }
+
+    /**
+     * Выполняет фактическое логирование ошибки.
+     * 
+     * @private
+     * @param {string|{key:string,params?:Object,fallback?:string}} message - Сообщение или объект перевода
+     * @param {Error|*} [error] - Объект ошибки
+     * @returns {void}
+     */
+    _doLogError(message, error) {
         const className = this.constructor.name;
         const isConsoleEnabledInConfig = (CONFIG.LOGGING && CONFIG.LOGGING.CONSOLE_OUTPUT) === true;
         const hasProcessEnv = typeof process !== 'undefined' && !!process.env;
@@ -475,12 +571,6 @@ class BaseManager {
             
             this.performanceMetrics.set(`${operationName}_lastDuration`, duration);
             
-            // Логируем только операции длительностью больше порога
-            const threshold = CONFIG.LOGS?.PERFORMANCE_LOG_THRESHOLD || 10;
-            if (duration > threshold) {
-                this._log(`${operationName} завершена за ${duration}мс`);
-            }
-            
             return result;
         } catch (error) {
             const duration = Math.round(performance.now() - startTime);
@@ -510,11 +600,11 @@ class BaseManager {
             
             this.performanceMetrics.set(`${operationName}_lastDuration`, duration);
             
-            // Логируем только операции длительностью больше порога
-            const threshold = CONFIG.LOGS?.PERFORMANCE_LOG_THRESHOLD || 10;
-            if (duration > threshold) {
-                this._log(`${operationName} завершена за ${duration}мс`);
-            }
+            // Логи производительности отключены, так как они неинформативны для пользователя
+            // const threshold = CONFIG.LOGS?.PERFORMANCE_LOG_THRESHOLD || 10;
+            // if (duration > threshold) {
+            //     this._log(`${operationName} завершена за ${duration}мс`);
+            // }
             
             return result;
         } catch (error) {

@@ -135,13 +135,6 @@ class StatusManager extends BaseManager {
         
         /** @type {number|null} */
         this.lastDisplayTimestamp = null;
-        
-        this._log({ key: 'logs.status.initSuccess' }, {
-            enableHistory: this.historyManager.enableHistory,
-            enableQueue: this.queueManager.enableQueue,
-            defaultDuration: this.defaultDuration,
-            hasStatusElement: !!this.renderer.statusElement
-        });
     }
 
     /**

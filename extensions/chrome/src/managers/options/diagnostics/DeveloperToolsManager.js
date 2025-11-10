@@ -122,8 +122,6 @@ class DeveloperToolsManager {
             setTimeout(() => {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
-
-            manager._log({ key: 'logs.developerTools.panelOpened', params: { tab } });
         } catch (error) {
             manager._logError({ key: 'logs.developerTools.openError' }, error);
         }
@@ -188,8 +186,6 @@ class DeveloperToolsManager {
                 } else {
                     manager.logsManager.stopAutoRefresh();
                 }
-
-                manager._log({ key: 'logs.developerTools.tabSwitched', params: { tabName } });
             } else {
                 manager._logError({ key: 'logs.developerTools.tabNotFound', params: { tabName } });
             }

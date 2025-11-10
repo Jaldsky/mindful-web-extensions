@@ -91,12 +91,6 @@ class ValidationManager extends BaseManager {
             lastValidationTime: null,
             lastValidationResult: null
         });
-        
-        this._log({ key: 'logs.validation.initialized' }, {
-            strictProtocol: this.strictProtocol,
-            enableHistory: this.enableHistory,
-            maxHistorySize: this.maxHistorySize
-        });
     }
 
     /**
@@ -180,14 +174,6 @@ class ValidationManager extends BaseManager {
                 }
 
                 const result = this._createValidationResult(true, null, trimmedUrl, startTime);
-                
-                const validationTime = Math.round(performance.now() - startTime);
-                const maxUrlLength = CONFIG.VALIDATION.MAX_URL_LENGTH_FOR_LOGGING;
-                this._log({ key: 'logs.validation.urlValid', params: { time: validationTime } }, { 
-                    url: trimmedUrl.substring(0, maxUrlLength) + (trimmedUrl.length > maxUrlLength ? '...' : ''),
-                    protocol: parsedUrl.protocol,
-                    host: parsedUrl.host
-                });
                 
                 return result;
             } catch (error) {
@@ -275,11 +261,6 @@ class ValidationManager extends BaseManager {
             if (this.history.length > this.maxHistorySize) {
                 this.history = this.history.slice(0, this.maxHistorySize);
             }
-            
-            this._log({ key: 'logs.validation.historyEntryAdded' }, {
-                isValid,
-                historySize: this.history.length
-            });
         } catch (error) {
             this._logError({ key: 'logs.validation.addHistoryError' }, error);
         }

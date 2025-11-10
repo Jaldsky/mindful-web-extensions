@@ -202,8 +202,6 @@ class EventQueueManager extends BaseManager {
             }
         }
 
-        this._log({ key: 'logs.eventQueue.domainExceptionsUpdated', params: { count: this.domainExceptionsManager.domainExceptions.size, removedFromQueue } });
-
         return {
             count: this.domainExceptionsManager.domainExceptions.size,
             removedFromQueue
@@ -301,7 +299,6 @@ class EventQueueManager extends BaseManager {
     async processQueue() {
         await this._executeWithTimingAsync('processQueue', async () => {
             if (this.queue.length === 0) {
-                this._log({ key: 'logs.eventQueue.queueEmpty' });
                 return;
             }
 
@@ -337,8 +334,6 @@ class EventQueueManager extends BaseManager {
                 const result = await this.backendManager.sendEvents(filteredEvents);
                 
                 if (result.success) {
-                    this._log({ key: 'logs.eventQueue.batchSentSuccess', params: { eventsCount: filteredEvents.length, skippedDueToExclusions } });
-
                     await this.storageManager.saveEventQueue(this.queue);
                     this.failureManager.resetFailureCounters();
                     this.updateState({
@@ -446,8 +441,6 @@ class EventQueueManager extends BaseManager {
             this.queue = await this.storageManager.restoreEventQueue();
             this.updateState({ queueSize: this.queue.length });
             this.statisticsManager.updateQueueSize(this.queue.length);
-            
-            this._log({ key: 'logs.eventQueue.queueRestored', params: { queueSize: this.queue.length } });
         });
     }
 
@@ -478,8 +471,6 @@ class EventQueueManager extends BaseManager {
         const wasOnline = this.isOnline;
         this.isOnline = isOnline;
         this.updateState({ isOnline });
-        
-        this._log({ key: 'logs.eventQueue.connectionStatusChanged', params: { isOnline } });
 
         if (!wasOnline && isOnline && this.queue.length > 0) {
             this._log({ key: 'logs.eventQueue.connectionRestored' });

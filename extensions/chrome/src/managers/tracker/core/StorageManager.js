@@ -58,8 +58,6 @@ class StorageManager extends BaseManager {
 
         /** @type {boolean} */
         this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
-        
-        this._log({ key: 'logs.trackerStorage.created' });
     }
 
     /**
@@ -128,10 +126,8 @@ class StorageManager extends BaseManager {
                 
                 if (result[StorageManager.STORAGE_KEYS.BACKEND_URL]) {
                     this.backendUrl = result[StorageManager.STORAGE_KEYS.BACKEND_URL];
-                    this._log({ key: 'logs.trackerStorage.backendUrlLoaded', params: { backendUrl: this.backendUrl } });
                 } else {
                     this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
-                    this._log({ key: 'logs.trackerStorage.backendUrlDefault', params: { backendUrl: this.backendUrl } });
                 }
                 
                 this.updateState({ backendUrl: this.backendUrl });
@@ -160,7 +156,6 @@ class StorageManager extends BaseManager {
                 const domains = normalizeDomainList(result[StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS] || []);
                 this.domainExceptions = domains;
                 this.updateState({ domainExceptionsCount: domains.length });
-                this._log({ key: 'logs.trackerStorage.domainExceptionsLoaded', params: { count: domains.length } });
                 return domains;
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.domainExceptionsLoadError' }, error);
@@ -190,7 +185,6 @@ class StorageManager extends BaseManager {
                     : StorageManager.DEFAULT_TRACKING_ENABLED;
 
                 this.updateState({ trackingEnabled: this.trackingEnabled });
-                this._log({ key: 'logs.trackerStorage.trackingEnabledLoaded', params: { trackingEnabled: this.trackingEnabled } });
                 return this.trackingEnabled;
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.trackingEnabledLoadError' }, error);
@@ -217,7 +211,7 @@ class StorageManager extends BaseManager {
                 });
                 this.backendUrl = url;
                 this.updateState({ backendUrl: this.backendUrl });
-                this._log({ key: 'logs.trackerStorage.backendUrlSaved', params: { backendUrl: url } });
+                this._log({ key: 'logs.trackerStorage.backendUrlSaved' }, { backendUrl: url });
                 return true;
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.backendUrlSaveError' }, error);
@@ -245,7 +239,10 @@ class StorageManager extends BaseManager {
                 });
                 this.domainExceptions = normalized;
                 this.updateState({ domainExceptionsCount: normalized.length });
-                this._log({ key: 'logs.trackerStorage.domainExceptionsSaved', params: { count: normalized.length } });
+                this._log({ key: 'logs.trackerStorage.domainExceptionsSaved' }, { 
+                    count: normalized.length,
+                    domains: normalized 
+                });
                 return true;
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.domainExceptionsSaveError' }, error);
@@ -299,7 +296,6 @@ class StorageManager extends BaseManager {
                 
                 if (result[StorageManager.STORAGE_KEYS.EVENT_QUEUE]) {
                     const queue = result[StorageManager.STORAGE_KEYS.EVENT_QUEUE];
-                    this._log({ key: 'logs.trackerStorage.eventQueueRestored', params: { queueLength: queue.length } });
                     return queue;
                 }
                 
@@ -327,7 +323,6 @@ class StorageManager extends BaseManager {
                 await chrome.storage.local.set({ 
                     [StorageManager.STORAGE_KEYS.EVENT_QUEUE]: queue 
                 });
-                this._log({ key: 'logs.trackerStorage.eventQueueSaved', params: { queueLength: queue.length } });
                 return true;
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.eventQueueSaveError' }, error);

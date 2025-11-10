@@ -254,7 +254,6 @@ class AppManager extends BaseManager {
         const button = this.domManager.elements.toggleTracking;
 
         try {
-            this._log({ key: 'logs.app.trackingToggleRequest', params: { targetState } });
 
             this.domManager.setTrackingToggleLoading(targetState);
 
@@ -285,8 +284,6 @@ class AppManager extends BaseManager {
             this.updateState({ isTracking: newIsTracking });
             this.domManager.updateTrackingStatus(newIsTracking);
             this.domManager.updateTrackingToggle(newIsTracking);
-
-            this._log({ key: 'logs.app.trackingStateUpdated', params: { isTracking: newIsTracking } });
 
             return true;
         } catch (error) {

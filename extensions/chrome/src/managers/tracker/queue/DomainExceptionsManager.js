@@ -57,8 +57,6 @@ class DomainExceptionsManager extends BaseManager {
         this.domainExceptions = new Set(normalized);
         this.updateState({ domainExceptionsCount: this.domainExceptions.size });
         
-        this._log({ key: 'logs.domainExceptions.updated', params: { count: this.domainExceptions.size } });
-        
         return {
             count: this.domainExceptions.size
         };

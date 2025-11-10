@@ -59,7 +59,6 @@ class StorageManager extends BaseManager {
             this._logError({ key: 'logs.storage.criticalInitError' }, error);
             throw error;
         }
-        this._log({ key: 'logs.storage.apiAvailable' });
     }
 
     /**
@@ -88,8 +87,6 @@ class StorageManager extends BaseManager {
      */
     async loadBackendUrl() {
         return this._executeWithTimingAsync('loadBackendUrl', async () => {
-            this._log({ key: 'logs.storage.loadingBackendUrl' });
-            
             const result = await chrome.storage.local.get([
                 StorageManager.STORAGE_KEYS.BACKEND_URL
             ]);
@@ -100,18 +97,12 @@ class StorageManager extends BaseManager {
                 StorageManager.DEFAULT_VALUES.BACKEND_URL
             );
             
-            this._log({ key: 'logs.storage.backendUrlLoaded' }, { 
-                backendUrl,
-                wasDefault: !loadedUrl
-            });
-            
             return backendUrl;
         });
     }
 
     async loadDomainExceptions() {
         return this._executeWithTimingAsync('loadDomainExceptions', async () => {
-            this._log({ key: 'logs.storage.loadingDomainExceptions' });
 
             try {
                 const result = await chrome.storage.local.get([
@@ -120,10 +111,6 @@ class StorageManager extends BaseManager {
 
                 const stored = result[StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS];
                 const domains = normalizeDomainList(Array.isArray(stored) ? stored : []);
-
-                this._log({ key: 'logs.storage.domainExceptionsLoaded' }, {
-                    count: domains.length
-                });
 
                 return domains;
             } catch (error) {
@@ -149,8 +136,6 @@ class StorageManager extends BaseManager {
         }
 
         return this._executeWithTimingAsync('saveBackendUrl', async () => {
-            this._log({ key: 'logs.storage.savingBackendUrl' }, { backendUrl });
-            
             await chrome.storage.local.set({
                 [StorageManager.STORAGE_KEYS.BACKEND_URL]: backendUrl
             });
@@ -161,9 +146,7 @@ class StorageManager extends BaseManager {
             
             const saved = verification[StorageManager.STORAGE_KEYS.BACKEND_URL] === backendUrl;
             
-            if (saved) {
-                this._log({ key: 'logs.storage.backendUrlSavedAndVerified' });
-            } else {
+            if (!saved) {
                 throw new Error(this.t('logs.storage.verificationFailed'));
             }
             
@@ -179,8 +162,6 @@ class StorageManager extends BaseManager {
         const normalized = normalizeDomainList(domains);
 
         return this._executeWithTimingAsync('saveDomainExceptions', async () => {
-            this._log({ key: 'logs.storage.savingDomainExceptions' }, { count: normalized.length });
-
             await chrome.storage.local.set({
                 [StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS]: normalized
             });
@@ -197,8 +178,6 @@ class StorageManager extends BaseManager {
                 throw new Error(this.t('logs.storage.verificationFailed'));
             }
 
-            this._log({ key: 'logs.storage.domainExceptionsSaved' });
-
             return true;
         });
     }
@@ -213,8 +192,6 @@ class StorageManager extends BaseManager {
      */
     async resetToDefault() {
         return this._executeWithTimingAsync('resetToDefault', async () => {
-            this._log({ key: 'logs.storage.resettingToDefault' });
-            
             const defaultUrl = StorageManager.DEFAULT_VALUES.BACKEND_URL;
             await this.saveBackendUrl(defaultUrl);
             await this.saveDomainExceptions([...StorageManager.DEFAULT_VALUES.DOMAIN_EXCEPTIONS]);
@@ -239,8 +216,6 @@ class StorageManager extends BaseManager {
         }
 
         return this._executeWithTimingAsync('notifyBackgroundScript', async () => {
-            this._log({ key: 'logs.storage.sendingNotification' }, { url });
-            
             try {
                 const timeoutPromise = new Promise((_resolve, reject) => {
                     setTimeout(() => reject(new Error(this.t('logs.storage.notificationTimeout'))), 
@@ -254,7 +229,6 @@ class StorageManager extends BaseManager {
 
                 await Promise.race([sendPromise, timeoutPromise]);
                 
-                this._log({ key: 'logs.storage.notificationSent' });
                 return true;
                 
             } catch (error) {
@@ -272,10 +246,6 @@ class StorageManager extends BaseManager {
         const normalized = normalizeDomainList(domains);
 
         return this._executeWithTimingAsync('notifyDomainExceptionsUpdate', async () => {
-            this._log({ key: 'logs.storage.sendingDomainExceptions' }, {
-                count: normalized.length
-            });
-
             try {
                 const timeoutPromise = new Promise((_resolve, reject) => {
                     setTimeout(() => reject(new Error(this.t('logs.storage.domainExceptionsNotificationTimeout'))),
@@ -289,7 +259,10 @@ class StorageManager extends BaseManager {
 
                 await Promise.race([sendPromise, timeoutPromise]);
 
-                this._log({ key: 'logs.storage.domainExceptionsSent' });
+                this._log({ key: 'logs.storage.domainExceptionsSent' }, {
+                    count: normalized.length,
+                    domains: normalized
+                });
                 return true;
             } catch (error) {
                 this._log({ key: 'logs.storage.domainExceptionsNoResponse' }, error);

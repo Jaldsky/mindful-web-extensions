@@ -52,8 +52,6 @@ class SettingsHandlerManager extends BaseManager {
          * @type {Object}
          */
         this.trackingController = dependencies.trackingController;
-        
-        this._log({ key: 'logs.settingsHandler.created' });
     }
 
     /**
@@ -81,14 +79,11 @@ class SettingsHandlerManager extends BaseManager {
             return;
         }
 
-        this._log({ key: 'logs.settingsHandler.backendUrlUpdating', params: { url } });
-        
         this.backendManager.setBackendUrl(url);
         
         this.storageManager.saveBackendUrl(url)
             .then(success => {
                 if (success) {
-                    this._log({ key: 'logs.settingsHandler.backendUrlUpdated' });
                     sendResponse({ success: true });
                 } else {
                     this._log({ key: 'logs.settingsHandler.backendUrlSaveError' });
@@ -125,7 +120,6 @@ class SettingsHandlerManager extends BaseManager {
                 : (Array.isArray(request.data?.domains) ? request.data.domains : []);
 
             const normalized = normalizeDomainList(incoming);
-            this._log({ key: 'logs.settingsHandler.domainExceptionsUpdating', params: { count: normalized.length } });
 
             this.storageManager.saveDomainExceptions(normalized)
                 .then(success => {
@@ -183,8 +177,6 @@ class SettingsHandlerManager extends BaseManager {
                 });
                 return;
             }
-
-            this._log({ key: 'logs.settingsHandler.trackingStateChanging', params: { enabled } });
 
             this.trackingController.setTrackingEnabled(enabled)
                 .then(result => {

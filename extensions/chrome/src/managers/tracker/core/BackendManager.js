@@ -85,7 +85,6 @@ class BackendManager extends BaseManager {
     setBackendUrl(url) {
         this.backendUrl = url;
         this.updateState({ backendUrl: url });
-        this._log({ key: 'logs.backend.backendUrlUpdated', params: { backendUrl: url } });
     }
 
     /**
@@ -100,7 +99,7 @@ class BackendManager extends BaseManager {
     setUserId(userId) {
         this.userId = userId;
         this.updateState({ userId });
-        this._log({ key: 'logs.backend.userIdUpdated', params: { userId } });
+        this._log({ key: 'logs.backend.userIdUpdated' }, { userId });
     }
 
     /**
@@ -173,12 +172,15 @@ class BackendManager extends BaseManager {
                 }
 
                 if (response.status === CONFIG.BACKEND.STATUS_CODES.NO_CONTENT) {
-                    this._log({ key: 'logs.backend.eventsSentSuccess', params: { eventsCount: events.length } });
+                    this._log({ key: 'logs.backend.eventsSentSuccess', params: { eventsCount: events.length } }, { 
+                        status: response.status 
+                    });
                     return { success: true };
                 }
 
                 const responseData = await response.json();
                 this._log({ key: 'logs.backend.eventsSentSuccess', params: { eventsCount: events.length } }, { 
+                    status: response.status,
                     response: responseData 
                 });
                 
@@ -227,7 +229,11 @@ class BackendManager extends BaseManager {
         
         return await this._executeWithTimingAsync('checkHealth', async () => {
             try {
-                const healthcheckUrl = CONFIG.BACKEND.HEALTHCHECK_URL;
+                // Строим healthcheck URL на основе текущего backend URL
+                // Заменяем путь на путь healthcheck из конфига
+                const backendUrlObj = new URL(this.backendUrl);
+                backendUrlObj.pathname = CONFIG.BACKEND.HEALTHCHECK_PATH;
+                const healthcheckUrl = backendUrlObj.toString();
                 
                 this._log({ key: 'logs.backend.checkingHealth' }, { 
                     method: CONFIG.BACKEND.METHODS.GET,
@@ -248,7 +254,7 @@ class BackendManager extends BaseManager {
                 });
 
                 let result;
-                
+
                 if (response.ok) {
                     const responseText = await response.text();
                     this._log({ key: 'logs.backend.backendAvailable' }, { response: responseText });

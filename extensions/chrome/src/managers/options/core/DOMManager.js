@@ -85,11 +85,6 @@ class DOMManager extends BaseManager {
                 const foundElements = Object.entries(this.elements)
                     .filter(([, el]) => el !== null).length;
                 const totalElements = Object.keys(this.elements).length;
-                
-                this._log({ key: 'logs.optionsDom.elementsInitialized' }, {
-                    found: `${foundElements}/${totalElements}`,
-                    elements: Object.keys(this.elements).filter(key => this.elements[key])
-                });
 
                 if (this.strictMode) {
                     this._validateElements();
@@ -187,9 +182,6 @@ class DOMManager extends BaseManager {
                 return false;
             }
             
-            const duration = Math.round(performance.now() - startTime);
-            this._log({ key: 'logs.optionsDom.updateSuccess', params: { elementName, duration } });
-            
             return true;
         } catch (error) {
             const duration = Math.round(performance.now() - startTime);
@@ -211,7 +203,6 @@ class DOMManager extends BaseManager {
             }
             
             const value = this.elements.backendUrl.value.trim();
-            this._log({ key: 'logs.optionsDom.urlValueRetrieved' }, { length: value.length });
             
             return value;
         });

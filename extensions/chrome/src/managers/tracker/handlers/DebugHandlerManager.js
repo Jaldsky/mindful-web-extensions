@@ -30,8 +30,6 @@ class DebugHandlerManager extends BaseManager {
          * @type {Object}
          */
         this.statisticsManager = dependencies.statisticsManager;
-        
-        this._log({ key: 'logs.debugHandler.created' });
     }
 
     /**

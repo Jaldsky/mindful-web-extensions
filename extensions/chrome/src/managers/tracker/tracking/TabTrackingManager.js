@@ -81,7 +81,6 @@ class TabTrackingManager extends BaseManager {
             await this._initializePreviousTab();
 
             this.updateState({ isTracking: true });
-            this._log({ key: 'logs.tabTracking.started' });
         });
     }
 
@@ -118,7 +117,6 @@ class TabTrackingManager extends BaseManager {
         chrome.windows.onFocusChanged.addListener(onFocusChangedListener);
         this.eventListeners.set('onFocusChanged', onFocusChangedListener);
         
-        this._log({ key: 'logs.tabTracking.listenersConfigured' });
     }
 
     /**
@@ -134,7 +132,6 @@ class TabTrackingManager extends BaseManager {
             if (tabs.length > 0) {
                 this.previousActiveTab = tabs[0];
                 this.updateState({ previousTabId: this.previousActiveTab.id });
-                this._log({ key: 'logs.tabTracking.previousTabInitialized', params: { tabId: this.previousActiveTab.id, url: this.previousActiveTab.url } });
             }
         } catch (error) {
             this._logError({ key: 'logs.tabTracking.previousTabInitError' }, error);
@@ -158,22 +155,45 @@ class TabTrackingManager extends BaseManager {
             try {
                 const tab = await chrome.tabs.get(activeInfo.tabId);
                 if (tab && tab.url) {
+                    if (this.previousActiveTab && this.previousActiveTab.id !== tab.id) {
+                        const previousDomain = this._extractDomain(this.previousActiveTab.url);
+                        if (previousDomain) {
+                            this.eventQueueManager.addEvent(CONFIG.TRACKER.EVENT_TYPES.INACTIVE, previousDomain);
+                            
+                            // Логируем с той же структурой, что и EventQueueManager для консистентности
+                            const event = {
+                                event: CONFIG.TRACKER.EVENT_TYPES.INACTIVE,
+                                domain: previousDomain,
+                                timestamp: new Date().toISOString()
+                            };
+                            const queueSize = this.eventQueueManager.getQueueSize();
+                            this._log({ key: 'logs.tabTracking.tabDeactivated' }, {
+                                event,
+                                queueSize
+                            });
+                        }
+                    }
+
                     const domain = this._extractDomain(tab.url);
                     if (domain) {
-                        if (this.previousActiveTab && this.previousActiveTab.id !== tab.id) {
-                            const previousDomain = this._extractDomain(this.previousActiveTab.url);
-                            if (previousDomain) {
-                                this.eventQueueManager.addEvent(CONFIG.TRACKER.EVENT_TYPES.INACTIVE, previousDomain);
-                            }
-                        }
-
                         this.eventQueueManager.addEvent(CONFIG.TRACKER.EVENT_TYPES.ACTIVE, domain);
-
-                        this.previousActiveTab = tab;
-                        this.updateState({ previousTabId: tab.id });
                         
-                        this._log({ key: 'logs.tabTracking.tabActivated', params: { tabId: tab.id, domain } });
+                        // Логируем с той же структурой, что и EventQueueManager для консистентности
+                        const event = {
+                            event: CONFIG.TRACKER.EVENT_TYPES.ACTIVE,
+                            domain: domain,
+                            timestamp: new Date().toISOString()
+                        };
+                        const queueSize = this.eventQueueManager.getQueueSize();
+                        this._log({ key: 'logs.tabTracking.tabActivated' }, {
+                            event,
+                            queueSize
+                        });
                     }
+
+                    // Обновляем предыдущую вкладку независимо от того, есть ли валидный домен
+                    this.previousActiveTab = tab;
+                    this.updateState({ previousTabId: tab.id });
                 }
             } catch (error) {
                 this._logError({ key: 'logs.tabTracking.tabActivatedError' }, error);
@@ -345,7 +365,6 @@ class TabTrackingManager extends BaseManager {
             
             this.eventListeners.clear();
             this.updateState({ isTracking: false });
-            this._log({ key: 'logs.tabTracking.stopped' });
         });
 
         this.previousActiveTab = null;

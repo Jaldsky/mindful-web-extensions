@@ -77,7 +77,6 @@ class BatchProcessor extends BaseManager {
      */
     start() {
         if (this.batchInterval) {
-            this._log({ key: 'logs.batchProcessor.alreadyStarted' });
             return;
         }
 

@@ -44,8 +44,6 @@ class ConnectionHandlerManager extends BaseManager {
          * @type {Object}
          */
         this.eventQueueManager = dependencies.eventQueueManager;
-        
-        this._log({ key: 'logs.connectionHandler.created' });
     }
 
     /**
@@ -58,10 +56,11 @@ class ConnectionHandlerManager extends BaseManager {
      * @param {string} messageType - Тип сообщения
      * @returns {void}
      */
-    handleTestConnection(sendResponse, messageType) {
+    async handleTestConnection(sendResponse, messageType) {
         const isCheckConnection = messageType === ConnectionHandlerManager.MESSAGE_TYPES.CHECK_CONNECTION;
         
         if (isCheckConnection) {
+            // Локаль автоматически загружается в _log() и _logError() в Service Worker контексте
             this._log({ key: 'logs.connectionHandler.healthcheckChecking' });
             
             this.backendManager.checkHealth(false)
@@ -77,7 +76,7 @@ class ConnectionHandlerManager extends BaseManager {
                 .catch(error => {
                     this._logError({ key: 'logs.connectionHandler.healthcheckError' }, error);
                     sendResponse({ 
-                        success: false,
+                        success: false, 
                         tooFrequent: false,
                         error: error.message 
                     });
