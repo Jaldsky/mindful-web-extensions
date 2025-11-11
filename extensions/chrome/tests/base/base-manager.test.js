@@ -249,20 +249,6 @@ describe('BaseManager', () => {
         });
     });
 
-    describe('getConstant', () => {
-        test('должен возвращать значение константы', () => {
-            const value = manager.getConstant('UPDATE_INTERVAL');
-
-            expect(value).toBe(20000);
-        });
-
-        test('должен возвращать undefined для несуществующей константы', () => {
-            const value = manager.getConstant('NON_EXISTENT');
-
-            expect(value).toBeUndefined();
-        });
-    });
-
     describe('destroy', () => {
         test('должен очищать метрики производительности', () => {
             manager._executeWithTiming('testOp', () => 'result');
@@ -341,14 +327,15 @@ describe('BaseManager', () => {
 
     describe('Обработка ошибок (Error Handling)', () => {
         test('updateState - должен обрабатывать ошибки при обновлении', () => {
-            // Делаем state non-extensible чтобы вызвать ошибку при spread
-            Object.defineProperty(manager, 'state', {
+            // Делаем stateManager.state non-extensible чтобы вызвать ошибку при spread
+            Object.defineProperty(manager.stateManager, 'state', {
                 get() {
                     throw new Error('Cannot access state');
                 },
                 set() {
                     throw new Error('Cannot set state');
-                }
+                },
+                configurable: true
             });
 
             expect(() => {
@@ -357,11 +344,12 @@ describe('BaseManager', () => {
         });
 
         test('getState - должен возвращать пустой объект при ошибке', () => {
-            // Ломаем state
-            Object.defineProperty(manager, 'state', {
+            // Ломаем stateManager.state
+            Object.defineProperty(manager.stateManager, 'state', {
                 get() {
                     throw new Error('State error');
-                }
+                },
+                configurable: true
             });
 
             const state = manager.getState();
@@ -370,14 +358,15 @@ describe('BaseManager', () => {
         });
 
         test('resetState - должен обрабатывать ошибки при сбросе', () => {
-            // Делаем state недоступным для записи
-            Object.defineProperty(manager, 'state', {
+            // Делаем stateManager.state недоступным для записи
+            Object.defineProperty(manager.stateManager, 'state', {
                 set() {
                     throw new Error('Cannot reset state');
                 },
                 get() {
                     return {};
-                }
+                },
+                configurable: true
             });
 
             // Не должно выбросить ошибку благодаря обработке

@@ -444,7 +444,7 @@ class AppManager extends BaseManager {
                 });
             }
         } catch (error) {
-            // Игнорируем ошибки загрузки, это не критично
+
             this._logError({ key: 'logs.app.loadConnectionStatusError' }, error);
         }
         return null;

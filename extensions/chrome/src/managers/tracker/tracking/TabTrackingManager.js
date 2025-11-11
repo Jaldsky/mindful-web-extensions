@@ -159,8 +159,7 @@ class TabTrackingManager extends BaseManager {
                         const previousDomain = this._extractDomain(this.previousActiveTab.url);
                         if (previousDomain) {
                             this.eventQueueManager.addEvent(CONFIG.TRACKER.EVENT_TYPES.INACTIVE, previousDomain);
-                            
-                            // Логируем с той же структурой, что и EventQueueManager для консистентности
+
                             const event = {
                                 event: CONFIG.TRACKER.EVENT_TYPES.INACTIVE,
                                 domain: previousDomain,
@@ -177,8 +176,7 @@ class TabTrackingManager extends BaseManager {
                     const domain = this._extractDomain(tab.url);
                     if (domain) {
                         this.eventQueueManager.addEvent(CONFIG.TRACKER.EVENT_TYPES.ACTIVE, domain);
-                        
-                        // Логируем с той же структурой, что и EventQueueManager для консистентности
+
                         const event = {
                             event: CONFIG.TRACKER.EVENT_TYPES.ACTIVE,
                             domain: domain,
@@ -191,7 +189,6 @@ class TabTrackingManager extends BaseManager {
                         });
                     }
 
-                    // Обновляем предыдущую вкладку независимо от того, есть ли валидный домен
                     this.previousActiveTab = tab;
                     this.updateState({ previousTabId: tab.id });
                 }

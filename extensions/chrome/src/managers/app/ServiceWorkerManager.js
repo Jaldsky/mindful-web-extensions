@@ -121,9 +121,10 @@ class ServiceWorkerManager extends BaseManager {
         );
 
         if (blockCheck.shouldBlock) {
-            const errorMessage = blockCheck.reason === 'Tracking is disabled'
-                ? (t('logs.serviceWorker.trackingDisabled') || 'Tracking is disabled')
-                : (t('logs.serviceWorker.noConnection') || 'No connection');
+            const errorMessage = blockCheck.reason || 
+                (blockCheck.reasonKey === 'logs.baseManager.trackingDisabled'
+                    ? t('logs.serviceWorker.trackingDisabled')
+                    : t('logs.serviceWorker.noConnection'));
 
             const error = new Error(errorMessage);
             throw error;
@@ -168,8 +169,7 @@ class ServiceWorkerManager extends BaseManager {
             const response = await this.sendMessage(
                 ServiceWorkerManager.MESSAGE_TYPES.CHECK_CONNECTION
             );
-            
-            // Возвращаем полный объект ответа, чтобы можно было проверить tooFrequent
+
             return {
                 success: response?.success || false,
                 tooFrequent: response?.tooFrequent || false,

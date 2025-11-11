@@ -221,12 +221,10 @@ class BackendManager extends BaseManager {
      */
     async checkHealth(force = false) {
         const now = Date.now();
-        
-        // Проверяем throttling: если запрос был выполнен недавно, пропускаем выполнение
+
         if (!force && this.lastHealthCheckTime !== null) {
             const timeSinceLastCheck = now - this.lastHealthCheckTime;
             if (timeSinceLastCheck < this.healthCheckInterval) {
-                // Пропускаем выполнение запроса, так как он был выполнен недавно
                 return { 
                     success: false, 
                     tooFrequent: true,
@@ -302,8 +300,7 @@ class BackendManager extends BaseManager {
                         errorText: errorText
                     };
                 }
-                
-                // Обновляем время последнего вызова (без кэширования результата)
+
                 this.lastHealthCheckTime = Date.now();
                 
                 return result;
@@ -316,8 +313,7 @@ class BackendManager extends BaseManager {
                     url: error.url,
                     name: error.name && error.name !== 'Error' ? error.name : undefined
                 };
-                
-                // Обновляем время последнего вызова (без кэширования результата)
+
                 this.lastHealthCheckTime = Date.now();
                 
                 return result;

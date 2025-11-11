@@ -54,6 +54,21 @@ const EN = {
             managersDestroyed: 'All managers destroyed',
             managersDestroyError: 'Error destroying managers'
         },
+        baseManager: {
+            stateUpdateError: 'New state must be an object',
+            updateStateError: 'Error updating state',
+            getStateError: 'Error getting state',
+            stateReset: 'State reset',
+            resetStateError: 'Error resetting state',
+            operationError: '{operationName} failed with error in {duration}ms',
+            getPerformanceMetricsError: 'Error getting performance metrics',
+            performanceMetricsCleared: 'Performance metrics cleared',
+            clearPerformanceMetricsError: 'Error clearing performance metrics',
+            destroyStart: 'Base cleanup of resources',
+            unknownError: 'Unknown error',
+            trackingDisabled: 'Tracking is disabled',
+            noConnection: 'No connection'
+        },
         diagnostics: {
             created: 'DiagnosticsManager initialized',
             serviceWorkerRequired: 'ServiceWorkerManager is required',

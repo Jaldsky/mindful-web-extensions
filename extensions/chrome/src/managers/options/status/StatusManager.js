@@ -34,11 +34,6 @@ const StatusRendererManager = require('./StatusRendererManager.js');
  */
 class StatusManager extends BaseManager {
     /**
-     * @type {StatusManagerState}
-     * @override
-     */
-    state;
-    /**
      * Типы статусов
      * @readonly
      * @enum {string}

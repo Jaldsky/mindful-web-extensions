@@ -31,7 +31,6 @@ class ThemeManager extends BaseManager {
     constructor(options = {}) {
         super(options);
 
-        // Инициализация подменеджеров
         this.storageManager = new StorageManager({
             enableLogging: this.enableLogging,
             enableCache: options.enableCache !== false
@@ -67,19 +66,16 @@ class ThemeManager extends BaseManager {
             try {
                 this._log({ key: 'logs.theme.themeManager.loadingAndApplying' });
 
-                // Сначала применяем из кеша для мгновенного эффекта
                 const cachedTheme = this.storageManager.getThemeFromCache();
                 if (cachedTheme && this.applicationManager.isValidTheme(cachedTheme)) {
                     this.applicationManager.applyTheme(cachedTheme);
                 }
 
-                // Затем загружаем из chrome.storage (авторитетный источник)
                 const storedTheme = await this.storageManager.loadTheme();
                 const theme = (storedTheme && this.applicationManager.isValidTheme(storedTheme)) 
                     ? storedTheme 
                     : CONFIG.THEME.DEFAULT;
 
-                // Применяем и сохраняем в кеш
                 this.applicationManager.applyTheme(theme);
                 this.storageManager.saveThemeToCache(theme);
 
@@ -93,8 +89,7 @@ class ThemeManager extends BaseManager {
                 return theme;
             } catch (error) {
                 this._logError({ key: 'logs.theme.themeManager.loadError' }, error);
-                
-                // Fallback: пытаемся применить из кеша или default
+
                 const fallbackTheme = this.storageManager.getThemeFromCache() || CONFIG.THEME.DEFAULT;
                 this.applicationManager.applyTheme(fallbackTheme);
                 return fallbackTheme;
@@ -257,7 +252,6 @@ class ThemeManager extends BaseManager {
         this._log({ key: 'logs.theme.themeManager.cleanupStart' });
         
         try {
-            // Уничтожаем подменеджеры
             if (this.syncManager) {
                 this.syncManager.destroy();
                 this.syncManager = null;
@@ -283,13 +277,11 @@ class ThemeManager extends BaseManager {
     }
 }
 
-// Экспорт для использования в других модулях
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ThemeManager;
     module.exports.default = ThemeManager;
 }
 
-// Для использования в браузере
 if (typeof window !== 'undefined') {
     window.ThemeManager = ThemeManager;
 }

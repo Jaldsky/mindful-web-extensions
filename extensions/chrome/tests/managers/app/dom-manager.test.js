@@ -335,11 +335,6 @@ describe('DOMManager', () => {
             expect(state.isOnline).toBe(false);
             expect(state.isTracking).toBe(false);
         });
-
-        test('should have getConstant method', () => {
-            const updateInterval = domManager.getConstant('UPDATE_INTERVAL');
-            expect(updateInterval).toBe(20000);
-        });
     });
 
     describe('destroy method', () => {
