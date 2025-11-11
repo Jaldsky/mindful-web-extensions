@@ -101,7 +101,18 @@ class FailureManager extends BaseManager {
         this.consecutiveFailures += 1;
         this.updateState({ consecutiveFailures: this.consecutiveFailures });
 
-        this._log({ key: 'logs.failure.sendFailure', params: { consecutiveFailures: this.consecutiveFailures, threshold: this.maxFailuresBeforeDisable } }, context);
+        const errorMessage = context.error || 'Failed to send events';
+        const error = new Error(errorMessage);
+        if (context.status !== undefined) error.status = context.status;
+        if (context.method !== undefined) error.method = context.method;
+        if (context.code !== undefined) error.code = context.code;
+        if (context.name !== undefined) error.name = context.name;
+        if (context.url !== undefined) error.url = context.url;
+        if (context.errorText !== undefined) error.errorText = context.errorText;
+        error.reason = context.reason || 'sendError';
+        error.attempt = this.consecutiveFailures;
+        
+        this._logError({ key: 'logs.failure.sendFailure', params: { attempt: this.consecutiveFailures, consecutiveFailures: this.consecutiveFailures, threshold: this.maxFailuresBeforeDisable } }, error);
 
         if (this.consecutiveFailures >= this.maxFailuresBeforeDisable && !this.failureThresholdReached) {
             this.failureThresholdReached = true;

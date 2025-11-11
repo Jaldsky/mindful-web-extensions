@@ -628,7 +628,7 @@ const RU = {
         failure: {
             created: 'FailureManager инициализирован',
             countersReset: 'Счетчики ошибок сброшены',
-            sendFailure: 'Неудачная попытка отправки событий',
+            sendFailure: 'Попытка {attempt}: Неудачная попытка отправки событий',
             trackerCannotBeDisabled: 'Трекер не может быть отключен автоматически: отсутствует trackingController',
             disableInProgress: 'Отключение трекера уже выполняется, пропуск повторного вызова',
             disablingTracker: 'Отключение трекера из-за повторных ошибок отправки',

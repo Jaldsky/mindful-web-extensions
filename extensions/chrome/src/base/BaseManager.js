@@ -419,6 +419,30 @@ class BaseManager {
     }
 
     /**
+     * Форматирует Error объект для логирования.
+     * Сохраняет только нужные поля (message, status, method, url и т.д.), исключая stack.
+     * 
+     * @private
+     * @param {Error} error - Объект ошибки
+     * @returns {Object} Отформатированный объект для логирования
+     */
+    _formatErrorForLogging(error) {
+        const formatted = {
+            message: error.message || 'Unknown error'
+        };
+        
+        // Сохраняем только нужные дополнительные поля
+        if (error.status !== undefined) formatted.status = error.status;
+        if (error.method !== undefined) formatted.method = error.method;
+        if (error.url !== undefined) formatted.url = error.url;
+        if (error.errorText !== undefined) formatted.errorText = error.errorText;
+        if (error.code !== undefined) formatted.code = error.code;
+        if (error.attempt !== undefined) formatted.attempt = error.attempt;
+        
+        return formatted;
+    }
+
+    /**
      * Сохраняет лог в chrome.storage.local для отображения в панели разработчика.
      * 
      * @private
@@ -442,10 +466,9 @@ class BaseManager {
                 message,
                 messageKey: messageKey || null,
                 messageParams: messageParams || null,
-                data: data !== undefined ? (data instanceof Error ? { message: data.message, stack: data.stack } : data) : null
+                data: data !== undefined ? (data instanceof Error ? this._formatErrorForLogging(data) : data) : null
             };
 
-            // Получаем текущие логи и добавляем новый
             const getResult = chrome.storage.local.get(['mindful_logs'], (result) => {
                 if (chrome.runtime.lastError) {
                     // Игнорируем ошибки, чтобы не нарушать основной функционал
@@ -454,36 +477,31 @@ class BaseManager {
 
                 const logs = result.mindful_logs || [];
                 logs.push(logEntry);
-                
-                // Ограничиваем количество логов
+
                 const maxLogs = CONFIG.LOGS?.MAX_LOGS || 1000;
                 if (logs.length > maxLogs) {
                     logs.splice(0, logs.length - maxLogs);
                 }
 
-                // Сохраняем обновленные логи
                 const setResult = chrome.storage.local.set({ mindful_logs: logs }, () => {
                     if (chrome.runtime.lastError) {
                         // Игнорируем ошибки сохранения
                     }
                 });
-                
-                // Обработка Promise API (для тестов)
+
                 if (setResult && typeof setResult.catch === 'function') {
                     setResult.catch(() => {
                         // Игнорируем ошибки
                     });
                 }
             });
-            
-            // Обработка Promise API (для тестов)
+
             if (getResult && typeof getResult.catch === 'function') {
                 getResult.catch(() => {
                     // Игнорируем ошибки
                 });
             }
         } catch (error) {
-            // Игнорируем ошибки, чтобы не нарушать основной функционал
         }
     }
 

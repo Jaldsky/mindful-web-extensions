@@ -624,7 +624,7 @@ const EN = {
         failure: {
             created: 'FailureManager initialized',
             countersReset: 'Failure counters reset',
-            sendFailure: 'Failed attempt to send events',
+            sendFailure: 'Attempt {attempt}: Failed attempt to send events',
             trackerCannotBeDisabled: 'Tracker cannot be disabled automatically: trackingController missing',
             disableInProgress: 'Tracker disabling already in progress, skipping duplicate call',
             disablingTracker: 'Disabling tracker due to repeated send errors',

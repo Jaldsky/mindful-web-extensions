@@ -131,6 +131,12 @@ class EventQueueManager extends BaseManager {
         this.retryTimeoutId = null;
 
         /** 
+         * ID таймера для проверки healthcheck при достижении порога ошибок
+         * @type {number|null}
+         */
+        this.healthcheckIntervalId = null;
+
+        /** 
          * Менеджер исключений доменов
          * @type {DomainExceptionsManager}
          */
@@ -311,6 +317,11 @@ class EventQueueManager extends BaseManager {
                 return;
             }
 
+            if (this.failureManager.isThresholdReached()) {
+                await this._checkHealthAndResumeIfAvailable();
+                return;
+            }
+
             const eventsToSend = this.queue.splice(0, this.batchSize);
             this.updateState({ queueSize: this.queue.length });
             this.statisticsManager.updateQueueSize(this.queue.length);
@@ -344,6 +355,12 @@ class EventQueueManager extends BaseManager {
                     const t = this._getTranslateFn();
                     const errorMessage = result.error || t('logs.backend.unknownError');
                     const error = new Error(errorMessage);
+                    if (result.status !== undefined) error.status = result.status;
+                    if (result.method !== undefined) error.method = result.method;
+                    if (result.code !== undefined) error.code = result.code;
+                    if (result.name !== undefined) error.name = result.name;
+                    if (result.url !== undefined) error.url = result.url;
+                    if (result.errorText !== undefined) error.errorText = result.errorText;
                     
                     this._logError({ key: 'logs.eventQueue.batchProcessingError' }, error);
 
@@ -356,6 +373,12 @@ class EventQueueManager extends BaseManager {
                     const thresholdReached = await this.failureManager.registerSendFailure({
                         reason: 'sendError',
                         error: errorMessage,
+                        status: result.status,
+                        method: result.method,
+                        code: result.code,
+                        name: result.name,
+                        url: result.url,
+                        errorText: result.errorText,
                         saveQueueFn: () => this.storageManager.saveEventQueue(this.queue)
                     });
                     this.updateState({
@@ -374,6 +397,7 @@ class EventQueueManager extends BaseManager {
                         }, this.retryDelay);
                     } else {
                         this._log({ key: 'logs.eventQueue.retryNotScheduled' });
+                        await this._checkHealthAndResumeIfAvailable();
                     }
                 }
             } catch (error) {
@@ -406,9 +430,63 @@ class EventQueueManager extends BaseManager {
                     }, this.retryDelay);
                 } else {
                     this._log({ key: 'logs.eventQueue.retryNotScheduled' });
+                    // При достижении порога запускаем проверку healthcheck
+                    await this._checkHealthAndResumeIfAvailable();
                 }
             }
         });
+    }
+
+    /**
+     * Проверяет доступность сервера через healthcheck и возобновляет отправку при успехе.
+     * 
+     * Используется когда достигнут порог ошибок. Периодически проверяет healthcheck
+     * и возобновляет отправку событий, когда сервер снова становится доступным.
+     * 
+     * @private
+     * @async
+     * @returns {Promise<void>}
+     */
+    async _checkHealthAndResumeIfAvailable() {
+        try {
+            const healthResult = await this.backendManager.checkHealth(false);
+            
+            if (healthResult.success) {
+
+                this.failureManager.resetFailureCounters();
+                this.updateState({
+                    consecutiveFailures: this.failureManager.getConsecutiveFailures(),
+                    failureThresholdReached: this.failureManager.isThresholdReached()
+                });
+
+                if (this.healthcheckIntervalId) {
+                    clearInterval(this.healthcheckIntervalId);
+                    this.healthcheckIntervalId = null;
+                }
+
+                if (this.queue.length > 0) {
+                    this._log({ key: 'logs.eventQueue.connectionRestored' });
+                    await this.processQueue();
+                }
+            } else {
+
+                if (!this.healthcheckIntervalId) {
+                    const healthcheckInterval = CONFIG.BASE.UPDATE_INTERVAL;
+                    this.healthcheckIntervalId = setInterval(async () => {
+                        await this._checkHealthAndResumeIfAvailable();
+                    }, healthcheckInterval);
+                }
+            }
+        } catch (error) {
+            this._logError({ key: 'logs.eventQueue.batchProcessingError' }, error);
+
+            if (!this.healthcheckIntervalId) {
+                const healthcheckInterval = CONFIG.BASE.UPDATE_INTERVAL;
+                this.healthcheckIntervalId = setInterval(async () => {
+                    await this._checkHealthAndResumeIfAvailable();
+                }, healthcheckInterval);
+            }
+        }
     }
 
     /**
@@ -425,6 +503,11 @@ class EventQueueManager extends BaseManager {
             consecutiveFailures: this.failureManager.getConsecutiveFailures(),
             failureThresholdReached: this.failureManager.isThresholdReached()
         });
+
+        if (this.healthcheckIntervalId) {
+            clearInterval(this.healthcheckIntervalId);
+            this.healthcheckIntervalId = null;
+        }
     }
 
     /**
@@ -501,6 +584,12 @@ class EventQueueManager extends BaseManager {
             clearTimeout(this.retryTimeoutId);
             this.retryTimeoutId = null;
         }
+        
+        if (this.healthcheckIntervalId) {
+            clearInterval(this.healthcheckIntervalId);
+            this.healthcheckIntervalId = null;
+        }
+        
         this.queue = [];
         
         if (this.domainExceptionsManager) {

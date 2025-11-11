@@ -259,10 +259,6 @@ class StorageManager extends BaseManager {
 
                 await Promise.race([sendPromise, timeoutPromise]);
 
-                this._log({ key: 'logs.storage.domainExceptionsSent' }, {
-                    count: normalized.length,
-                    domains: normalized
-                });
                 return true;
             } catch (error) {
                 this._log({ key: 'logs.storage.domainExceptionsNoResponse' }, error);

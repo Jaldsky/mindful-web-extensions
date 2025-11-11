@@ -211,7 +211,15 @@ class StorageManager extends BaseManager {
                 });
                 this.backendUrl = url;
                 this.updateState({ backendUrl: this.backendUrl });
-                this._log({ key: 'logs.trackerStorage.backendUrlSaved' }, { backendUrl: url });
+                
+                let hostForLog = url;
+                try {
+                    const urlObj = new URL(url);
+                    hostForLog = urlObj.host;
+                } catch (e) {
+                }
+                
+                this._log({ key: 'logs.trackerStorage.backendUrlSaved' }, { backendUrl: hostForLog });
                 return true;
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.backendUrlSaveError' }, error);
