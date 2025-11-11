@@ -25,31 +25,25 @@ let themeManagerInstance = null;
  */
 async function initializeAppPage() {
     try {
-        console.log('[App] Инициализация страницы приложения');
-        
-        // Создаем и инициализируем ThemeManager
         themeManagerInstance = new ThemeManager({
             enableLogging: true,
             enableCache: true
         });
         
-        // Загружаем и применяем тему
         await themeManagerInstance.loadAndApplyTheme();
         
-        // Слушаем изменения темы
         themeManagerInstance.listenForThemeChanges();
         
         appManagerInstance = new AppManager({
-            enableLogging: true // Можно отключить в продакшене
+            enableLogging: true
         });
         
-        // Экспортируем в window для отладки
         window.appManager = appManagerInstance;
         window.themeManager = themeManagerInstance;
-        
-        console.log('[App] Страница приложения успешно инициализирована');
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('[App] Критическая ошибка инициализации:', error);
+        throw error;
     }
 }
 
@@ -60,14 +54,12 @@ async function initializeAppPage() {
  */
 function cleanupAppPage() {
     if (themeManagerInstance) {
-        console.log('[App] Очистка ресурсов ThemeManager');
         themeManagerInstance.destroy();
         themeManagerInstance = null;
         window.themeManager = null;
     }
     
     if (appManagerInstance) {
-        console.log('[App] Очистка ресурсов страницы приложения');
         appManagerInstance.destroy();
         appManagerInstance = null;
         window.appManager = null;
@@ -123,7 +115,6 @@ async function runAppDiagnostics() {
  */
 async function testAppConnection() {
     if (!appManagerInstance || !appManagerInstance.serviceWorkerManager) {
-        console.error('ServiceWorkerManager не доступен');
         return false;
     }
     
@@ -158,10 +149,8 @@ async function getTodayStats() {
     return await appManagerInstance.serviceWorkerManager.getTodayStats();
 }
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', initializeAppPage);
 
-// Очистка при закрытии страницы
 window.addEventListener('beforeunload', cleanupAppPage);
 
 /**
@@ -195,7 +184,6 @@ function getNotificationStats() {
     return appManagerInstance.notificationManager.getNotificationStatistics();
 }
 
-// Экспорт вспомогательных функций в window для отладки в консоли
 if (typeof window !== 'undefined') {
     window.getAppDiagnostics = getAppDiagnostics;
     window.runAppDiagnostics = runAppDiagnostics;
@@ -205,21 +193,33 @@ if (typeof window !== 'undefined') {
     window.getDOMMetrics = getDOMMetrics;
     window.getNotificationStats = getNotificationStats;
     
-    // Вывод информации в консоль при инициализации
-    console.log('%c[App] Доступные команды для отладки:', 'color: #4CAF50; font-weight: bold');
-    console.log('%cОсновные:', 'color: #2196F3; font-weight: bold');
-    console.log('  • getAppDiagnostics() - Получить диагностическую информацию');
-    console.log('  • runAppDiagnostics() - Запустить полную диагностику');
-    console.log('%cПодключение:', 'color: #2196F3; font-weight: bold');
-    console.log('  • testAppConnection() - Проверить подключение к серверу');
-    console.log('  • getTrackingStatus() - Получить статус отслеживания');
-    console.log('  • getTodayStats() - Получить статистику за сегодня');
-    console.log('%cСтатистика:', 'color: #2196F3; font-weight: bold');
-    console.log('  • getDOMMetrics() - Метрики производительности DOM');
-    console.log('  • getNotificationStats() - Статистика уведомлений');
+    const isDevMode = typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production';
+    if (isDevMode) {
+        // eslint-disable-next-line no-console
+        console.log('%c[App] Доступные команды для отладки:', 'color: #4CAF50; font-weight: bold');
+        // eslint-disable-next-line no-console
+        console.log('%cОсновные:', 'color: #2196F3; font-weight: bold');
+        // eslint-disable-next-line no-console
+        console.log('  • getAppDiagnostics() - Получить диагностическую информацию');
+        // eslint-disable-next-line no-console
+        console.log('  • runAppDiagnostics() - Запустить полную диагностику');
+        // eslint-disable-next-line no-console
+        console.log('%cПодключение:', 'color: #2196F3; font-weight: bold');
+        // eslint-disable-next-line no-console
+        console.log('  • testAppConnection() - Проверить подключение к серверу');
+        // eslint-disable-next-line no-console
+        console.log('  • getTrackingStatus() - Получить статус отслеживания');
+        // eslint-disable-next-line no-console
+        console.log('  • getTodayStats() - Получить статистику за сегодня');
+        // eslint-disable-next-line no-console
+        console.log('%cСтатистика:', 'color: #2196F3; font-weight: bold');
+        // eslint-disable-next-line no-console
+        console.log('  • getDOMMetrics() - Метрики производительности DOM');
+        // eslint-disable-next-line no-console
+        console.log('  • getNotificationStats() - Статистика уведомлений');
+    }
 }
 
-// Экспорт для тестирования (если необходимо)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { 
         initializeAppPage, 
