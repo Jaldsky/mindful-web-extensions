@@ -11,15 +11,12 @@ let tracker = null;
  * @returns {void}
  */
 function initializeTracker() {
-    console.log('[Tracker] Создание экземпляра TrackerManager...');
-    
     try {
         tracker = new TrackerManager({
             enableLogging: true
         });
-        
-        console.log('[Tracker] TrackerManager успешно создан и инициализирован');
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('[Tracker] Ошибка инициализации TrackerManager:', error);
     }
 }
