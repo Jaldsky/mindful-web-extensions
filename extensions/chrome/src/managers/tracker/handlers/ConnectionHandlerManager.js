@@ -60,12 +60,23 @@ class ConnectionHandlerManager extends BaseManager {
         const isCheckConnection = messageType === ConnectionHandlerManager.MESSAGE_TYPES.CHECK_CONNECTION;
         
         if (isCheckConnection) {
-            // Локаль автоматически загружается в _log() и _logError() в Service Worker контексте
             this._log({ key: 'logs.connectionHandler.healthcheckChecking' });
             
             this.backendManager.checkHealth(false)
                 .then(result => {
-                    this._log({ key: 'logs.connectionHandler.healthcheckResult' }, result);
+                    if (result.tooFrequent) {
+                        this._log({ key: 'logs.connectionHandler.healthcheckResult' }, result);
+                    } else if (result.success) {
+                        this._log({ key: 'logs.connectionHandler.healthcheckResult' }, result);
+                    } else {
+                        const error = new Error(result.error || 'Healthcheck failed');
+                        if (result.status !== undefined) error.status = result.status;
+                        if (result.method !== undefined) error.method = result.method;
+                        if (result.url !== undefined) error.url = result.url;
+                        if (result.errorText !== undefined) error.errorText = result.errorText;
+                        if (result.name !== undefined) error.name = result.name;
+                        this._logError({ key: 'logs.connectionHandler.healthcheckError' }, error);
+                    }
                     // Убеждаемся, что tooFrequent передается в ответе
                     sendResponse({
                         success: result.success || false,

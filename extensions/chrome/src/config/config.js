@@ -23,37 +23,46 @@ const CONFIG = {
     /**
      * Настройки Backend API
      */
-    BACKEND: {
-        DEFAULT_URL: 'http://localhost:8000/api/v1/events/send',
-        HEALTHCHECK_PATH: '/api/v1/healthcheck', // Путь для healthcheck endpoint
-        TIMEOUT: 10000, // Таймаут запроса (мс)
-        RETRY_ATTEMPTS: 3, // Количество попыток повтора
-        RETRY_DELAY: 20000, // Задержка между попытками (мс)
-        // HTTP методы
-        METHODS: {
-            POST: 'POST',
-            GET: 'GET'
-        },
-        // HTTP заголовки
-        HEADERS: {
-            CONTENT_TYPE: 'Content-Type',
-            USER_ID: 'X-User-ID'
-        },
-        // Значения заголовков
-        HEADER_VALUES: {
-            CONTENT_TYPE_JSON: 'application/json'
-        },
-        // HTTP статусы
-        STATUS_CODES: {
-            NO_CONTENT: 204 // No Content - нет тела ответа
-        },
-        // Ключи для payload
-        PAYLOAD_KEYS: {
-            DATA: 'data'
-        },
-        // Шаблон сообщения об ошибке HTTP
-        ERROR_MESSAGE_TEMPLATE: 'HTTP {status}: {message}'
-    },
+    BACKEND: (() => {
+        const BASE_URL = 'http://localhost:8000'; // Базовый URL backend сервера
+        const EVENTS_ENDPOINT = '/api/v1/events/send'; // Эндпоинт для отправки событий
+        const HEALTHCHECK_PATH = '/api/v1/healthcheck'; // Путь для healthcheck endpoint
+        const DEFAULT_URL = BASE_URL + EVENTS_ENDPOINT; // Полный URL по умолчанию
+        
+        return {
+            BASE_URL,
+            EVENTS_ENDPOINT,
+            HEALTHCHECK_PATH,
+            DEFAULT_URL,
+            TIMEOUT: 10000, // Таймаут запроса (мс)
+            RETRY_ATTEMPTS: 3, // Количество попыток повтора
+            RETRY_DELAY: 20000, // Задержка между попытками (мс)
+            // HTTP методы
+            METHODS: {
+                POST: 'POST',
+                GET: 'GET'
+            },
+            // HTTP заголовки
+            HEADERS: {
+                CONTENT_TYPE: 'Content-Type',
+                USER_ID: 'X-User-ID'
+            },
+            // Значения заголовков
+            HEADER_VALUES: {
+                CONTENT_TYPE_JSON: 'application/json'
+            },
+            // HTTP статусы
+            STATUS_CODES: {
+                NO_CONTENT: 204 // No Content - нет тела ответа
+            },
+            // Ключи для payload
+            PAYLOAD_KEYS: {
+                DATA: 'data'
+            },
+            // Шаблон сообщения об ошибке HTTP
+            ERROR_MESSAGE_TEMPLATE: 'HTTP {status}: {message}'
+        };
+    })(),
 
     /**
      * Настройки трекера событий

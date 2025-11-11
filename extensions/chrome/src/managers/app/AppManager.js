@@ -186,8 +186,6 @@ class AppManager extends BaseManager {
         const originalText = this.localeManager.t('app.buttons.testConnection');
         
         try {
-            this._log({ key: 'logs.app.testConnection.start' });
-
             this.domManager.setButtonState(
                 button,
                 this.localeManager.t('app.buttons.testConnectionLoading'),
@@ -220,7 +218,6 @@ class AppManager extends BaseManager {
             }
             
             this.domManager.showConnectionStatusMessage(message, messageType);
-            this._log({ key: isOnline ? 'logs.app.testConnection.success' : 'logs.app.testConnection.fail' });
 
             return isOnline;
         } catch (error) {

@@ -160,14 +160,17 @@ class BackendManager extends BaseManager {
                     const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
                         .replace('{status}', response.status)
                         .replace('{message}', errorText || response.statusText);
-                    this._logError({ key: 'logs.backend.backendResponseError' }, { 
-                        method: CONFIG.BACKEND.METHODS.POST,
-                        status: response.status,
-                        errorText 
-                    });
+                    const error = new Error(errorMessage);
+                    error.status = response.status;
+                    error.method = CONFIG.BACKEND.METHODS.POST;
+                    error.errorText = errorText;
+                    this._logError({ key: 'logs.backend.backendResponseError' }, error);
                     return { 
                         success: false, 
-                        error: errorMessage 
+                        error: errorMessage,
+                        status: response.status,
+                        method: CONFIG.BACKEND.METHODS.POST,
+                        errorText: errorText
                     };
                 }
 
@@ -188,9 +191,14 @@ class BackendManager extends BaseManager {
             } catch (error) {
                 this._logError({ key: 'logs.backend.eventsSendError' }, error);
                 const t = this._getTranslateFn();
+                const errorMessage = error.message || t('logs.backend.unknownError');
                 return { 
                     success: false, 
-                    error: error.message || t('logs.backend.unknownError') 
+                    error: errorMessage,
+                    method: CONFIG.BACKEND.METHODS.POST,
+                    code: error.code,
+                    name: error.name && error.name !== 'Error' ? error.name : undefined,
+                    url: error.url || this.backendUrl
                 };
             }
         });
@@ -229,8 +237,6 @@ class BackendManager extends BaseManager {
         
         return await this._executeWithTimingAsync('checkHealth', async () => {
             try {
-                // Строим healthcheck URL на основе текущего backend URL
-                // Заменяем путь на путь healthcheck из конфига
                 const backendUrlObj = new URL(this.backendUrl);
                 backendUrlObj.pathname = CONFIG.BACKEND.HEALTHCHECK_PATH;
                 const healthcheckUrl = backendUrlObj.toString();
@@ -240,12 +246,31 @@ class BackendManager extends BaseManager {
                     url: healthcheckUrl
                 });
 
-                const response = await fetch(healthcheckUrl, {
-                    method: CONFIG.BACKEND.METHODS.GET,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
-                    }
-                });
+                let response;
+                try {
+                    response = await fetch(healthcheckUrl, {
+                        method: CONFIG.BACKEND.METHODS.GET,
+                        headers: {
+                            [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        }
+                    });
+                } catch (fetchError) {
+                    const error = fetchError instanceof Error 
+                        ? fetchError 
+                        : new Error(fetchError.message || fetchError.toString());
+                    error.url = healthcheckUrl;
+                    if (fetchError.code !== undefined) error.code = fetchError.code;
+                    if (fetchError.name && fetchError.name !== 'Error') error.name = fetchError.name;
+                    this._logError({ key: 'logs.backend.healthcheckError' }, error);
+                    this.lastHealthCheckTime = Date.now();
+                    return { 
+                        success: false, 
+                        error: `Network error: ${error.message || error.toString()}`,
+                        url: healthcheckUrl,
+                        method: CONFIG.BACKEND.METHODS.GET,
+                        name: error.name && error.name !== 'Error' ? error.name : undefined
+                    };
+                }
 
                 this._log({ key: 'logs.backend.healthcheckResponse' }, { 
                     method: CONFIG.BACKEND.METHODS.GET,
@@ -261,17 +286,20 @@ class BackendManager extends BaseManager {
                     result = { success: true };
                 } else {
                     const errorText = await response.text();
-                    this._logError({ key: 'logs.backend.backendUnavailable' }, { 
-                        method: CONFIG.BACKEND.METHODS.GET,
-                        status: response.status,
-                        errorText 
-                    });
                     const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
                         .replace('{status}', response.status)
                         .replace('{message}', errorText || response.statusText);
+                    const error = new Error(errorMessage);
+                    error.status = response.status;
+                    error.method = CONFIG.BACKEND.METHODS.GET;
+                    error.errorText = errorText;
+                    this._logError({ key: 'logs.backend.backendUnavailable' }, error);
                     result = { 
                         success: false, 
-                        error: errorMessage 
+                        error: errorMessage,
+                        status: response.status,
+                        method: CONFIG.BACKEND.METHODS.GET,
+                        errorText: errorText
                     };
                 }
                 
@@ -283,7 +311,10 @@ class BackendManager extends BaseManager {
                 this._logError({ key: 'logs.backend.healthcheckError' }, error);
                 const result = { 
                     success: false, 
-                    error: `${error.name}: ${error.message}` 
+                    error: `${error.name}: ${error.message}`,
+                    method: CONFIG.BACKEND.METHODS.GET,
+                    url: error.url,
+                    name: error.name && error.name !== 'Error' ? error.name : undefined
                 };
                 
                 // Обновляем время последнего вызова (без кэширования результата)

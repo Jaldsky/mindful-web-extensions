@@ -83,7 +83,6 @@ class BatchProcessor extends BaseManager {
         this.batchInterval = setInterval(() => {
             const queueSize = this.getQueueSizeFn();
             if (queueSize > 0) {
-                this._log({ key: 'logs.batchProcessor.periodicProcessing', params: { queueSize, interval: `${this.batchTimeout / 1000}s` } });
                 this.processQueueFn();
             }
         }, this.batchTimeout);
