@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  */
 
-const DiagnosticsWorkflowManager = require('../../../src/managers/options/diagnostics/DiagnosticsWorkflowManager.js');
-const { createBaseOptionsManager } = require('./options-test-helpers.js');
+const DiagnosticsWorkflowManager = require('../../../../src/managers/options/diagnostics/DiagnosticsWorkflowManager.js');
+const { createBaseOptionsManager } = require('../options-test-helpers.js');
 
 describe('DiagnosticsWorkflowManager', () => {
     const setupDOM = () => {

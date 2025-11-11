@@ -2,8 +2,8 @@
  * Тесты для ValidationManager
  */
 
-const CONFIG = require('../../../src/config/config.js');
-const ValidationManager = require('../../../src/managers/options/core/ValidationManager.js');
+const CONFIG = require('../../../../src/config/config.js');
+const ValidationManager = require('../../../../src/managers/options/core/ValidationManager.js');
 
 describe('ValidationManager', () => {
     let validationManager;

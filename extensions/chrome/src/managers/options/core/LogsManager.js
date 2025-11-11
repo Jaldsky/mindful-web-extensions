@@ -351,7 +351,7 @@ class LogsManager {
 
             const logsContent = document.getElementById('logsContent');
             if (logsContent) {
-                logsContent.textContent = manager.localeManager.t('logs.logs.noLogsAvailable');
+                logsContent.innerHTML = `<div class="log-empty">${this.escapeHtml(manager.localeManager.t('logs.logs.noLogsAvailable'))}</div>`;
             }
 
             this.updateCounter(0);

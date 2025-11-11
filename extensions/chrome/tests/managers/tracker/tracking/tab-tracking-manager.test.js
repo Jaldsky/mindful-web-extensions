@@ -2,11 +2,11 @@
  * Тесты для TabTrackingManager
  */
 
-const TabTrackingManager = require('../../../src/managers/tracker/tracking/TabTrackingManager.js');
-const EventQueueManager = require('../../../src/managers/tracker/queue/EventQueueManager.js');
-const BackendManager = require('../../../src/managers/tracker/core/BackendManager.js');
-const StatisticsManager = require('../../../src/managers/tracker/core/StatisticsManager.js');
-const StorageManager = require('../../../src/managers/tracker/core/StorageManager.js');
+const TabTrackingManager = require('../../../../src/managers/tracker/tracking/TabTrackingManager.js');
+const EventQueueManager = require('../../../../src/managers/tracker/queue/EventQueueManager.js');
+const BackendManager = require('../../../../src/managers/tracker/core/BackendManager.js');
+const StatisticsManager = require('../../../../src/managers/tracker/core/StatisticsManager.js');
+const StorageManager = require('../../../../src/managers/tracker/core/StorageManager.js');
 
 describe('TabTrackingManager', () => {
     let tabTrackingManager;
