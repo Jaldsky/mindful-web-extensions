@@ -386,7 +386,6 @@ describe('DOMManager', () => {
             expect(typeof domManager.updateState).toBe('function');
             expect(typeof domManager.getState).toBe('function');
             expect(typeof domManager.resetState).toBe('function');
-            expect(typeof domManager.getConstant).toBe('function');
         });
 
         test('должен корректно обновлять состояние', () => {

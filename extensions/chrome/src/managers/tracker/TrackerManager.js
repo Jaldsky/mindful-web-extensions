@@ -99,7 +99,6 @@ class TrackerManager extends BaseManager {
 
         await this._executeWithTimingAsync('init', async () => {
             try {
-                // Локаль автоматически загружается в _log() и _logError() в Service Worker контексте
                 const userId = await this.storageManager.getOrCreateUserId();
                 this.backendManager.setUserId(userId);
 
@@ -171,7 +170,6 @@ class TrackerManager extends BaseManager {
      * @returns {Promise<{success: boolean, isTracking: boolean}>} Результат операции
      */
     async enableTracking() {
-        // Локаль автоматически загружается в _log() и _logError() в Service Worker контексте
         if (this.trackingEnabled) {
             this._log({ key: 'logs.tracker.alreadyEnabled' });
             return { success: true, isTracking: true };
@@ -210,7 +208,6 @@ class TrackerManager extends BaseManager {
      * @returns {Promise<{success: boolean, isTracking: boolean}>} Результат операции
      */
     async disableTracking() {
-        // Локаль автоматически загружается в _log() и _logError() в Service Worker контексте
         if (!this.trackingEnabled) {
             this._log({ key: 'logs.tracker.alreadyDisabled' });
             return { success: true, isTracking: false };

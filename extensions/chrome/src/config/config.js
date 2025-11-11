@@ -17,7 +17,13 @@ const CONFIG = {
         NOTIFICATION_DURATION: 3000, // Длительность уведомлений (мс)
         PING_TIMEOUT: 5000, // Таймаут ping запроса (мс)
         THROTTLE_DELAY: 1000, // Задержка throttle (мс)
-        MAX_HISTORY_SIZE: 50 // Максимальный размер истории
+        MAX_HISTORY_SIZE: 50, // Максимальный размер истории
+        // Начальное состояние менеджера
+        DEFAULT_STATE: {
+            isOnline: false,
+            isTracking: false,
+            lastUpdate: 0
+        }
     },
 
     /**
@@ -218,7 +224,12 @@ const CONFIG = {
         DEFAULT: 'en',
         AVAILABLE: ['en', 'ru'],
         STORAGE_KEY: 'mindful_locale',
-        CACHE_KEY: 'mindful_locale_cache'
+        CACHE_KEY: 'mindful_locale_cache',
+        // Поддерживаемые локали (объект для удобного доступа)
+        SUPPORTED_LOCALES: {
+            EN: 'en',
+            RU: 'ru'
+        }
     },
 
     /**
@@ -277,7 +288,31 @@ const CONFIG = {
         OPEN_OPTIONS: 'openOptions',
         
         // Отладка
-        GENERATE_RANDOM_DOMAINS: 'generateRandomDomains'
+        GENERATE_RANDOM_DOMAINS: 'generateRandomDomains',
+        
+        // Служебные сообщения (не блокируются при отключенном отслеживании)
+        // Ключи должны соответствовать ключам в MESSAGE_TYPES (например, 'PING', 'GET_STATUS')
+        SYSTEM_MESSAGES: [
+            'PING',
+            'GET_STATUS',
+            'GET_TRACKING_STATUS',
+            'GET_TODAY_STATS',
+            'GET_DETAILED_STATS',
+            'SET_TRACKING_ENABLED',
+            'CHECK_CONNECTION',
+            'UPDATE_BACKEND_URL',
+            'UPDATE_DOMAIN_EXCEPTIONS'
+        ],
+        
+        // Паттерны для определения блокирующих ошибок
+        BLOCKING_ERROR_PATTERNS: [
+            'tracking is disabled',
+            'no connection',
+            'отслеживание отключено',
+            'нет подключения',
+            'logs.serviceworker.trackingdisabled',
+            'logs.serviceworker.noconnection'
+        ]
     },
 
     /**
@@ -436,7 +471,9 @@ const CONFIG = {
         MAX_LOGS: 1000, // Максимальное количество логов в хранилище
         AUTO_REFRESH_INTERVAL: 1000, // Интервал автообновления логов (мс)
         SELECTION_TIMEOUT: 5000, // Таймаут для выделения текста перед возобновлением обновления (мс)
-        PERFORMANCE_LOG_THRESHOLD: 10 // Порог логирования операций (мс) - логируются только операции > 10мс
+        PERFORMANCE_LOG_THRESHOLD: 10, // Порог логирования операций (мс) - логируются только операции > 10мс
+        STORAGE_KEY: 'mindful_logs', // Ключ для хранения логов в chrome.storage.local
+        DEFAULT_CLASS_NAME: 'Unknown' // Дефолтное имя класса для логирования
     },
 
     /**

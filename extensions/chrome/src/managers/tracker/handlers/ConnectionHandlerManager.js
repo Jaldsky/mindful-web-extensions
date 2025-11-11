@@ -77,7 +77,6 @@ class ConnectionHandlerManager extends BaseManager {
                         if (result.name !== undefined) error.name = result.name;
                         this._logError({ key: 'logs.connectionHandler.healthcheckError' }, error);
                     }
-                    // Убеждаемся, что tooFrequent передается в ответе
                     sendResponse({
                         success: result.success || false,
                         tooFrequent: result.tooFrequent || false,
@@ -97,7 +96,6 @@ class ConnectionHandlerManager extends BaseManager {
             
             if (queueSize === 0) {
                 this._log({ key: 'logs.connectionHandler.queueEmpty' });
-                // Не передаем force = true, чтобы throttling работал и показывал "too frequent"
                 this.backendManager.checkHealth(false)
                     .then(result => {
                         const t = this._getTranslateFn();

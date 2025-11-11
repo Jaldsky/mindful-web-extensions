@@ -79,7 +79,6 @@ class StorageManager extends BaseManager {
                     this.userId = result[StorageManager.STORAGE_KEYS.USER_ID];
                     this._log({ key: 'logs.trackerStorage.userIdLoaded', params: { userId: this.userId } });
                 } else {
-                    // Генерируем UUID v4
                     this.userId = this._generateUUID();
                     await chrome.storage.local.set({ 
                         [StorageManager.STORAGE_KEYS.USER_ID]: this.userId 

@@ -54,6 +54,21 @@ const RU = {
             managersDestroyed: 'Все менеджеры уничтожены',
             managersDestroyError: 'Ошибка уничтожения менеджеров'
         },
+        baseManager: {
+            stateUpdateError: 'Новое состояние должно быть объектом',
+            updateStateError: 'Ошибка обновления состояния',
+            getStateError: 'Ошибка получения состояния',
+            stateReset: 'Состояние сброшено',
+            resetStateError: 'Ошибка сброса состояния',
+            operationError: '{operationName} завершилась с ошибкой за {duration}мс',
+            getPerformanceMetricsError: 'Ошибка получения метрик производительности',
+            performanceMetricsCleared: 'Метрики производительности очищены',
+            clearPerformanceMetricsError: 'Ошибка очистки метрик производительности',
+            destroyStart: 'Базовая очистка ресурсов',
+            unknownError: 'Неизвестная ошибка',
+            trackingDisabled: 'Отслеживание отключено',
+            noConnection: 'Нет подключения'
+        },
         diagnostics: {
             created: 'DiagnosticsManager инициализирован',
             serviceWorkerRequired: 'ServiceWorkerManager обязателен',

@@ -430,7 +430,6 @@ class EventQueueManager extends BaseManager {
                     }, this.retryDelay);
                 } else {
                     this._log({ key: 'logs.eventQueue.retryNotScheduled' });
-                    // При достижении порога запускаем проверку healthcheck
                     await this._checkHealthAndResumeIfAvailable();
                 }
             }
