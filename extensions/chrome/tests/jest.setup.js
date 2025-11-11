@@ -116,11 +116,17 @@ global.fetch = jest.fn();
 
 // Подавление консольных логов во время тестов
 // Сохраняем оригинальные методы
+// eslint-disable-next-line no-console
 const originalConsole = {
+    // eslint-disable-next-line no-console
     log: console.log,
+    // eslint-disable-next-line no-console
     warn: console.warn,
+    // eslint-disable-next-line no-console
     error: console.error,
+    // eslint-disable-next-line no-console
     info: console.info,
+    // eslint-disable-next-line no-console
     debug: console.debug
 };
 

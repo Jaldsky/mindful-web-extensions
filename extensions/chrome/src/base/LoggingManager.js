@@ -62,6 +62,7 @@ class LoggingManager {
         const shouldConsole = isConsoleEnabledInConfig || isTestEnv;
         const { resolvedMessage, messageKey, messageParams } = this._resolveMessage(message);
         if (shouldConsole) {
+            // eslint-disable-next-line no-console
             console.log(`[${className}] ${resolvedMessage}`, data !== undefined ? data : '');
         }
         this._saveLogToStorage('INFO', resolvedMessage, data, messageKey, messageParams);
@@ -105,6 +106,7 @@ class LoggingManager {
         const shouldConsole = isConsoleEnabledInConfig || isTestEnv;
         const { resolvedMessage, messageKey, messageParams } = this._resolveMessage(message);
         if (shouldConsole) {
+            // eslint-disable-next-line no-console
             console.error(`[${className}] ${resolvedMessage}`, error || '');
         }
         this._saveLogToStorage('ERROR', resolvedMessage, error, messageKey, messageParams);

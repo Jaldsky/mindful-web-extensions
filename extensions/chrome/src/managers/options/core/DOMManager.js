@@ -81,10 +81,6 @@ class DOMManager extends BaseManager {
         this._executeWithTiming('initializeElements', () => {
             try {
                 this.elements = this._cacheDOMElements();
-                
-                const foundElements = Object.entries(this.elements)
-                    .filter(([, el]) => el !== null).length;
-                const totalElements = Object.keys(this.elements).length;
 
                 if (this.strictMode) {
                     this._validateElements();

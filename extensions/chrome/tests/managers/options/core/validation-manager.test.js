@@ -398,8 +398,6 @@ describe('ValidationManager', () => {
 
         test('должен обновлять метрики при каждой валидации', () => {
             validationManager.validateBackendUrl('http://example.com');
-            const metrics1 = validationManager.getPerformanceMetrics();
-
             validationManager.validateBackendUrl('http://example2.com');
             const metrics2 = validationManager.getPerformanceMetrics();
 

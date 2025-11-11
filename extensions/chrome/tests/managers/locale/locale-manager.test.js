@@ -241,7 +241,7 @@ describe('LocaleManager', () => {
             jest.spyOn(localeManager.translationManager, 'translate').mockReturnValue('translated');
             
             // Используем внутренний метод domManager который использует callback
-            const result = localeManager.t('test.key', { param: 'value' });
+            localeManager.t('test.key', { param: 'value' });
             
             expect(localeManager.translationManager.translate).toHaveBeenCalledWith('test.key', { param: 'value' });
         });
