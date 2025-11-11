@@ -238,8 +238,8 @@ describe('StatusManager', () => {
             await manager.showStatus('Message 1', StatusManager.STATUS_TYPES.SUCCESS);
             
             // Последующие добавляются в очередь
-            const result2 = await manager.showStatus('Message 2', StatusManager.STATUS_TYPES.SUCCESS);
-            const result3 = await manager.showStatus('Message 3', StatusManager.STATUS_TYPES.SUCCESS);
+            await manager.showStatus('Message 2', StatusManager.STATUS_TYPES.SUCCESS);
+            await manager.showStatus('Message 3', StatusManager.STATUS_TYPES.SUCCESS);
 
             // Второе и третье должны быть в очереди
             expect(manager.queueManager.size()).toBeGreaterThan(0);

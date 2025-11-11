@@ -74,8 +74,6 @@ describe('StatisticsManager', () => {
         });
 
         test('должен обновлять состояние', () => {
-            const initialState = statisticsManager.getState();
-            
             statisticsManager.addEvent('active', 'test.com');
             
             const newState = statisticsManager.getState();

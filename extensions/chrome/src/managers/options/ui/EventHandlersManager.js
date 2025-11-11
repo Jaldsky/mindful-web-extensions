@@ -23,8 +23,6 @@ class EventHandlersManager {
      */
     setupEventHandlers() {
         const manager = this.manager;
-        const setupStartTime = performance.now();
-        let handlersCount = 0;
 
         if (manager.domManager.elements.settingsForm) {
             const formSubmitHandler = (e) => {
@@ -267,7 +265,6 @@ class EventHandlersManager {
         window.addEventListener('blur', blurHandler);
         manager.eventHandlers.set('windowFocus', focusHandler);
         manager.eventHandlers.set('windowBlur', blurHandler);
-        handlersCount += 2;
 
         manager.developerToolsManager.restoreState();
     }
