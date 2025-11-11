@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  */
 
-const DiagnosticsDataManager = require('../../../src/managers/options/diagnostics/DiagnosticsDataManager.js');
-const { createBaseOptionsManager } = require('./options-test-helpers.js');
+const DiagnosticsDataManager = require('../../../../src/managers/options/diagnostics/DiagnosticsDataManager.js');
+const { createBaseOptionsManager } = require('../options-test-helpers.js');
 
 describe('DiagnosticsDataManager', () => {
     afterEach(() => {

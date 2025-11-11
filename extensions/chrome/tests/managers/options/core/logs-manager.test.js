@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  */
 
-const LogsManager = require('../../../src/managers/options/core/LogsManager.js');
-const { createBaseOptionsManager } = require('./options-test-helpers.js');
+const LogsManager = require('../../../../src/managers/options/core/LogsManager.js');
+const { createBaseOptionsManager } = require('../options-test-helpers.js');
 
 describe('LogsManager', () => {
     let originalClipboard;
