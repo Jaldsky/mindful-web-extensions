@@ -293,6 +293,175 @@ describe('EventHandlersManager', () => {
             expect(manager.eventHandlers.has('themeToggle')).toBe(true);
         });
 
+        test('логирует если settingsForm не найден', () => {
+            manager.domManager.elements.settingsForm = null;
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager._log).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.ui.eventHandlers.settingsFormNotFound' })
+            );
+        });
+
+        test('логирует если resetBtn не найден', () => {
+            manager.domManager.elements.resetBtn = null;
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager._log).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.ui.eventHandlers.resetBtnNotFound' })
+            );
+        });
+
+        test('логирует если saveBtn не найден', () => {
+            manager.domManager.elements.saveBtn = null;
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager._log).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.ui.eventHandlers.saveBtnNotFound' })
+            );
+        });
+
+        test('логирует если runDiagnostics не найден', () => {
+            manager.domManager.elements.runDiagnostics = null;
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager._log).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.ui.eventHandlers.runDiagnosticsBtnNotFound' })
+            );
+        });
+
+        test('не настраивает обработчик для clearDiagnostics если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<button id="clearDiagnostics">Clear</button>',
+                ''
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('clearDiagnostics')).toBe(false);
+        });
+
+        test('не настраивает обработчик для closeDevToolsPanel если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<button id="closeDevToolsPanel">Close</button>',
+                ''
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('closeDevToolsPanel')).toBe(false);
+        });
+
+        test('не настраивает обработчик для logsTab если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<button id="logsTab">Logs</button>',
+                ''
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('logsTab')).toBe(false);
+        });
+
+        test('не настраивает обработчик для diagnosticsTab если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<button id="diagnosticsTab">Diagnostics</button>',
+                ''
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('diagnosticsTab')).toBe(false);
+        });
+
+        test('не настраивает обработчик для clearLogs если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<button id="clearLogs">Clear Logs</button>',
+                ''
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('clearLogs')).toBe(false);
+        });
+
+        test('не настраивает обработчик для copyLogs если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<button id="copyLogs">Copy</button>',
+                ''
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('copyLogs')).toBe(false);
+        });
+
+        test('не настраивает обработчик для activityRangeSelect если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<select id="activityRangeSelect">',
+                '<select id="activityRangeSelectMissing">'
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('activityRangeSelect')).toBe(false);
+        });
+
+        test('не настраивает обработчик для logsClassFilter если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<select id="logsClassFilter">',
+                '<select id="logsClassFilterMissing">'
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('logsClassFilter')).toBe(false);
+        });
+
+        test('не настраивает обработчик для logsServerOnlyFilter если элемент не найден', () => {
+            const element = document.getElementById('logsServerOnlyFilter');
+            if (element) {
+                element.remove();
+            }
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('logsServerOnlyFilter')).toBe(false);
+        });
+
+        test('не настраивает обработчик для languageToggle если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<button id="languageToggle">Language</button>',
+                ''
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('languageToggle')).toBe(false);
+        });
+
+        test('не настраивает обработчик для themeToggle если элемент не найден', () => {
+            document.body.innerHTML = document.body.innerHTML.replace(
+                '<button id="themeToggle">Theme</button>',
+                ''
+            );
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('themeToggle')).toBe(false);
+        });
+
+        test('не настраивает обработчик для addDomainExceptionBtn если элемент не найден', () => {
+            manager.domManager.elements.addDomainExceptionBtn = null;
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('addDomainExceptionBtn')).toBe(false);
+        });
+
         test('настраивает обработчик для addDomainExceptionBtn', () => {
             eventHandlersManager.setupEventHandlers();
             
