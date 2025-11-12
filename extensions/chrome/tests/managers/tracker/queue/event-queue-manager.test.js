@@ -377,4 +377,191 @@ describe('EventQueueManager', () => {
             expect(eventQueueManager.destroy).toBeDefined();
         });
     });
+
+    describe('processQueue дополнительные сценарии', () => {
+        test('не обрабатывает пустую очередь', async () => {
+            eventQueueManager.queue = [];
+            
+            await eventQueueManager.processQueue();
+            
+            expect(backendManager.sendEvents).not.toHaveBeenCalled();
+        });
+
+        test('не обрабатывает очередь когда офлайн', async () => {
+            eventQueueManager.queue = [{ event: 'active', domain: 'test.com', timestamp: new Date().toISOString() }];
+            eventQueueManager.setOnlineStatus(false);
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            
+            await eventQueueManager.processQueue();
+            
+            expect(backendManager.sendEvents).not.toHaveBeenCalled();
+        });
+
+        test('обрабатывает очередь когда достигнут порог ошибок', async () => {
+            eventQueueManager.queue = [{ event: 'active', domain: 'test.com', timestamp: new Date().toISOString() }];
+            eventQueueManager.failureManager.isThresholdReached = jest.fn(() => true);
+            backendManager.checkHealth = jest.fn().mockResolvedValue({ success: false });
+            
+            await eventQueueManager.processQueue();
+            
+            expect(backendManager.checkHealth).toHaveBeenCalled();
+        });
+
+        test('фильтрует события по исключениям доменов', async () => {
+            eventQueueManager.queue = [
+                { event: 'active', domain: 'blocked.com', timestamp: new Date().toISOString() },
+                { event: 'active', domain: 'allowed.com', timestamp: new Date().toISOString() }
+            ];
+            await eventQueueManager.setDomainExceptions(['blocked.com']);
+            backendManager.sendEvents.mockResolvedValue({ success: true });
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            
+            await eventQueueManager.processQueue();
+            
+            expect(backendManager.sendEvents).toHaveBeenCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({ domain: 'allowed.com' })
+                ])
+            );
+        });
+
+        test('не отправляет события если все отфильтрованы', async () => {
+            eventQueueManager.queue = [
+                { event: 'active', domain: 'blocked.com', timestamp: new Date().toISOString() }
+            ];
+            await eventQueueManager.setDomainExceptions(['blocked.com']);
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            
+            await eventQueueManager.processQueue();
+            
+            expect(backendManager.sendEvents).not.toHaveBeenCalled();
+        });
+
+        test('возвращает события в очередь при ошибке отправки', async () => {
+            eventQueueManager.queue = [{ event: 'active', domain: 'test.com', timestamp: new Date().toISOString() }];
+            backendManager.sendEvents.mockResolvedValue({ success: false, error: 'Server error' });
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            eventQueueManager.failureManager.registerSendFailure = jest.fn().mockResolvedValue(false);
+            eventQueueManager.failureManager.getConsecutiveFailures = jest.fn(() => 1);
+            eventQueueManager.failureManager.isThresholdReached = jest.fn(() => false);
+            
+            jest.useFakeTimers();
+            await eventQueueManager.processQueue();
+            await Promise.resolve();
+            
+            expect(eventQueueManager.queue.length).toBeGreaterThan(0);
+            jest.useRealTimers();
+        });
+
+        test('обрабатывает исключения при отправке событий', async () => {
+            eventQueueManager.queue = [{ event: 'active', domain: 'test.com', timestamp: new Date().toISOString() }];
+            backendManager.sendEvents.mockRejectedValue(new Error('Network error'));
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            eventQueueManager.failureManager.registerSendFailure = jest.fn().mockResolvedValue(false);
+            eventQueueManager.failureManager.getConsecutiveFailures = jest.fn(() => 1);
+            eventQueueManager.failureManager.isThresholdReached = jest.fn(() => false);
+            
+            jest.useFakeTimers();
+            await eventQueueManager.processQueue();
+            await Promise.resolve();
+            
+            expect(eventQueueManager.queue.length).toBeGreaterThan(0);
+            jest.useRealTimers();
+        });
+
+        test('планирует повтор при ошибке если порог не достигнут', async () => {
+            eventQueueManager.queue = [{ event: 'active', domain: 'test.com', timestamp: new Date().toISOString() }];
+            backendManager.sendEvents.mockResolvedValue({ success: false, error: 'Error' });
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            eventQueueManager.failureManager.registerSendFailure = jest.fn().mockResolvedValue(false);
+            eventQueueManager.failureManager.getConsecutiveFailures = jest.fn(() => 1);
+            eventQueueManager.failureManager.isThresholdReached = jest.fn(() => false);
+            
+            jest.useFakeTimers();
+            await eventQueueManager.processQueue();
+            await Promise.resolve();
+            
+            expect(eventQueueManager.retryTimeoutId).toBeDefined();
+            jest.useRealTimers();
+        });
+
+        test('не планирует повтор если порог достигнут', async () => {
+            eventQueueManager.queue = [{ event: 'active', domain: 'test.com', timestamp: new Date().toISOString() }];
+            backendManager.sendEvents.mockResolvedValue({ success: false, error: 'Error' });
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            eventQueueManager.failureManager.registerSendFailure = jest.fn().mockResolvedValue(true);
+            eventQueueManager.failureManager.getConsecutiveFailures = jest.fn(() => 5);
+            eventQueueManager.failureManager.isThresholdReached = jest.fn(() => true);
+            backendManager.checkHealth = jest.fn().mockResolvedValue({ success: false });
+            
+            await eventQueueManager.processQueue();
+            await Promise.resolve();
+            
+            expect(backendManager.checkHealth).toHaveBeenCalled();
+        });
+    });
+
+    describe('_checkHealthAndResumeIfAvailable', () => {
+        test('возобновляет отправку при успешном healthcheck', async () => {
+            eventQueueManager.queue = [{ event: 'active', domain: 'test.com', timestamp: new Date().toISOString() }];
+            backendManager.checkHealth = jest.fn().mockResolvedValue({ success: true });
+            backendManager.sendEvents = jest.fn().mockResolvedValue({ success: true });
+            storageManager.saveEventQueue = jest.fn().mockResolvedValue(true);
+            eventQueueManager.failureManager.resetFailureCounters = jest.fn();
+            eventQueueManager.failureManager.getConsecutiveFailures = jest.fn(() => 0);
+            eventQueueManager.failureManager.isThresholdReached = jest.fn(() => false);
+            
+            await eventQueueManager._checkHealthAndResumeIfAvailable();
+            await Promise.resolve();
+            
+            expect(backendManager.sendEvents).toHaveBeenCalled();
+        });
+
+        test('запускает периодический healthcheck при неуспехе', async () => {
+            backendManager.checkHealth = jest.fn().mockResolvedValue({ success: false });
+            
+            jest.useFakeTimers();
+            await eventQueueManager._checkHealthAndResumeIfAvailable();
+            await Promise.resolve();
+            
+            expect(eventQueueManager.healthcheckIntervalId).toBeDefined();
+            jest.useRealTimers();
+        });
+
+        test('обрабатывает ошибки healthcheck', async () => {
+            backendManager.checkHealth = jest.fn().mockRejectedValue(new Error('Healthcheck error'));
+            
+            jest.useFakeTimers();
+            await eventQueueManager._checkHealthAndResumeIfAvailable();
+            await Promise.resolve();
+            
+            expect(eventQueueManager.healthcheckIntervalId).toBeDefined();
+            jest.useRealTimers();
+        });
+    });
+
+    describe('resetFailureState', () => {
+        test('сбрасывает состояние ошибок', () => {
+            eventQueueManager.healthcheckIntervalId = setInterval(() => {}, 1000);
+            eventQueueManager.failureManager.resetFailureCounters = jest.fn();
+            eventQueueManager.failureManager.getConsecutiveFailures = jest.fn(() => 0);
+            eventQueueManager.failureManager.isThresholdReached = jest.fn(() => false);
+            
+            eventQueueManager.resetFailureState();
+            
+            expect(eventQueueManager.failureManager.resetFailureCounters).toHaveBeenCalled();
+            expect(eventQueueManager.healthcheckIntervalId).toBeNull();
+        });
+    });
+
+    describe('setDomainExceptions дополнительные сценарии', () => {
+        test('обрабатывает ошибки сохранения при установке исключений', async () => {
+            eventQueueManager.queue = [{ event: 'active', domain: 'test.com', timestamp: new Date().toISOString() }];
+            storageManager.saveEventQueue.mockRejectedValue(new Error('Save error'));
+            
+            const result = await eventQueueManager.setDomainExceptions(['test.com']);
+            
+            expect(result.count).toBe(1);
+        });
+    });
 });
