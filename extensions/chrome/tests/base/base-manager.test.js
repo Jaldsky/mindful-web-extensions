@@ -412,4 +412,47 @@ describe('BaseManager', () => {
             ).rejects.toThrow('Async operation failed');
         });
     });
+
+    describe('Покрытие веток (Branch Coverage)', () => {
+        test('state setter - должен обрабатывать отсутствие stateManager', () => {
+            const manager = new BaseManager({ enableLogging: false });
+            manager.stateManager = null;
+
+            // Не должно выбросить ошибку
+            expect(() => {
+                manager.state = { test: 'value' };
+            }).not.toThrow();
+        });
+
+        test('state setter - должен обрабатывать отсутствие stateManager.state', () => {
+            const manager = new BaseManager({ enableLogging: false });
+            manager.stateManager = { state: null };
+
+            // Не должно выбросить ошибку
+            expect(() => {
+                manager.state = { test: 'value' };
+            }).not.toThrow();
+        });
+
+        test('state setter - должен обновлять state когда stateManager и state существуют', () => {
+            const manager = new BaseManager({ enableLogging: false });
+            manager.stateManager.state = { existing: 'value' };
+
+            manager.state = { newField: 'newValue' };
+
+            expect(manager.stateManager.state.newField).toBe('newValue');
+            expect(manager.stateManager.state.existing).toBe('value');
+        });
+
+        test('_getSystemMessages - должен вызывать messageManager._getSystemMessages', () => {
+            const manager = new BaseManager({ enableLogging: false });
+            const messageTypes = { PING: 'ping', GET_STATUS: 'getStatus' };
+            const spy = jest.spyOn(manager.messageManager, '_getSystemMessages');
+
+            manager._getSystemMessages(messageTypes);
+
+            expect(spy).toHaveBeenCalledWith(messageTypes);
+            spy.mockRestore();
+        });
+    });
 });

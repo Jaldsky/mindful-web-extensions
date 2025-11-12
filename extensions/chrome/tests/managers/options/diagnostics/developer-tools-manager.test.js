@@ -91,4 +91,214 @@ describe('DeveloperToolsManager', () => {
         expect(manager.logsManager.stopAutoRefresh).toHaveBeenCalled();
         expect(document.getElementById('devToolsPanel').style.display).toBe('none');
     });
+
+    describe('toggle обработка ошибок', () => {
+        test('обрабатывает отсутствие элементов', () => {
+            document.body.innerHTML = '';
+            const manager = createBaseOptionsManager();
+            const developerToolsManager = new DeveloperToolsManager(manager);
+
+            developerToolsManager.toggle();
+
+            expect(manager._logError).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.developerTools.elementsNotFound' })
+            );
+        });
+
+        test('обрабатывает ошибки при переключении', () => {
+            setupDOM();
+            const manager = createBaseOptionsManager();
+            const developerToolsManager = new DeveloperToolsManager(manager);
+            const content = document.getElementById('developerToolsContent');
+            Object.defineProperty(content, 'style', {
+                get: () => { throw new Error('Style error'); }
+            });
+
+            developerToolsManager.toggle();
+
+            expect(manager._logError).toHaveBeenCalled();
+        });
+    });
+
+    describe('restoreState', () => {
+        test('восстанавливает состояние из localStorage', () => {
+            const { developerToolsManager } = createEnvironment();
+            localStorage.setItem('mindful_developer_tools_expanded', 'true');
+
+            developerToolsManager.restoreState();
+
+            const content = document.getElementById('developerToolsContent');
+            expect(content.style.display).toBe('flex');
+        });
+
+        test('скрывает панель если не расширена', () => {
+            const { developerToolsManager } = createEnvironment();
+            localStorage.setItem('mindful_developer_tools_expanded', 'false');
+
+            developerToolsManager.restoreState();
+
+            const content = document.getElementById('developerToolsContent');
+            expect(content.style.display).toBe('none');
+        });
+
+        test('обрабатывает отсутствие элементов', () => {
+            document.body.innerHTML = '';
+            const manager = createBaseOptionsManager();
+            const developerToolsManager = new DeveloperToolsManager(manager);
+
+            expect(() => developerToolsManager.restoreState()).not.toThrow();
+        });
+
+        test('обрабатывает ошибки при восстановлении', () => {
+            setupDOM();
+            const manager = createBaseOptionsManager();
+            const developerToolsManager = new DeveloperToolsManager(manager);
+            jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+                throw new Error('Storage error');
+            });
+
+            developerToolsManager.restoreState();
+
+            expect(manager._logError).toHaveBeenCalled();
+        });
+    });
+
+    describe('openPanel дополнительные сценарии', () => {
+        test('обрабатывает отсутствие панели', () => {
+            document.body.innerHTML = '';
+            const manager = createBaseOptionsManager();
+            manager.logsManager = {
+                loadLogs: jest.fn(),
+                startAutoRefresh: jest.fn()
+            };
+            const developerToolsManager = new DeveloperToolsManager(manager);
+
+            developerToolsManager.openPanel();
+
+            expect(manager._logError).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.developerTools.panelNotFound' })
+            );
+        });
+
+        test('открывает панель с вкладкой diagnostics', () => {
+            const { manager, developerToolsManager } = createEnvironment();
+            const switchTabSpy = jest.spyOn(developerToolsManager, 'switchTab');
+
+            developerToolsManager.openPanel('diagnostics');
+
+            expect(switchTabSpy).toHaveBeenCalledWith('diagnostics');
+            expect(manager.logsManager.loadLogs).not.toHaveBeenCalled();
+        });
+
+        test('обрабатывает ошибки при открытии', () => {
+            setupDOM();
+            const manager = createBaseOptionsManager();
+            manager.logsManager = {
+                loadLogs: jest.fn(),
+                startAutoRefresh: jest.fn()
+            };
+            const developerToolsManager = new DeveloperToolsManager(manager);
+            const panel = document.getElementById('devToolsPanel');
+            Object.defineProperty(panel, 'style', {
+                get: () => { throw new Error('Style error'); }
+            });
+
+            developerToolsManager.openPanel();
+
+            expect(manager._logError).toHaveBeenCalled();
+        });
+    });
+
+    describe('closePanel обработка ошибок', () => {
+        test('обрабатывает отсутствие панели', () => {
+            document.body.innerHTML = '';
+            const manager = createBaseOptionsManager();
+            manager.logsManager = {
+                stopAutoRefresh: jest.fn()
+            };
+            const developerToolsManager = new DeveloperToolsManager(manager);
+
+            developerToolsManager.closePanel();
+
+            expect(manager._logError).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.developerTools.panelNotFound' })
+            );
+        });
+
+        test('обрабатывает ошибки при закрытии', () => {
+            setupDOM();
+            const manager = createBaseOptionsManager();
+            manager.logsManager = {
+                stopAutoRefresh: jest.fn()
+            };
+            const developerToolsManager = new DeveloperToolsManager(manager);
+            const panel = document.getElementById('devToolsPanel');
+            Object.defineProperty(panel, 'classList', {
+                get: () => { throw new Error('ClassList error'); }
+            });
+
+            developerToolsManager.closePanel();
+
+            expect(manager._logError).toHaveBeenCalled();
+        });
+    });
+
+    describe('switchTab', () => {
+        test('переключает вкладку на logs', () => {
+            const { manager, developerToolsManager } = createEnvironment();
+
+            developerToolsManager.switchTab('logs');
+
+            const activeTab = document.querySelector('[data-tab="logs"]');
+            const activeContent = document.getElementById('logsTabContent');
+            expect(activeTab.classList.contains('active')).toBe(true);
+            expect(activeContent.classList.contains('active')).toBe(true);
+            expect(manager.logsManager.loadLogs).toHaveBeenCalled();
+            expect(manager.logsManager.startAutoRefresh).toHaveBeenCalled();
+        });
+
+        test('переключает вкладку на diagnostics', () => {
+            const { manager, developerToolsManager } = createEnvironment();
+
+            developerToolsManager.switchTab('diagnostics');
+
+            const activeTab = document.querySelector('[data-tab="diagnostics"]');
+            const activeContent = document.getElementById('diagnosticsTabContent');
+            expect(activeTab.classList.contains('active')).toBe(true);
+            expect(activeContent.classList.contains('active')).toBe(true);
+            expect(manager.logsManager.stopAutoRefresh).toHaveBeenCalled();
+        });
+
+        test('обрабатывает отсутствие вкладки', () => {
+            const { manager, developerToolsManager } = createEnvironment();
+            const logErrorSpy = jest.spyOn(manager, '_logError');
+
+            developerToolsManager.switchTab('nonexistent');
+
+            expect(logErrorSpy).toHaveBeenCalledWith(
+                expect.objectContaining({ 
+                    key: 'logs.developerTools.tabNotFound',
+                    params: expect.objectContaining({ tabName: 'nonexistent' })
+                })
+            );
+        });
+
+        test('обрабатывает ошибки при переключении', () => {
+            setupDOM();
+            const manager = createBaseOptionsManager();
+            manager.logsManager = {
+                loadLogs: jest.fn(),
+                startAutoRefresh: jest.fn(),
+                stopAutoRefresh: jest.fn()
+            };
+            const developerToolsManager = new DeveloperToolsManager(manager);
+            jest.spyOn(document, 'querySelectorAll').mockImplementation(() => {
+                throw new Error('Query error');
+            });
+
+            developerToolsManager.switchTab('logs');
+
+            expect(manager._logError).toHaveBeenCalled();
+        });
+    });
 });

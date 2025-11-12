@@ -732,4 +732,158 @@ describe('AppManager', () => {
             silentManager.destroy();
         });
     });
+
+    describe('Покрытие веток (Branch Coverage)', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+            appManager = new AppManager({ enableLogging: false });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        test('init - обрабатывает ошибки инициализации', async () => {
+            // Тестируем обработку ошибок через прямой вызов init() на существующем менеджере
+            // вместо создания нового экземпляра, чтобы избежать проблем с необработанными промисами
+            appManager.isInitialized = false;
+            mockLocaleManager.init.mockRejectedValueOnce(new Error('Init error'));
+            
+            await expect(appManager.init()).rejects.toThrow('Init error');
+            expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                expect.stringContaining('Error'),
+                'error'
+            );
+            
+            // Восстанавливаем состояние
+            mockLocaleManager.init.mockResolvedValue();
+            appManager.isInitialized = true;
+        });
+
+        test('loadInitialStatus - обрабатывает tooFrequent с lastStatus', async () => {
+            appManager._loadConnectionStatusFromStorage = jest.fn().mockResolvedValue(true);
+            mockServiceWorkerManager.checkConnection.mockResolvedValue({
+                success: false,
+                tooFrequent: true
+            });
+            
+            await appManager.loadInitialStatus();
+            
+            expect(appManager._loadConnectionStatusFromStorage).toHaveBeenCalled();
+            expect(mockDOMManager.updateConnectionStatus).toHaveBeenCalledWith(true);
+        });
+
+        test('loadInitialStatus - обрабатывает tooFrequent без lastStatus', async () => {
+            appManager._loadConnectionStatusFromStorage = jest.fn().mockResolvedValue(null);
+            appManager.state = { isOnline: false };
+            mockServiceWorkerManager.checkConnection.mockResolvedValue({
+                success: false,
+                tooFrequent: true
+            });
+            
+            await appManager.loadInitialStatus();
+            
+            expect(mockDOMManager.updateConnectionStatus).toHaveBeenCalledWith(false);
+        });
+
+        test('setupEventHandlers - обрабатывает отсутствие openSettings', () => {
+            mockDOMManager.elements.openSettings = null;
+            
+            expect(() => appManager.setupEventHandlers()).not.toThrow();
+        });
+
+        test('setupEventHandlers - обрабатывает отсутствие testConnection', () => {
+            mockDOMManager.elements.testConnection = null;
+            
+            expect(() => appManager.setupEventHandlers()).not.toThrow();
+        });
+
+        test('setupEventHandlers - обрабатывает отсутствие toggleTracking', () => {
+            mockDOMManager.elements.toggleTracking = null;
+            
+            expect(() => appManager.setupEventHandlers()).not.toThrow();
+        });
+
+        test('testConnection - обрабатывает tooFrequent результат', async () => {
+            mockServiceWorkerManager.checkConnection.mockResolvedValue({
+                success: false,
+                tooFrequent: true
+            });
+            
+            const result = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await result;
+            
+            expect(mockDOMManager.showConnectionStatusMessage).toHaveBeenCalledWith(
+                expect.any(String),
+                'warning'
+            );
+        });
+
+        test('testConnection - обрабатывает failed результат', async () => {
+            mockServiceWorkerManager.checkConnection.mockResolvedValue({
+                success: false,
+                tooFrequent: false
+            });
+            appManager._saveConnectionStatusToStorage = jest.fn().mockResolvedValue();
+            
+            const result = appManager.testConnection();
+            jest.advanceTimersByTime(500);
+            await result;
+            
+            expect(mockDOMManager.showConnectionStatusMessage).toHaveBeenCalledWith(
+                expect.any(String),
+                'error'
+            );
+        });
+
+        test('toggleTracking - обрабатывает rejected promise', async () => {
+            mockServiceWorkerManager.setTrackingEnabled.mockRejectedValue(new Error('Toggle error'));
+            appManager.state.isTracking = true;
+            
+            const result = appManager.toggleTracking();
+            jest.advanceTimersByTime(500);
+            await result;
+            
+            expect(mockDOMManager.updateTrackingToggle).toHaveBeenCalledWith(true);
+        });
+
+        test('toggleTracking - обрабатывает response без success', async () => {
+            mockServiceWorkerManager.setTrackingEnabled.mockResolvedValue({
+                success: false,
+                error: 'Toggle failed'
+            });
+            appManager.state.isTracking = true;
+            
+            const result = appManager.toggleTracking();
+            jest.advanceTimersByTime(500);
+            await result;
+            
+            expect(mockDOMManager.updateTrackingToggle).toHaveBeenCalledWith(true);
+        });
+
+        test('toggleTracking - обрабатывает response с error', async () => {
+            mockServiceWorkerManager.setTrackingEnabled.mockResolvedValue({
+                error: 'Toggle error'
+            });
+            appManager.state.isTracking = true;
+            
+            const result = appManager.toggleTracking();
+            jest.advanceTimersByTime(500);
+            await result;
+            
+            expect(mockDOMManager.updateTrackingToggle).toHaveBeenCalledWith(true);
+        });
+
+        test('toggleTracking - обрабатывает некорректный response', async () => {
+            mockServiceWorkerManager.setTrackingEnabled.mockResolvedValue('invalid');
+            appManager.state.isTracking = true;
+            
+            const result = appManager.toggleTracking();
+            jest.advanceTimersByTime(500);
+            await result;
+            
+            expect(mockDOMManager.updateTrackingToggle).toHaveBeenCalledWith(true);
+        });
+    });
 });

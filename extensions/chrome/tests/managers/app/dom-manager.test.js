@@ -774,4 +774,88 @@ describe('DOMManager', () => {
             manager.destroy();
         });
     });
+
+    describe('Покрытие веток (Branch Coverage)', () => {
+        test('constructor - выбрасывает ошибку если translateFn не функция', () => {
+            expect(() => {
+                new DOMManager({
+                    enableLogging: false,
+                    translateFn: 'not a function'
+                });
+            }).toThrow(TypeError);
+        });
+
+        test('_validateDOMAvailability - выбрасывает ошибку если getElementById недоступен', () => {
+            const originalGetElementById = document.getElementById;
+            document.getElementById = undefined;
+            
+            expect(() => {
+                new DOMManager({ enableLogging: false });
+            }).toThrow();
+            
+            document.getElementById = originalGetElementById;
+        });
+
+        test('showConnectionStatusMessage - обрабатывает type warning', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            const element = document.getElementById('connectionStatus');
+            
+            manager.showConnectionStatusMessage('Warning message', 'warning');
+            
+            expect(element.className).toContain('status-warning');
+        });
+
+        test('showConnectionStatusMessage - обрабатывает type info', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            const element = document.getElementById('connectionStatus');
+            
+            manager.showConnectionStatusMessage('Info message', 'info');
+            
+            expect(element.className).toContain('status-inactive');
+        });
+
+        test('showConnectionStatusMessage - использует lastKnownConnectionStatus при восстановлении', () => {
+            jest.useFakeTimers();
+            const manager = new DOMManager({ enableLogging: false });
+            manager.lastKnownConnectionStatus = true;
+            manager.updateConnectionStatus = jest.fn();
+            
+            manager.showConnectionStatusMessage('Test message', 'success');
+            jest.advanceTimersByTime(2000);
+            
+            expect(manager.updateConnectionStatus).toHaveBeenCalledWith(true);
+            jest.useRealTimers();
+        });
+
+        test('showConnectionStatusMessage - использует state.isOnline если lastKnownConnectionStatus null', () => {
+            jest.useFakeTimers();
+            const manager = new DOMManager({ enableLogging: false });
+            manager.lastKnownConnectionStatus = null;
+            manager.state = { isOnline: false };
+            manager.updateConnectionStatus = jest.fn();
+            
+            manager.showConnectionStatusMessage('Test message', 'success');
+            jest.advanceTimersByTime(2000);
+            
+            expect(manager.updateConnectionStatus).toHaveBeenCalledWith(false);
+            jest.useRealTimers();
+        });
+
+        test('showConnectionStatusMessage - не обновляет если message не строка', () => {
+            const manager = new DOMManager({ enableLogging: false });
+            const element = document.getElementById('connectionStatus');
+            const originalText = element.textContent;
+            
+            manager.showConnectionStatusMessage(null, 'success');
+            
+            expect(element.textContent).toBe(originalText);
+        });
+
+        test('showConnectionStatusMessage - не обновляет если element отсутствует', () => {
+            document.body.innerHTML = '';
+            const manager = new DOMManager({ enableLogging: false });
+            
+            expect(() => manager.showConnectionStatusMessage('Test', 'success')).not.toThrow();
+        });
+    });
 });

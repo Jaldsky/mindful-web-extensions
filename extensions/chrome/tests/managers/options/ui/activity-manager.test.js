@@ -188,9 +188,9 @@ describe('ActivityManager', () => {
                 { t: Date.now(), v: lastValue }
             ];
             
-            // Получаем контекст после инициализации
+            // Получаем canvas после инициализации
             const canvas = document.getElementById('activityChart');
-            const ctx = canvas.getContext('2d');
+            expect(canvas).toBeDefined();
             
             // Создаем spy для проверки вызова _updateActivityChart
             const updateSpy = jest.spyOn(activityManager, '_updateActivityChart');
