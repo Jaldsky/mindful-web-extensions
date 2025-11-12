@@ -87,7 +87,9 @@ function createBaseOptionsManager() {
             domainExceptions: new Set()
         },
         setDomainExceptions: jest.fn(),
-        eventHandlers: new Map()
+        eventHandlers: new Map(),
+        originalButtonTexts: new Map(),
+        activityRefreshIntervalId: null
     };
 }
 
