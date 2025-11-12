@@ -886,4 +886,167 @@ describe('AppManager', () => {
             expect(mockDOMManager.updateTrackingToggle).toHaveBeenCalledWith(true);
         });
     });
+
+    describe('Покрытие statements', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+            appManager = new AppManager({ enableLogging: false });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        test('_saveConnectionStatusToStorage сохраняет статус успешно', async () => {
+            global.chrome.storage.local.set.mockImplementation((items, callback) => {
+                callback();
+            });
+
+            await appManager._saveConnectionStatusToStorage(true);
+
+            expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+                { mindful_connection_status: true },
+                expect.any(Function)
+            );
+        });
+
+        test('_saveConnectionStatusToStorage обрабатывает ошибку chrome.runtime.lastError', async () => {
+            const logErrorSpy = jest.spyOn(appManager, '_logError');
+            global.chrome.runtime.lastError = { message: 'Storage error' };
+            global.chrome.storage.local.set.mockImplementation((items, callback) => {
+                callback();
+            });
+
+            await appManager._saveConnectionStatusToStorage(false);
+
+            expect(logErrorSpy).toHaveBeenCalled();
+            logErrorSpy.mockRestore();
+        });
+
+        test('_saveConnectionStatusToStorage обрабатывает отсутствие chrome.storage', async () => {
+            const originalChrome = global.chrome;
+            global.chrome = {};
+
+            await appManager._saveConnectionStatusToStorage(true);
+
+            global.chrome = originalChrome;
+        });
+
+        test('_loadConnectionStatusFromStorage загружает статус успешно', async () => {
+            global.chrome.runtime.lastError = null;
+            global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+                callback({ mindful_connection_status: true });
+            });
+
+            const result = await appManager._loadConnectionStatusFromStorage();
+
+            expect(result).toBe(true);
+        });
+
+        test('_loadConnectionStatusFromStorage возвращает null если статус не найден', async () => {
+            global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+                callback({});
+            });
+
+            const result = await appManager._loadConnectionStatusFromStorage();
+
+            expect(result).toBeNull();
+        });
+
+        test('_loadConnectionStatusFromStorage обрабатывает ошибку chrome.runtime.lastError', async () => {
+            const logErrorSpy = jest.spyOn(appManager, '_logError');
+            global.chrome.runtime.lastError = { message: 'Storage error' };
+            global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+                callback({});
+            });
+
+            const result = await appManager._loadConnectionStatusFromStorage();
+
+            expect(result).toBeNull();
+            expect(logErrorSpy).toHaveBeenCalled();
+            logErrorSpy.mockRestore();
+        });
+
+        test('_loadConnectionStatusFromStorage обрабатывает отсутствие chrome.storage', async () => {
+            const originalChrome = global.chrome;
+            global.chrome = {};
+
+            const result = await appManager._loadConnectionStatusFromStorage();
+
+            expect(result).toBeNull();
+            global.chrome = originalChrome;
+        });
+
+        test('onLocaleChange обновляет DOM', () => {
+            appManager.onLocaleChange();
+
+            expect(mockLocaleManager.localizeDOM).toHaveBeenCalled();
+            expect(mockDOMManager.refreshStatuses).toHaveBeenCalled();
+        });
+
+        test('_removeEventHandlers обрабатывает отсутствие элемента', () => {
+            appManager.domManager.elements = { testButton: null };
+            appManager.eventHandlers.set('testButton', jest.fn());
+
+            appManager._removeEventHandlers();
+
+            expect(appManager.eventHandlers.size).toBe(0);
+        });
+
+        test('_removeEventHandlers обрабатывает отсутствие handler', () => {
+            const button = document.createElement('button');
+            button.id = 'testButton';
+            document.body.appendChild(button);
+            appManager.domManager.elements = { testButton: button };
+            appManager.eventHandlers.set('testButton', null);
+
+            appManager._removeEventHandlers();
+
+            expect(appManager.eventHandlers.size).toBe(0);
+        });
+
+        test('_destroyManagers обрабатывает отсутствие менеджеров', () => {
+            appManager.diagnosticsManager = null;
+            appManager.serviceWorkerManager = null;
+            appManager.notificationManager = null;
+            appManager.domManager = null;
+            appManager.localeManager = null;
+
+            expect(() => appManager._destroyManagers()).not.toThrow();
+        });
+
+        test('_destroyManagers обрабатывает ошибки при уничтожении', () => {
+            const logErrorSpy = jest.spyOn(appManager, '_logError');
+            appManager.diagnosticsManager.destroy = jest.fn(() => {
+                throw new Error('Destroy error');
+            });
+
+            expect(() => appManager._destroyManagers()).not.toThrow();
+            expect(logErrorSpy).toHaveBeenCalled();
+            logErrorSpy.mockRestore();
+        });
+
+        test('destroy обрабатывает случай когда уже уничтожен', () => {
+            const logSpy = jest.spyOn(appManager, '_log');
+            appManager.isInitialized = false;
+            appManager.destroy();
+
+            expect(logSpy).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.app.alreadyDestroyed' })
+            );
+            logSpy.mockRestore();
+        });
+
+        test('destroy обрабатывает ошибки при уничтожении', () => {
+            const logErrorSpy = jest.spyOn(appManager, '_logError');
+            jest.spyOn(appManager, '_stopPeriodicUpdates').mockImplementation(() => {
+                throw new Error('Stop error');
+            });
+
+            appManager.destroy();
+
+            expect(logErrorSpy).toHaveBeenCalled();
+            logErrorSpy.mockRestore();
+        });
+    });
 });

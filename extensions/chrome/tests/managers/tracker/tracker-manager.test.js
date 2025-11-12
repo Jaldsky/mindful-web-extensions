@@ -232,6 +232,117 @@ describe('TrackerManager', () => {
             const savedStates = global.chrome.storage.local.set.mock.calls.map(args => args[0]);
             expect(savedStates.some(entry => entry && entry.mindful_tracking_enabled === true)).toBe(true);
         });
+
+        test('должен возвращать ошибку если сохранение состояния не удалось при enableTracking', async () => {
+            jest.spyOn(trackerManager.tabTrackingManager, 'startTracking').mockResolvedValue();
+            await trackerManager.disableTracking();
+            
+            // Мокируем chrome.storage.local.set чтобы он выбрасывал ошибку
+            global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Storage error'));
+            const saveSpy = jest.spyOn(trackerManager.storageManager, 'saveTrackingEnabled');
+            // saveTrackingEnabled вернет false только если произойдет ошибка, но в коде он всегда возвращает true при успехе
+            // Поэтому мокируем напрямую метод, чтобы он возвращал false
+            saveSpy.mockResolvedValueOnce(false);
+
+            const result = await trackerManager.enableTracking();
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBeDefined();
+            expect(trackerManager.trackingEnabled).toBe(false);
+        });
+
+        test('должен возвращать ошибку если сохранение состояния не удалось при disableTracking', async () => {
+            jest.spyOn(trackerManager.storageManager, 'saveTrackingEnabled').mockResolvedValue(false);
+
+            const result = await trackerManager.disableTracking();
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBeDefined();
+            expect(trackerManager.trackingEnabled).toBe(true);
+        });
+
+        test('должен обрабатывать ошибки при enableTracking', async () => {
+            jest.spyOn(trackerManager.tabTrackingManager, 'startTracking').mockRejectedValue(new Error('Start error'));
+            await trackerManager.disableTracking();
+
+            const result = await trackerManager.enableTracking();
+
+            expect(result.success).toBe(false);
+            expect(trackerManager.trackingEnabled).toBe(false);
+        });
+
+        test('должен обрабатывать ошибки при disableTracking', async () => {
+            jest.spyOn(trackerManager.tabTrackingManager, 'stopTracking').mockImplementation(() => {
+                throw new Error('Stop error');
+            });
+
+            const result = await trackerManager.disableTracking();
+
+            expect(result.success).toBe(false);
+            expect(trackerManager.trackingEnabled).toBe(true);
+        });
+
+        test('должен возвращать success если tracking уже включен', async () => {
+            const result = await trackerManager.enableTracking();
+
+            expect(result).toEqual({ success: true, isTracking: true });
+        });
+
+        test('должен возвращать success если tracking уже отключен', async () => {
+            await trackerManager.disableTracking();
+
+            const result = await trackerManager.disableTracking();
+
+            expect(result).toEqual({ success: true, isTracking: false });
+        });
+
+        test('setTrackingEnabled должен выбрасывать TypeError для не boolean значения', async () => {
+            await expect(trackerManager.setTrackingEnabled('not boolean')).rejects.toThrow(TypeError);
+        });
+
+        test('setTrackingEnabled должен вызывать enableTracking для true', async () => {
+            await trackerManager.disableTracking();
+            const enableSpy = jest.spyOn(trackerManager, 'enableTracking').mockResolvedValue({ success: true, isTracking: true });
+
+            await trackerManager.setTrackingEnabled(true);
+
+            expect(enableSpy).toHaveBeenCalled();
+        });
+
+        test('setTrackingEnabled должен вызывать disableTracking для false', async () => {
+            const disableSpy = jest.spyOn(trackerManager, 'disableTracking').mockResolvedValue({ success: true, isTracking: false });
+
+            await trackerManager.setTrackingEnabled(false);
+
+            expect(disableSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Покрытие веток (Branch Coverage)', () => {
+        test('init должен обрабатывать случай когда trackingEnabled = false', async () => {
+            global.chrome.storage.local.get.mockResolvedValue({
+                mindful_tracking_enabled: false
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+
+            expect(trackerManager.trackingEnabled).toBe(false);
+            expect(trackerManager.isInitialized).toBe(true);
+        });
+
+        test('_setupOnlineMonitoring должен обрабатывать offline статус', async () => {
+            Object.defineProperty(global.navigator, 'onLine', {
+                writable: true,
+                value: false
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            const setOnlineStatusSpy = jest.spyOn(trackerManager.eventQueueManager, 'setOnlineStatus');
+            await trackerManager.init();
+
+            expect(setOnlineStatusSpy).toHaveBeenCalledWith(false);
+        });
     });
 
     describe('destroy', () => {
