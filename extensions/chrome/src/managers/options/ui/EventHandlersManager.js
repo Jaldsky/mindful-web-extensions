@@ -23,6 +23,7 @@ class EventHandlersManager {
      */
     setupEventHandlers() {
         const manager = this.manager;
+        let handlersCount = 0;
 
         if (manager.domManager.elements.settingsForm) {
             const formSubmitHandler = (e) => {
