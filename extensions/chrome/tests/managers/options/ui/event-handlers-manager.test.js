@@ -219,8 +219,6 @@ describe('EventHandlersManager', () => {
         test('настраивает обработчик для activityRangeSelect', () => {
             eventHandlersManager.setupEventHandlers();
             
-            const select = document.getElementById('activityRangeSelect');
-            
             // Получаем обработчик и вызываем его напрямую с правильным event объектом
             const handler = manager.eventHandlers.get('activityRangeSelect');
             const mockEvent = {
@@ -247,8 +245,6 @@ describe('EventHandlersManager', () => {
 
         test('настраивает обработчик для logsClassFilter', () => {
             eventHandlersManager.setupEventHandlers();
-            
-            const select = document.getElementById('logsClassFilter');
             
             // Получаем обработчик и вызываем его напрямую с правильным event объектом
             const handler = manager.eventHandlers.get('logsClassFilter');

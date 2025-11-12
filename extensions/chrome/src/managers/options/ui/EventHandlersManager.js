@@ -23,7 +23,6 @@ class EventHandlersManager {
      */
     setupEventHandlers() {
         const manager = this.manager;
-        let handlersCount = 0;
 
         if (manager.domManager.elements.settingsForm) {
             const formSubmitHandler = (e) => {
@@ -33,7 +32,6 @@ class EventHandlersManager {
 
             manager.domManager.elements.settingsForm.addEventListener('submit', formSubmitHandler);
             manager.eventHandlers.set('settingsForm', formSubmitHandler);
-            handlersCount++;
         } else {
             manager._log({ key: 'logs.ui.eventHandlers.settingsFormNotFound' });
         }
@@ -47,7 +45,6 @@ class EventHandlersManager {
 
             manager.domManager.elements.resetBtn.addEventListener('click', resetClickHandler);
             manager.eventHandlers.set('resetBtn', resetClickHandler);
-            handlersCount++;
         } else {
             manager._log({ key: 'logs.ui.eventHandlers.resetBtnNotFound' });
         }
@@ -67,7 +64,6 @@ class EventHandlersManager {
 
             manager.domManager.elements.runDiagnostics.addEventListener('click', diagnosticsClickHandler);
             manager.eventHandlers.set('runDiagnostics', diagnosticsClickHandler);
-            handlersCount++;
         } else {
             manager._log({ key: 'logs.ui.eventHandlers.runDiagnosticsBtnNotFound' });
         }
@@ -77,7 +73,6 @@ class EventHandlersManager {
             const handler = () => manager.clearDiagnostics();
             clearDiagnostics.addEventListener('click', handler);
             manager.eventHandlers.set('clearDiagnostics', handler);
-            handlersCount++;
         }
 
         const closeDevToolsPanel = document.getElementById('closeDevToolsPanel');
@@ -85,7 +80,6 @@ class EventHandlersManager {
             const handler = () => manager.closeDevToolsPanel();
             closeDevToolsPanel.addEventListener('click', handler);
             manager.eventHandlers.set('closeDevToolsPanel', handler);
-            handlersCount++;
         }
 
         const logsTab = document.getElementById('logsTab');
@@ -93,7 +87,6 @@ class EventHandlersManager {
             const handler = () => manager.switchTab('logs');
             logsTab.addEventListener('click', handler);
             manager.eventHandlers.set('logsTab', handler);
-            handlersCount++;
         }
 
         const diagnosticsTab = document.getElementById('diagnosticsTab');
@@ -101,7 +94,6 @@ class EventHandlersManager {
             const handler = () => manager.switchTab('diagnostics');
             diagnosticsTab.addEventListener('click', handler);
             manager.eventHandlers.set('diagnosticsTab', handler);
-            handlersCount++;
         }
 
         const clearLogs = document.getElementById('clearLogs');
@@ -109,7 +101,6 @@ class EventHandlersManager {
             const handler = () => manager.clearLogs();
             clearLogs.addEventListener('click', handler);
             manager.eventHandlers.set('clearLogs', handler);
-            handlersCount++;
         }
 
         const copyLogs = document.getElementById('copyLogs');
@@ -117,7 +108,6 @@ class EventHandlersManager {
             const handler = () => manager.copyLogs();
             copyLogs.addEventListener('click', handler);
             manager.eventHandlers.set('copyLogs', handler);
-            handlersCount++;
         }
 
         const rangeSelect = document.getElementById('activityRangeSelect');
@@ -139,7 +129,6 @@ class EventHandlersManager {
             };
             btn.addEventListener('click', handler);
             manager.eventHandlers.set(`logFilterBtn${index}`, handler);
-            handlersCount++;
         });
 
         const classFilter = document.getElementById('logsClassFilter');
@@ -149,7 +138,6 @@ class EventHandlersManager {
             };
             classFilter.addEventListener('change', handler);
             manager.eventHandlers.set('logsClassFilter', handler);
-            handlersCount++;
         }
 
         const serverOnlyFilter = document.getElementById('logsServerOnlyFilter');
@@ -159,7 +147,6 @@ class EventHandlersManager {
             };
             serverOnlyFilter.addEventListener('change', handler);
             manager.eventHandlers.set('logsServerOnlyFilter', handler);
-            handlersCount++;
         }
 
         const languageToggle = document.getElementById('languageToggle');
@@ -169,7 +156,6 @@ class EventHandlersManager {
             };
             languageToggle.addEventListener('click', handler);
             manager.eventHandlers.set('languageToggle', handler);
-            handlersCount++;
         }
 
         const themeToggle = document.getElementById('themeToggle');
@@ -179,7 +165,6 @@ class EventHandlersManager {
             };
             themeToggle.addEventListener('click', handler);
             manager.eventHandlers.set('themeToggle', handler);
-            handlersCount++;
         }
 
         const addDomainBtn = manager.domManager.elements.addDomainExceptionBtn;
@@ -190,7 +175,6 @@ class EventHandlersManager {
             };
             addDomainBtn.addEventListener('click', handler);
             manager.eventHandlers.set('addDomainExceptionBtn', handler);
-            handlersCount++;
         }
 
         const domainInput = manager.domManager.elements.domainExceptionInput;
@@ -203,7 +187,6 @@ class EventHandlersManager {
             };
             domainInput.addEventListener('keydown', handler);
             manager.eventHandlers.set('domainExceptionInputKeydown', handler);
-            handlersCount++;
         }
 
         const domainList = manager.domManager.elements.domainExceptionsList;
@@ -219,7 +202,6 @@ class EventHandlersManager {
             };
             domainList.addEventListener('click', handler);
             manager.eventHandlers.set('domainExceptionsList', handler);
-            handlersCount++;
         }
 
         if (manager.domManager.elements.toggleDeveloperTools) {
@@ -233,7 +215,6 @@ class EventHandlersManager {
             };
             manager.domManager.elements.toggleDeveloperTools.addEventListener('click', handler);
             manager.eventHandlers.set('toggleDeveloperTools', handler);
-            handlersCount++;
         } else {
             manager._log({ key: 'logs.ui.eventHandlers.toggleDeveloperToolsBtnNotFound' });
         }
@@ -250,7 +231,6 @@ class EventHandlersManager {
         };
         document.addEventListener('visibilitychange', visHandler);
         manager.eventHandlers.set('visibilitychange', visHandler);
-        handlersCount++;
 
         const focusHandler = () => {
             try {

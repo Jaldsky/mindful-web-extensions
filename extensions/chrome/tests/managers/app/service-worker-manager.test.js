@@ -575,4 +575,141 @@ describe('ServiceWorkerManager', () => {
             expect(serviceWorkerManager.performanceMetrics.size).toBe(0);
         });
     });
+
+    describe('Покрытие веток (Branch Coverage)', () => {
+        test('sendMessage - обрабатывает блокировку с trackingDisabled', async () => {
+            serviceWorkerManager.state = { isTracking: false };
+            const t = jest.fn((key) => {
+                if (key === 'logs.serviceWorker.trackingDisabled') return 'Tracking disabled';
+                if (key === 'logs.baseManager.trackingDisabled') return 'Tracking disabled';
+                return key;
+            });
+            serviceWorkerManager._getTranslateFn = jest.fn(() => t);
+            
+            await expect(
+                serviceWorkerManager.sendMessage('OTHER_MESSAGE', {})
+            ).rejects.toThrow('Tracking disabled');
+        });
+
+        test('sendMessage - обрабатывает блокировку с noConnection', async () => {
+            serviceWorkerManager.state = { isTracking: true, isOnline: false };
+            const t = jest.fn((key) => {
+                if (key === 'logs.serviceWorker.noConnection') return 'No connection';
+                if (key === 'logs.baseManager.noConnection') return 'No connection';
+                return key;
+            });
+            serviceWorkerManager._getTranslateFn = jest.fn(() => t);
+            
+            await expect(
+                serviceWorkerManager.sendMessage('OTHER_MESSAGE', {})
+            ).rejects.toThrow('No connection');
+        });
+
+        test('sendMessage - обрабатывает блокировку с reasonKey trackingDisabled', async () => {
+            serviceWorkerManager.state = { isTracking: false };
+            const t = jest.fn((key) => key);
+            serviceWorkerManager._getTranslateFn = jest.fn(() => t);
+            
+            await expect(
+                serviceWorkerManager.sendMessage('OTHER_MESSAGE', {})
+            ).rejects.toThrow();
+        });
+
+        test('sendMessage - обрабатывает блокировку с reasonKey noConnection', async () => {
+            serviceWorkerManager.state = { isTracking: true, isOnline: false };
+            const t = jest.fn((key) => key);
+            serviceWorkerManager._getTranslateFn = jest.fn(() => t);
+            
+            await expect(
+                serviceWorkerManager.sendMessage('OTHER_MESSAGE', {})
+            ).rejects.toThrow();
+        });
+
+        test('getTodayStats - обрабатывает blocking errors', async () => {
+            const blockingError = new Error('Tracking is disabled');
+            serviceWorkerManager.sendMessage = jest.fn().mockRejectedValue(blockingError);
+            const logErrorSpy = jest.spyOn(serviceWorkerManager, '_logError');
+            
+            const stats = await serviceWorkerManager.getTodayStats();
+            
+            expect(stats).toEqual({
+                events: 0,
+                domains: 0,
+                queue: 0
+            });
+            expect(logErrorSpy).not.toHaveBeenCalled();
+        });
+
+        test('getDetailedStats - обрабатывает blocking errors', async () => {
+            const blockingError = new Error('Tracking is disabled');
+            serviceWorkerManager.sendMessage = jest.fn().mockRejectedValue(blockingError);
+            const logErrorSpy = jest.spyOn(serviceWorkerManager, '_logError');
+            
+            const stats = await serviceWorkerManager.getDetailedStats();
+            
+            expect(stats).toEqual({
+                eventsTracked: 0,
+                activeEvents: 0,
+                inactiveEvents: 0,
+                domainsVisited: 0,
+                domains: [],
+                queueSize: 0,
+                isTracking: false
+            });
+            expect(logErrorSpy).not.toHaveBeenCalled();
+        });
+
+        test('getDetailedStats - обрабатывает некорректный response', async () => {
+            serviceWorkerManager.sendMessage = jest.fn().mockResolvedValue('invalid');
+            
+            const stats = await serviceWorkerManager.getDetailedStats();
+            
+            expect(stats).toEqual({
+                eventsTracked: 0,
+                activeEvents: 0,
+                inactiveEvents: 0,
+                domainsVisited: 0,
+                domains: [],
+                queueSize: 0,
+                isTracking: false
+            });
+        });
+
+        test('getTodayStats - обрабатывает некорректный response', async () => {
+            serviceWorkerManager.sendMessage = jest.fn().mockResolvedValue('invalid');
+            
+            const stats = await serviceWorkerManager.getTodayStats();
+            
+            expect(stats).toEqual({
+                events: 0,
+                domains: 0,
+                queue: 0
+            });
+        });
+
+        test('setTrackingEnabled - обрабатывает отсутствие isTracking в response', async () => {
+            serviceWorkerManager.sendMessage = jest.fn().mockResolvedValue({
+                success: true
+            });
+            
+            const result = await serviceWorkerManager.setTrackingEnabled(true);
+            
+            expect(result.isTracking).toBe(true); // Использует isEnabled как fallback
+        });
+
+        test('destroy - обрабатывает отсутствие messageListener', () => {
+            serviceWorkerManager.messageListener = null;
+            
+            expect(() => serviceWorkerManager.destroy()).not.toThrow();
+        });
+
+        test('destroy - обрабатывает ошибки при уничтожении', () => {
+            serviceWorkerManager.messageListener = jest.fn();
+            chrome.runtime.onMessage.removeListener = jest.fn(() => {
+                throw new Error('Remove error');
+            });
+            
+            expect(() => serviceWorkerManager.destroy()).not.toThrow();
+        });
+    });
 });

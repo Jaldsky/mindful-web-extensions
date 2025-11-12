@@ -82,4 +82,124 @@ describe('DiagnosticsWorkflowManager', () => {
         expect(resultsContainer.style.display).toBe('none');
         expect(document.getElementById('diagnosticsStatusValue').textContent).toBe('Not run');
     });
+
+    describe('runDiagnostics обработка ошибок', () => {
+        test('обрабатывает ошибки при выполнении диагностики', async () => {
+            const { manager, diagnosticsManager } = createEnvironment();
+            manager.diagnosticsManager.runDiagnostics.mockRejectedValue(new Error('Diagnostics failed'));
+
+            await expect(diagnosticsManager.runDiagnostics()).rejects.toThrow('Diagnostics failed');
+            expect(manager.statusManager.showError).toHaveBeenCalled();
+            expect(manager.domManager.elements.runDiagnostics.disabled).toBe(false);
+        });
+
+        test('обрабатывает ошибки когда statusManager не показывает статус', async () => {
+            const { manager, diagnosticsManager } = createEnvironment();
+            manager.diagnosticsManager.runDiagnostics.mockRejectedValue(new Error('Test error'));
+            manager.statusManager.showError.mockReturnValue(false);
+
+            await expect(diagnosticsManager.runDiagnostics()).rejects.toThrow();
+            expect(manager._log).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.diagnosticsWorkflow.statusErrorWarning' })
+            );
+        });
+    });
+
+    describe('clearDiagnostics обработка ошибок', () => {
+        test('обрабатывает ошибки при очистке', () => {
+            setupDOM();
+            const manager = createBaseOptionsManager();
+            const diagnosticsManager = new DiagnosticsWorkflowManager(manager);
+            const resultsContainer = document.getElementById('diagnosticsResults');
+            Object.defineProperty(resultsContainer, 'style', {
+                get: () => { throw new Error('Style error'); }
+            });
+
+            diagnosticsManager.clearDiagnostics();
+
+            expect(manager._logError).toHaveBeenCalled();
+        });
+    });
+
+    describe('updateStatus', () => {
+        test('обрабатывает отсутствие statusValue', () => {
+            document.body.innerHTML = '';
+            const manager = createBaseOptionsManager();
+            const diagnosticsManager = new DiagnosticsWorkflowManager(manager);
+
+            expect(() => diagnosticsManager.updateStatus('success')).not.toThrow();
+        });
+
+        test('обновляет статус на failed', () => {
+            const { diagnosticsManager } = createEnvironment();
+
+            diagnosticsManager.updateStatus('failed');
+
+            const statusValue = document.getElementById('diagnosticsStatusValue');
+            expect(statusValue.classList.contains('error')).toBe(true);
+            expect(statusValue.textContent).toBe('Failed');
+        });
+    });
+
+    describe('renderDiagnostics', () => {
+        test('обрабатывает отсутствие элементов', () => {
+            document.body.innerHTML = '<div id="diagnosticsResults"></div>';
+            const manager = createBaseOptionsManager();
+            const diagnosticsManager = new DiagnosticsWorkflowManager(manager);
+
+            diagnosticsManager.renderDiagnostics({
+                overall: 'ok',
+                totalDuration: 100,
+                checks: {}
+            });
+
+            expect(manager._logError).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.diagnosticsWorkflow.elementsNotFound' })
+            );
+        });
+
+        test('обрабатывает ошибки при отрисовке', () => {
+            setupDOM();
+            const manager = createBaseOptionsManager();
+            const diagnosticsManager = new DiagnosticsWorkflowManager(manager);
+            const summary = document.getElementById('diagnosticsSummary');
+            const originalInnerHTML = summary.innerHTML;
+            Object.defineProperty(summary, 'innerHTML', {
+                get: () => originalInnerHTML,
+                set: () => { throw new Error('InnerHTML error'); }
+            });
+
+            diagnosticsManager.renderDiagnostics({
+                overall: 'ok',
+                totalDuration: 100,
+                checks: {}
+            });
+
+            expect(manager._logError).toHaveBeenCalled();
+        });
+
+        test('отрисовывает результаты с предупреждениями', () => {
+            const { manager, diagnosticsManager } = createEnvironment();
+            manager.diagnosticsManager.runDiagnostics.mockResolvedValue({
+                overall: 'warning',
+                totalDuration: 200,
+                checks: {
+                    storage: { status: 'ok', message: 'OK', duration: 10 },
+                    network: { status: 'warning', message: 'Warning', duration: 20 }
+                }
+            });
+
+            diagnosticsManager.renderDiagnostics({
+                overall: 'warning',
+                totalDuration: 200,
+                checks: {
+                    storage: { status: 'ok', message: 'OK', duration: 10 },
+                    network: { status: 'warning', message: 'Warning', duration: 20 }
+                }
+            });
+
+            const summary = document.getElementById('diagnosticsSummary');
+            expect(summary.innerHTML).toContain('Warnings');
+        });
+    });
 });
