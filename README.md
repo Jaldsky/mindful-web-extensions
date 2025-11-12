@@ -23,23 +23,29 @@ Mindful Web Extensions — это набор расширений для бра�
 
 ### 🇬🇧 English
 - 🕒 **Activity Tracking**: Automatic tracking of tab switching and focus changes
-- 📊 **Domain Analysis**: Statistics collection for visited websites
+- 📊 **Real-time Statistics**: Today's Activity dashboard with events, domains, and queue metrics
+- 📈 **Activity Charts**: Visual activity graphs with customizable time ranges (1m to 1d)
+- 🛑 **Tracking Control**: Enable/disable tracking with a single click
+- 🚫 **Domain Exceptions**: Exclude specific domains from tracking and data sending
 - 🔄 **Offline Mode**: Local data storage when internet is unavailable
-- 📦 **Batch Processing**: Optimized data sending to server
+- 📦 **Batch Processing**: Optimized data sending to server with error handling limits
 - 🔒 **Privacy-First**: Only domains, never full URLs or content
 - ⚙️ **Configurable**: Customizable backend URL and settings
 - 🌓 **Theme Support**: Light and dark themes with seamless switching
-- 🌍 **Multilingual**: Full support for English and Russian languages
+- 🌍 **Multilingual**: Full support for English and Russian languages with complete localization
 
 ### 🇷🇺 Русский
 - 🕒 **Отслеживание активности**: Автоматическое отслеживание переключений между вкладками
-- 📊 **Анализ доменов**: Сбор статистики по посещаемым сайтам
+- 📊 **Статистика в реальном времени**: Панель "Активность за сегодня" с событиями, доменами и метриками очереди
+- 📈 **Графики активности**: Визуальные графики активности с настраиваемыми временными диапазонами (1м до 1д)
+- 🛑 **Управление трекингом**: Включение/отключение трекинга одним кликом
+- 🚫 **Исключения доменов**: Исключение определенных доменов из трекинга и отправки данных
 - 🔄 **Офлайн-режим**: Сохранение данных локально при отсутствии интернета
-- 📦 **Батчевая обработка**: Оптимизированная отправка данных на сервер
+- 📦 **Батчевая обработка**: Оптимизированная отправка данных на сервер с лимитами обработки ошибок
 - 🔒 **Приватность**: Только домены, никогда полные URL или содержимое
 - ⚙️ **Настраиваемость**: Настраиваемый URL бэкенда и параметры
 - 🌓 **Поддержка тем**: Светлая и темная темы с плавным переключением
-- 🌍 **Многоязычность**: Полная поддержка английского и русского языков
+- 🌍 **Многоязычность**: Полная поддержка английского и русского языков с полной локализацией
 
 ## 🛠️ Tech Stack / Технологии
 
@@ -89,7 +95,9 @@ This will create a `dist/` folder with the bundled extension files.
 1. In the popup, ensure status shows **"Connection: Online"**
 2. Click **"Test Connection"** to verify backend communication
 3. Open several tabs and switch between them
-4. Watch the **"Events tracked"** counter increase in the popup
+4. Watch the **"Events tracked"** and **"Domains visited"** counters increase in the popup
+5. View detailed statistics in the **"Today's Activity"** section
+6. Use **"Disable Tracking"** button to pause tracking if needed
 
 ### 🇷🇺 Русский
 
@@ -127,7 +135,9 @@ npm run build        # Сборка расширения
 1. В popup расширения убедитесь, что статус **"Connection: Online"**
 2. Нажмите **"Test Connection"** для проверки связи с бэкендом
 3. Откройте несколько вкладок и переключайтесь между ними
-4. Следите за увеличением счетчика **"Events tracked"** в popup
+4. Следите за увеличением счетчиков **"Events tracked"** и **"Domains visited"** в popup
+5. Просмотрите детальную статистику в разделе **"Активность за сегодня"**
+6. Используйте кнопку **"Отключить трекинг"** для временной остановки трекинга при необходимости
 
 ---
 
@@ -159,9 +169,11 @@ Events are sent in the following format:
 
 #### Batch Processing
 - Events accumulate locally in a queue
-- Sending occurs in batches of 10 events or every 30 seconds
+- Sending occurs in batches every 30 seconds
 - Data is stored locally when internet is unavailable
 - Queue is automatically processed when connection is restored
+- Error handling with limits to prevent excessive retry attempts
+- Domain exceptions allow excluding specific domains from tracking and sending
 
 ### 🇷🇺 Русский
 
@@ -189,9 +201,11 @@ Events are sent in the following format:
 
 #### Батчевая обработка
 - События накапливаются локально в очереди
-- Отправка происходит батчами по 10 событий или каждые 30 секунд
+- Отправка происходит батчами каждые 30 секунд
 - При отсутствии интернета данные сохраняются локально
 - При восстановлении соединения очередь автоматически обрабатывается
+- Обработка ошибок с лимитами для предотвращения избыточных повторных попыток
+- Исключения доменов позволяют исключить определенные домены из трекинга и отправки
 
 ---
 
@@ -200,10 +214,25 @@ Events are sent in the following format:
 ### 🇬🇧 English
 
 #### Architecture
-- **Service Worker** (`tracker.js`): Main tracking logic
-- **Popup** (`src/popup.js`): Entry point for popup interface
-- **App Managers** (`src/app_manager/`): Modular manager classes
-- **Options** (`options.js`): Settings page
+- **Service Worker** (`src/tracker.js`): Main tracking logic with modular structure
+- **Popup** (`src/app.js`): Entry point for popup interface with activity dashboard
+- **App Managers** (`src/managers/app/`): App, diagnostics, DOM, notification, and service worker managers
+- **Options** (`src/options.js`): Settings page with activity charts and domain exceptions
+- **Tracker Module** (`src/managers/tracker/`): 
+  - `core/`: Backend, storage, and statistics managers
+  - `handlers/`: Connection, debug, message, settings, and status handlers
+  - `queue/`: Batch processing, domain exceptions, event queue, and failure management
+  - `tracking/`: Tab tracking manager
+- **Options Module** (`src/managers/options/`):
+  - `core/`: DOM, initialization, lifecycle, logs, storage, and validation managers
+  - `diagnostics/`: Developer tools, diagnostics data, and workflow managers
+  - `status/`: Status history, queue, renderer, and status managers
+  - `ui/`: Activity, domain exceptions, event handlers, locale display, settings, theme display, and UI managers
+- **Theme Module** (`src/managers/theme/`): Application, storage, sync, theme initializer, and theme managers
+- **Locale Module** (`src/managers/locale/`): DOM, locale, storage, and translation managers
+- **Base Classes** (`src/base/`): BaseManager, LocaleManager, LoggingManager, MessageManager, PerformanceManager, StateManager
+- **Public Assets** (`public/`): HTML templates, icons, and styles
+- **Locales** (`src/locales/`): English and Russian translation files
 - **Manifest V3**: Modern Chrome extensions standard
 - **Webpack**: Module bundler for ES6 modules
 
@@ -249,7 +278,7 @@ That's it! Hooks are configured automatically and will run on every commit.
 > **Note:** In CI environments, hooks installation is automatically skipped.
 
 **What happens on commit:**
-1. 🧪 **npm test** - Runs all 1029 tests (~7 seconds)
+1. 🧪 **npm test** - Runs all tests with comprehensive coverage
 2. 🔍 **npm run lint:fix** - Checks code quality and auto-fixes issues
 3. ❌ **Blocks commit** if tests fail or linter finds errors
 4. ✅ **Allows commit** if all checks pass (warnings are OK)
@@ -297,9 +326,25 @@ git commit --no-verify -m "urgent fix"
 ### 🇷🇺 Русский
 
 #### Архитектура
-- **Service Worker** (`tracker.js`): Основная логика трекинга
-- **Popup** (`popup.html/js`): Интерфейс для мониторинга статуса
-- **Options** (`options.html/js`): Страница настроек
+- **Service Worker** (`src/tracker.js`): Основная логика трекинга с модульной структурой
+- **Popup** (`src/app.js`): Точка входа для интерфейса popup с панелью активности
+- **App Managers** (`src/managers/app/`): Менеджеры приложения, диагностики, DOM, уведомлений и service worker
+- **Options** (`src/options.js`): Страница настроек с графиками активности и исключениями доменов
+- **Tracker Module** (`src/managers/tracker/`):
+  - `core/`: Менеджеры бэкенда, хранилища и статистики
+  - `handlers/`: Обработчики соединения, отладки, сообщений, настроек и статуса
+  - `queue/`: Батчевая обработка, исключения доменов, очередь событий и управление ошибками
+  - `tracking/`: Менеджер отслеживания вкладок
+- **Options Module** (`src/managers/options/`):
+  - `core/`: Менеджеры DOM, инициализации, жизненного цикла, логов, хранилища и валидации
+  - `diagnostics/`: Менеджеры инструментов разработчика, данных диагностики и рабочих процессов
+  - `status/`: Менеджеры истории статуса, очереди, рендеринга и статуса
+  - `ui/`: Менеджеры активности, исключений доменов, обработчиков событий, отображения локали, настроек, отображения темы и UI
+- **Theme Module** (`src/managers/theme/`): Менеджеры приложения, хранилища, синхронизации, инициализатора темы и темы
+- **Locale Module** (`src/managers/locale/`): Менеджеры DOM, локали, хранилища и переводов
+- **Base Classes** (`src/base/`): BaseManager, LocaleManager, LoggingManager, MessageManager, PerformanceManager, StateManager
+- **Public Assets** (`public/`): HTML шаблоны, иконки и стили
+- **Locales** (`src/locales/`): Файлы переводов на английский и русский языки
 - **Manifest V3**: Современный стандарт расширений Chrome
 
 #### Отладка
@@ -329,10 +374,10 @@ npm install
 > **Примечание:** В CI окружениях установка хуков автоматически пропускается.
 
 **Что происходит при коммите:**
-1. 🔍 ESLint проверяет измененные JavaScript файлы
-2. 🔧 Автоматически исправляет проблемы форматирования где возможно
-3. ❌ Блокирует коммит если остались критические ошибки
-4. ✅ Разрешает коммит если все проверки пройдены
+1. 🧪 **npm test** - Запускает все тесты с полным покрытием
+2. 🔍 **npm run lint:fix** - Проверяет качество кода и автоматически исправляет проблемы
+3. ❌ **Блокирует коммит** если тесты не прошли или линтер нашел ошибки
+4. ✅ **Разрешает коммит** если все проверки пройдены (предупреждения допустимы)
 
 **Ручное тестирование:**
 ```bash
@@ -380,17 +425,19 @@ git commit --no-verify -m "срочный фикс"
 
 ### 🇬🇧 English
 - **Local Storage**: All data is stored locally first
-- **User Control**: User can configure backend URL
+- **User Control**: User can configure backend URL, enable/disable tracking, and manage domain exceptions
 - **Minimal Permissions**: Extension requests only necessary permissions
 - **No Scripts**: Does not inject code into web pages
 - **Domain Only**: Tracks only domains, never full URLs or content
+- **Domain Exceptions**: Users can exclude specific domains from tracking and data transmission
 
 ### 🇷🇺 Русский
 - **Локальное хранение**: Все данные сначала сохраняются локально
-- **Контроль пользователя**: Пользователь может настроить URL бэкенда
+- **Контроль пользователя**: Пользователь может настроить URL бэкенда, включить/отключить трекинг и управлять исключениями доменов
 - **Минимальные разрешения**: Расширение запрашивает только необходимые разрешения
 - **Без скриптов**: Не внедряет код на веб-страницы
 - **Только домены**: Отслеживает только домены, никогда полные URL или содержимое
+- **Исключения доменов**: Пользователи могут исключить определенные домены из трекинга и передачи данных
 
 ## 📝 Permissions / Разрешения
 
@@ -492,31 +539,4 @@ git commit -m "your message"  # Pre-commit хуки запускаются ав�
 
 ---
 
-## 🤝 Contributing / Вклад в проект
-
-### 🇬🇧 English
-We welcome contributions to the project! Please:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and test them
-4. Create a Pull Request with a description of changes
-
-### 🇷🇺 Русский
-Мы приветствуем вклад в развитие проекта! Пожалуйста:
-
-1. Создайте форк репозитория
-2. Создайте ветку для вашей функции: `git checkout -b feature/amazing-feature`
-3. Внесите изменения и протестируйте их
-4. Создайте Pull Request с описанием изменений
-
----
-
-## 📄 License / Лицензия
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
----
-
 **Mindful Web Extensions** — restore control over your attention in the digital world! 🧘‍♀️
-
