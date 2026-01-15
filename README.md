@@ -63,7 +63,7 @@ Mindful Web Extensions — это набор расширений для бра�
 
 #### 1. Prerequisites
 - **Backend Server**: Ensure your FastAPI backend is running on `http://localhost:8000`
-- **API Endpoint**: Must be available `POST /api/v1/events/send`
+- **API Endpoint**: Must be available `POST /api/v1/events/save`
 - **Chrome Browser**: Version 88+ with Manifest V3 support
 - **Node.js**: Version 14+ for building the extension
 
@@ -86,7 +86,7 @@ This will create a `dist/` folder with the bundled extension files.
 #### 3. Configure
 1. Click the extension icon in the toolbar
 2. Click **"Settings"** to open the settings page
-3. Change backend URL if needed (default: `http://localhost:8000/api/v1/events/send`)
+3. Change backend URL if needed (default: `http://localhost:8000/api/v1/events/save`)
 4. Choose your preferred theme (☀️ Light or 🌙 Dark) using the theme toggle button
 5. Select your language (🌐 EN or RU) using the language toggle button
 6. Click **"Save Settings"**
@@ -103,7 +103,7 @@ This will create a `dist/` folder with the bundled extension files.
 
 #### 1. Предварительные требования
 - **Бэкенд сервер**: Убедитесь, что ваш FastAPI бэкенд запущен на `http://localhost:8000`
-- **Эндпоинт API**: Должен быть доступен `POST /api/v1/events/send`
+- **Эндпоинт API**: Должен быть доступен `POST /api/v1/events/save`
 - **Chrome браузер**: Версия 88+ с поддержкой Manifest V3
 - **Node.js**: Версия 14+ для сборки расширения
 
@@ -126,7 +126,7 @@ npm run build        # Сборка расширения
 #### 4. Настройка
 1. Кликните на иконку расширения в панели инструментов
 2. Нажмите **"Settings"** для открытия страницы настроек
-3. Измените URL бэкенда при необходимости (по умолчанию: `http://localhost:8000/api/v1/events/send`)
+3. Измените URL бэкенда при необходимости (по умолчанию: `http://localhost:8000/api/v1/events/save`)
 4. Выберите предпочитаемую тему (☀️ Светлая или 🌙 Тёмная) с помощью кнопки переключения темы
 5. Выберите язык (🌐 EN или RU) с помощью кнопки переключения языка
 6. Нажмите **"Сохранить настройки"**

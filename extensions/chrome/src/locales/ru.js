@@ -589,6 +589,7 @@ const RU = {
         backend: {
             created: 'BackendManager инициализирован',
             userIdUpdated: 'User ID обновлен',
+            authTokenUpdated: 'Auth токен обновлен',
             sendingEvents: 'Отправка событий на backend',
             backendResponse: 'Ответ от backend',
             backendResponseError: 'Ошибка ответа от backend',
@@ -600,6 +601,10 @@ const RU = {
             backendUnavailable: 'Backend недоступен',
             healthcheckError: 'Ошибка проверки доступности backend',
             userIdNotSet: 'User ID не установлен',
+            authTokenNotSet: 'Auth токен не установлен',
+            creatingAnonymousSession: 'Создание анонимной сессии',
+            anonymousSessionError: 'Ошибка анонимной сессии',
+            anonymousSessionInvalidResponse: 'Некорректный ответ анонимной сессии',
             noEventsToSend: 'Нет событий для отправки',
             unknownError: 'Неизвестная ошибка',
             destroyed: 'BackendManager уничтожен'
@@ -723,6 +728,9 @@ const RU = {
             userIdLoaded: 'User ID загружен',
             userIdCreated: 'User ID создан',
             userIdError: 'Ошибка получения/создания User ID',
+            anonSessionLoadError: 'Ошибка загрузки анонимной сессии',
+            anonSessionSaved: 'Анонимная сессия сохранена',
+            anonSessionSaveError: 'Ошибка сохранения анонимной сессии',
             backendUrlLoadError: 'Ошибка загрузки Backend URL',
             backendUrlSaved: 'Backend URL сохранен',
             backendUrlSaveError: 'Ошибка сохранения Backend URL',
@@ -760,6 +768,7 @@ const RU = {
             created: 'TrackerManager создан',
             alreadyInitialized: 'TrackerManager уже инициализирован',
             userIdInitialized: 'User ID инициализирован',
+            anonSessionInitError: 'Ошибка инициализации анонимной сессии',
             trackingStatusRestored: 'Статус отслеживания восстановлен',
             tabTrackingInitialized: 'Отслеживание вкладок инициализировано',
             trackingDisabledNotStarted: 'Отслеживание отключено, отслеживание вкладок не запускается',
@@ -842,7 +851,7 @@ const RU = {
         // Форма
         form: {
             backendUrlLabel: 'URL бэкенда:',
-            backendUrlPlaceholder: 'http://localhost:8000/api/v1/events/send',
+            backendUrlPlaceholder: 'http://localhost:8000/api/v1/events/save',
             backendUrlHelp: 'Введите URL конечной точки API вашего бэкенда Mindful Web',
             domainExceptionsLabel: 'Исключения доменов:',
             domainExceptionsPlaceholder: 'example.com',

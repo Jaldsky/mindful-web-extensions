@@ -49,6 +49,12 @@ class StorageManager extends BaseManager {
         
         /** @type {string|null} */
         this.userId = null;
+
+        /** @type {string|null} */
+        this.anonId = null;
+
+        /** @type {string|null} */
+        this.anonToken = null;
         
         /** @type {string} */
         this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
@@ -91,6 +97,59 @@ class StorageManager extends BaseManager {
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.userIdError' }, error);
                 throw error;
+            }
+        });
+    }
+
+    /**
+     * Загружает анонимную сессию из хранилища.
+     *
+     * @async
+     * @returns {Promise<{anonId: string | null, anonToken: string | null}>}
+     */
+    async loadAnonymousSession() {
+        return await this._executeWithTimingAsync('loadAnonymousSession', async () => {
+            try {
+                const result = await chrome.storage.local.get([
+                    StorageManager.STORAGE_KEYS.ANON_ID,
+                    StorageManager.STORAGE_KEYS.ANON_TOKEN
+                ]);
+                this.anonId = result[StorageManager.STORAGE_KEYS.ANON_ID] || null;
+                this.anonToken = result[StorageManager.STORAGE_KEYS.ANON_TOKEN] || null;
+                this.updateState({ anonId: this.anonId });
+                return { anonId: this.anonId, anonToken: this.anonToken };
+            } catch (error) {
+                this._logError({ key: 'logs.trackerStorage.anonSessionLoadError' }, error);
+                this.anonId = null;
+                this.anonToken = null;
+                return { anonId: null, anonToken: null };
+            }
+        });
+    }
+
+    /**
+     * Сохраняет анонимную сессию в хранилище.
+     *
+     * @async
+     * @param {string} anonId - Идентификатор анонимной сессии
+     * @param {string} anonToken - JWT токен анонимной сессии
+     * @returns {Promise<boolean>} Успешность операции
+     */
+    async saveAnonymousSession(anonId, anonToken) {
+        return await this._executeWithTimingAsync('saveAnonymousSession', async () => {
+            try {
+                await chrome.storage.local.set({
+                    [StorageManager.STORAGE_KEYS.ANON_ID]: anonId,
+                    [StorageManager.STORAGE_KEYS.ANON_TOKEN]: anonToken
+                });
+                this.anonId = anonId;
+                this.anonToken = anonToken;
+                this.updateState({ anonId: this.anonId });
+                this._log({ key: 'logs.trackerStorage.anonSessionSaved' });
+                return true;
+            } catch (error) {
+                this._logError({ key: 'logs.trackerStorage.anonSessionSaveError' }, error);
+                return false;
             }
         });
     }
@@ -348,6 +407,24 @@ class StorageManager extends BaseManager {
     }
 
     /**
+     * Получает текущий anon_id.
+     *
+     * @returns {string|null} anon_id
+     */
+    getAnonId() {
+        return this.anonId;
+    }
+
+    /**
+     * Получает текущий anon_token.
+     *
+     * @returns {string|null} anon_token
+     */
+    getAnonToken() {
+        return this.anonToken;
+    }
+
+    /**
      * Получает текущий Backend URL.
      * 
      * @returns {string} Backend URL
@@ -379,6 +456,8 @@ class StorageManager extends BaseManager {
             try {
                 await chrome.storage.local.remove([
                     StorageManager.STORAGE_KEYS.USER_ID,
+                    StorageManager.STORAGE_KEYS.ANON_ID,
+                    StorageManager.STORAGE_KEYS.ANON_TOKEN,
                     StorageManager.STORAGE_KEYS.BACKEND_URL,
                     StorageManager.STORAGE_KEYS.EVENT_QUEUE,
                     StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS,
@@ -386,6 +465,8 @@ class StorageManager extends BaseManager {
                 ]);
                 
                 this.userId = null;
+                this.anonId = null;
+                this.anonToken = null;
                 this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
                 this.domainExceptions = [];
                 this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
@@ -409,6 +490,8 @@ class StorageManager extends BaseManager {
      */
     destroy() {
         this.userId = null;
+        this.anonId = null;
+        this.anonToken = null;
         this.backendUrl = null;
         this.domainExceptions = [];
         this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;

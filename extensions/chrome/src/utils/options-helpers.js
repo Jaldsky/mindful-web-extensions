@@ -215,7 +215,7 @@ export function getCurrentBackendUrl(optionsManagerInstance) {
  */
 export function getDefaultBackendUrl(optionsManagerInstance) {
     if (!optionsManagerInstance) {
-        return 'http://localhost:8000/api/v1/events/send';
+        return 'http://localhost:8000/api/v1/events/save';
     }
     
     return optionsManagerInstance.getDefaultBackendUrl();

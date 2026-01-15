@@ -99,11 +99,21 @@ class TrackerManager extends BaseManager {
 
         await this._executeWithTimingAsync('init', async () => {
             try {
-                const userId = await this.storageManager.getOrCreateUserId();
-                this.backendManager.setUserId(userId);
-
                 const backendUrl = await this.storageManager.loadBackendUrl();
                 this.backendManager.setBackendUrl(backendUrl);
+
+                const { anonId, anonToken } = await this.storageManager.loadAnonymousSession();
+                if (anonToken) {
+                    this.backendManager.setAuthToken(anonToken);
+                } else {
+                    const anonResult = await this.backendManager.createAnonymousSession();
+                    if (anonResult.success) {
+                        await this.storageManager.saveAnonymousSession(anonResult.anonId, anonResult.anonToken);
+                        this.backendManager.setAuthToken(anonResult.anonToken);
+                    } else {
+                        this._logError({ key: 'logs.tracker.anonSessionInitError' }, new Error(anonResult.error));
+                    }
+                }
 
                 const domainExceptions = await this.storageManager.loadDomainExceptions();
 
@@ -292,7 +302,7 @@ class TrackerManager extends BaseManager {
      * 
      * Возвращает объединенную статистику из всех менеджеров:
      * статистика событий, размер очереди, статус инициализации,
-     * User ID и Backend URL.
+     * Anon ID и Backend URL.
      * 
      * @returns {Object} Объект со статистикой
      */
@@ -304,7 +314,7 @@ class TrackerManager extends BaseManager {
             ...stats,
             queueSize,
             isInitialized: this.isInitialized,
-            userId: this.storageManager.getUserId(),
+            anonId: this.storageManager.getAnonId(),
             backendUrl: this.backendManager.getBackendUrl()
         };
     }

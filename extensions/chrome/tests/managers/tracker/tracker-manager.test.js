@@ -122,16 +122,17 @@ describe('TrackerManager', () => {
             expect(initState2).toBe(true);
         });
 
-        test('должен инициализировать userId', async () => {
+        test('должен инициализировать anonToken', async () => {
             global.chrome.storage.local.get.mockResolvedValue({
-                mindful_user_id: 'test-user-123'
+                mindful_anon_id: 'test-anon-id',
+                mindful_anon_token: 'test-anon-token'
             });
 
             trackerManager = new TrackerManager({ enableLogging: false });
             
             await trackerManager.init();
 
-            expect(trackerManager.backendManager.userId).toBe('test-user-123');
+            expect(trackerManager.backendManager.authToken).toBe('test-anon-token');
         });
 
         test('должен настраивать lifecycle handlers', async () => {
@@ -157,7 +158,7 @@ describe('TrackerManager', () => {
             expect(stats).toHaveProperty('domainsVisited');
             expect(stats).toHaveProperty('queueSize');
             expect(stats).toHaveProperty('isInitialized');
-            expect(stats).toHaveProperty('userId');
+            expect(stats).toHaveProperty('anonId');
             expect(stats).toHaveProperty('backendUrl');
         });
     });
