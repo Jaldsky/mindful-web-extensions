@@ -68,7 +68,7 @@ describe('StorageManager (Tracker)', () => {
 
         test('должен иметь начальные значения', () => {
             expect(storageManager.userId).toBeNull();
-            expect(storageManager.backendUrl).toBe('http://localhost:8000/api/v1/events/send');
+            expect(storageManager.backendUrl).toBe('http://localhost:8000/api/v1/events/save');
         });
     });
 
@@ -118,7 +118,7 @@ describe('StorageManager (Tracker)', () => {
         test('должен использовать URL по умолчанию если не найден', async () => {
             const url = await storageManager.loadBackendUrl();
 
-            expect(url).toBe('http://localhost:8000/api/v1/events/send');
+            expect(url).toBe('http://localhost:8000/api/v1/events/save');
         });
 
         test('должен обрабатывать ошибки и возвращать URL по умолчанию', async () => {
@@ -126,7 +126,7 @@ describe('StorageManager (Tracker)', () => {
 
             const url = await storageManager.loadBackendUrl();
 
-            expect(url).toBe('http://localhost:8000/api/v1/events/send');
+            expect(url).toBe('http://localhost:8000/api/v1/events/save');
         });
     });
 
@@ -262,7 +262,7 @@ describe('StorageManager (Tracker)', () => {
 
             expect(result).toBe(true);
             expect(storageManager.userId).toBeNull();
-            expect(storageManager.backendUrl).toBe('http://localhost:8000/api/v1/events/send');
+            expect(storageManager.backendUrl).toBe('http://localhost:8000/api/v1/events/save');
             expect(global.chrome.storage.local.remove).toHaveBeenCalled();
             expect(storageManager.getDomainExceptions()).toEqual([]);
             expect(memoryStorage.mindful_domain_exceptions).toBeUndefined();

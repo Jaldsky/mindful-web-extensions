@@ -343,7 +343,7 @@ class EventQueueManager extends BaseManager {
 
             try {
                 const result = await this.backendManager.sendEvents(filteredEvents);
-                
+
                 if (result.success) {
                     await this.storageManager.saveEventQueue(this.queue);
                     this.failureManager.resetFailureCounters();

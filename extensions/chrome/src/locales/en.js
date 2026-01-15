@@ -588,6 +588,7 @@ const EN = {
         backend: {
             created: 'BackendManager initialized',
             userIdUpdated: 'User ID updated',
+            authTokenUpdated: 'Auth token updated',
             sendingEvents: 'Sending events to backend',
             backendResponse: 'Response from backend',
             backendResponseError: 'Backend response error',
@@ -599,6 +600,10 @@ const EN = {
             backendUnavailable: 'Backend unavailable',
             healthcheckError: 'Error checking backend availability',
             userIdNotSet: 'User ID is not set',
+            authTokenNotSet: 'Auth token is not set',
+            creatingAnonymousSession: 'Creating anonymous session',
+            anonymousSessionError: 'Anonymous session error',
+            anonymousSessionInvalidResponse: 'Invalid anonymous session response',
             noEventsToSend: 'No events to send',
             unknownError: 'Unknown error',
             destroyed: 'BackendManager destroyed'
@@ -719,6 +724,9 @@ const EN = {
             userIdLoaded: 'User ID loaded',
             userIdCreated: 'User ID created',
             userIdError: 'Error getting/creating User ID',
+            anonSessionLoadError: 'Error loading anonymous session',
+            anonSessionSaved: 'Anonymous session saved',
+            anonSessionSaveError: 'Error saving anonymous session',
             backendUrlLoadError: 'Error loading Backend URL',
             backendUrlSaved: 'Backend URL saved',
             backendUrlSaveError: 'Error saving Backend URL',
@@ -756,6 +764,7 @@ const EN = {
             created: 'TrackerManager created',
             alreadyInitialized: 'TrackerManager already initialized',
             userIdInitialized: 'User ID initialized',
+            anonSessionInitError: 'Error initializing anonymous session',
             trackingStatusRestored: 'Tracking status restored',
             tabTrackingInitialized: 'Tab tracking initialized',
             trackingDisabledNotStarted: 'Tracking disabled, tab tracking not started',
@@ -838,7 +847,7 @@ const EN = {
         // Form
         form: {
             backendUrlLabel: 'Backend URL:',
-            backendUrlPlaceholder: 'http://localhost:8000/api/v1/events/send',
+            backendUrlPlaceholder: 'http://localhost:8000/api/v1/events/save',
             backendUrlHelp: 'Enter the URL of your Mindful Web backend API endpoint',
             domainExceptionsLabel: 'Domain exclusions:',
             domainExceptionsPlaceholder: 'example.com',

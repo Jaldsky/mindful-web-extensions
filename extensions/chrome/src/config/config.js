@@ -31,14 +31,16 @@ const CONFIG = {
      */
     BACKEND: (() => {
         const BASE_URL = 'http://localhost:8000'; // Базовый URL backend сервера
-        const EVENTS_ENDPOINT = '/api/v1/events/send'; // Эндпоинт для отправки событий
+        const EVENTS_ENDPOINT = '/api/v1/events/save'; // Эндпоинт для отправки событий
         const HEALTHCHECK_PATH = '/api/v1/healthcheck'; // Путь для healthcheck endpoint
+        const AUTH_ANON_PATH = '/api/v1/auth/anonymous'; // Путь для создания анонимной сессии
         const DEFAULT_URL = BASE_URL + EVENTS_ENDPOINT; // Полный URL по умолчанию
         
         return {
             BASE_URL,
             EVENTS_ENDPOINT,
             HEALTHCHECK_PATH,
+            AUTH_ANON_PATH,
             DEFAULT_URL,
             TIMEOUT: 10000, // Таймаут запроса (мс)
             RETRY_ATTEMPTS: 3, // Количество попыток повтора
@@ -51,7 +53,7 @@ const CONFIG = {
             // HTTP заголовки
             HEADERS: {
                 CONTENT_TYPE: 'Content-Type',
-                USER_ID: 'X-User-ID'
+                AUTHORIZATION: 'Authorization'
             },
             // Значения заголовков
             HEADER_VALUES: {
@@ -202,6 +204,8 @@ const CONFIG = {
     STORAGE_KEYS: {
         // Общие
         USER_ID: 'mindful_user_id',
+        ANON_ID: 'mindful_anon_id',
+        ANON_TOKEN: 'mindful_anon_token',
         BACKEND_URL: 'mindful_backend_url',
         LOCALE: 'mindful_locale',
         DOMAIN_EXCEPTIONS: 'mindful_domain_exceptions',

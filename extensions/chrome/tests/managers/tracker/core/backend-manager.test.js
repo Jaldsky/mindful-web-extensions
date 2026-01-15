@@ -14,7 +14,7 @@ describe('BackendManager', () => {
         global.fetch = fetchMock;
 
         backendManager = new BackendManager({
-            userId: 'test-user-id',
+            authToken: 'test-auth-token',
             backendUrl: 'http://test.com/api',
             enableLogging: false
         });
@@ -35,12 +35,12 @@ describe('BackendManager', () => {
 
         test('должен иметь начальные значения', () => {
             expect(backendManager.backendUrl).toBe('http://test.com/api');
-            expect(backendManager.userId).toBe('test-user-id');
+            expect(backendManager.authToken).toBe('test-auth-token');
         });
 
         test('должен использовать URL по умолчанию если не указан', () => {
             const manager = new BackendManager({ enableLogging: false });
-            expect(manager.backendUrl).toBe('http://localhost:8000/api/v1/events/send');
+            expect(manager.backendUrl).toBe('http://localhost:8000/api/v1/events/save');
             manager.destroy();
         });
 
@@ -58,12 +58,12 @@ describe('BackendManager', () => {
         });
     });
 
-    describe('setUserId', () => {
-        test('должен устанавливать новый userId', () => {
-            backendManager.setUserId('new-user-id');
+    describe('setAuthToken', () => {
+        test('должен устанавливать новый authToken', () => {
+            backendManager.setAuthToken('new-auth-token');
 
-            expect(backendManager.userId).toBe('new-user-id');
-            expect(backendManager.getState().userId).toBe('new-user-id');
+            expect(backendManager.authToken).toBe('new-auth-token');
+            expect(backendManager.getState().authTokenSet).toBe(true);
         });
     });
 
@@ -88,7 +88,7 @@ describe('BackendManager', () => {
                     method: 'POST',
                     headers: expect.objectContaining({
                         'Content-Type': 'application/json',
-                        'X-User-ID': 'test-user-id'
+                        'Authorization': 'Bearer test-auth-token'
                     }),
                     body: JSON.stringify({ data: testEvents })
                 })
@@ -133,14 +133,14 @@ describe('BackendManager', () => {
             expect(result.error).toContain('Network error');
         });
 
-        test('должен требовать userId', async () => {
-            backendManager.userId = null;
+        test('должен требовать authToken', async () => {
+            backendManager.authToken = null;
             const testEvents = [{ event: 'active', domain: 'test.com', timestamp: '2024-01-01' }];
 
             const result = await backendManager.sendEvents(testEvents);
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('User ID не установлен');
+            expect(result.error).toContain('Auth токен не установлен');
         });
     });
 
@@ -184,7 +184,7 @@ describe('BackendManager', () => {
         });
 
         test('не требует userId для healthcheck', async () => {
-            backendManager.userId = null;
+            backendManager.authToken = null;
 
             fetchMock.mockResolvedValue({
                 ok: true,
@@ -209,13 +209,13 @@ describe('BackendManager', () => {
         test('должен очищать ресурсы', () => {
             backendManager.performanceMetrics.set('test', 100);
             backendManager.backendUrl = 'http://test.com';
-            backendManager.userId = 'test-id';
+            backendManager.authToken = 'test-id';
 
             backendManager.destroy();
 
             expect(backendManager.performanceMetrics.size).toBe(0);
             expect(backendManager.backendUrl).toBeNull();
-            expect(backendManager.userId).toBeNull();
+            expect(backendManager.authToken).toBeNull();
         });
     });
 
