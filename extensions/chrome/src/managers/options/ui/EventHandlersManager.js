@@ -36,6 +36,30 @@ class EventHandlersManager {
             manager._log({ key: 'logs.ui.eventHandlers.settingsFormNotFound' });
         }
 
+        if (manager.domManager.elements.onboardingTryBtn) {
+            const handler = async (e) => {
+                e.preventDefault();
+                await manager.storageManager.saveOnboardingCompleted(true);
+                manager.uiManager.authManager.hideOnboarding();
+            };
+            manager.domManager.elements.onboardingTryBtn.addEventListener('click', handler);
+            manager.eventHandlers.set('onboardingTryBtn', handler);
+        }
+
+        if (manager.domManager.elements.onboardingLoginBtn) {
+            const handler = async (e) => {
+                e.preventDefault();
+                await manager.storageManager.saveOnboardingCompleted(true);
+                manager.uiManager.authManager.hideOnboarding();
+                manager.statusManager.showInfo(
+                    manager.localeManager.t('options.onboarding.signInHint') || 
+                    'Для авторизации кликните на иконку расширения'
+                );
+            };
+            manager.domManager.elements.onboardingLoginBtn.addEventListener('click', handler);
+            manager.eventHandlers.set('onboardingLoginBtn', handler);
+        }
+
         if (manager.domManager.elements.resetBtn) {
             manager.originalButtonTexts.set('resetBtn', manager.domManager.elements.resetBtn.textContent);
 
