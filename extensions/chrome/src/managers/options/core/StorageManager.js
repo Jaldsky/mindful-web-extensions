@@ -121,6 +121,47 @@ class StorageManager extends BaseManager {
     }
 
     /**
+     * Загружает флаг завершения onboarding.
+     *
+     * @async
+     * @returns {Promise<boolean>} true если onboarding завершен
+     */
+    async loadOnboardingCompleted() {
+        return this._executeWithTimingAsync('loadOnboardingCompleted', async () => {
+            try {
+                const result = await chrome.storage.local.get([
+                    StorageManager.STORAGE_KEYS.ONBOARDING_COMPLETED
+                ]);
+                return Boolean(result[StorageManager.STORAGE_KEYS.ONBOARDING_COMPLETED]);
+            } catch (error) {
+                this._logError({ key: 'logs.storage.onboardingLoadError' }, error);
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Сохраняет флаг завершения onboarding.
+     *
+     * @async
+     * @param {boolean} value - Значение флага
+     * @returns {Promise<boolean>} Успешность операции
+     */
+    async saveOnboardingCompleted(value) {
+        return this._executeWithTimingAsync('saveOnboardingCompleted', async () => {
+            try {
+                await chrome.storage.local.set({
+                    [StorageManager.STORAGE_KEYS.ONBOARDING_COMPLETED]: Boolean(value)
+                });
+                return true;
+            } catch (error) {
+                this._logError({ key: 'logs.storage.onboardingSaveError' }, error);
+                return false;
+            }
+        });
+    }
+
+    /**
      * Сохраняет URL бэкенда в хранилище.
      * Включает валидацию, измерение производительности и проверку успешности.
      * 

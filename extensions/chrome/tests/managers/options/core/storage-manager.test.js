@@ -282,6 +282,94 @@ describe('StorageManager', () => {
         });
     });
 
+    describe('loadOnboardingCompleted', () => {
+        test('должен загружать флаг завершения onboarding', async () => {
+            memoryStorage.mindful_onboarding_completed = true;
+
+            const result = await storageManager.loadOnboardingCompleted();
+
+            expect(result).toBe(true);
+            expect(global.chrome.storage.local.get).toHaveBeenCalledWith(['mindful_onboarding_completed']);
+        });
+
+        test('должен возвращать false если флаг не установлен', async () => {
+            const result = await storageManager.loadOnboardingCompleted();
+
+            expect(result).toBe(false);
+        });
+
+        test('должен возвращать false если значение null', async () => {
+            memoryStorage.mindful_onboarding_completed = null;
+
+            const result = await storageManager.loadOnboardingCompleted();
+
+            expect(result).toBe(false);
+        });
+
+        test('должен возвращать false при ошибке загрузки', async () => {
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
+
+            const result = await storageManager.loadOnboardingCompleted();
+
+            expect(result).toBe(false);
+        });
+
+        test('должен конвертировать различные значения в boolean', async () => {
+            memoryStorage.mindful_onboarding_completed = 1;
+            expect(await storageManager.loadOnboardingCompleted()).toBe(true);
+
+            memoryStorage.mindful_onboarding_completed = 0;
+            expect(await storageManager.loadOnboardingCompleted()).toBe(false);
+
+            memoryStorage.mindful_onboarding_completed = 'true';
+            expect(await storageManager.loadOnboardingCompleted()).toBe(true);
+
+            memoryStorage.mindful_onboarding_completed = '';
+            expect(await storageManager.loadOnboardingCompleted()).toBe(false);
+        });
+    });
+
+    describe('saveOnboardingCompleted', () => {
+        test('должен сохранять флаг завершения onboarding', async () => {
+            const result = await storageManager.saveOnboardingCompleted(true);
+
+            expect(result).toBe(true);
+            expect(memoryStorage.mindful_onboarding_completed).toBe(true);
+            expect(global.chrome.storage.local.set).toHaveBeenCalledWith({
+                mindful_onboarding_completed: true
+            });
+        });
+
+        test('должен сохранять false значение', async () => {
+            const result = await storageManager.saveOnboardingCompleted(false);
+
+            expect(result).toBe(true);
+            expect(memoryStorage.mindful_onboarding_completed).toBe(false);
+        });
+
+        test('должен конвертировать различные значения в boolean', async () => {
+            await storageManager.saveOnboardingCompleted(1);
+            expect(memoryStorage.mindful_onboarding_completed).toBe(true);
+
+            await storageManager.saveOnboardingCompleted(0);
+            expect(memoryStorage.mindful_onboarding_completed).toBe(false);
+
+            await storageManager.saveOnboardingCompleted('true');
+            expect(memoryStorage.mindful_onboarding_completed).toBe(true);
+
+            await storageManager.saveOnboardingCompleted(null);
+            expect(memoryStorage.mindful_onboarding_completed).toBe(false);
+        });
+
+        test('должен возвращать false при ошибке сохранения', async () => {
+            global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Storage error'));
+
+            const result = await storageManager.saveOnboardingCompleted(true);
+
+            expect(result).toBe(false);
+        });
+    });
+
     describe('Метрики производительности', () => {
         test('должен собирать метрики для loadBackendUrl', async () => {
             global.chrome.storage.local.get.mockResolvedValue({
