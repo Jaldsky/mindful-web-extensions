@@ -102,6 +102,95 @@ describe('LocaleManager', () => {
             expect(localeManager.isInitialized).toBe(true);
             expect(localeManager.translationManager.setLocale).toHaveBeenCalledWith('en');
         });
+
+        test('should detect browser locale when no saved locale', async () => {
+            const BaseManager = require('../../../src/base/BaseManager.js');
+            jest.spyOn(BaseManager, 'detectBrowserLocale').mockReturnValue('ru');
+            jest.spyOn(BaseManager, 'updateLocaleCache');
+            
+            localeManager.storageManager.loadLocale = jest.fn().mockResolvedValue(null);
+            localeManager.translationManager.isLocaleSupported = jest.fn().mockReturnValue(true);
+            localeManager.translationManager.setLocale = jest.fn().mockReturnValue(true);
+            localeManager.translationManager.getCurrentLocale = jest.fn().mockReturnValue('ru');
+            localeManager.storageManager.saveLocale = jest.fn().mockResolvedValue(true);
+
+            await localeManager.init();
+
+            expect(BaseManager.detectBrowserLocale).toHaveBeenCalled();
+            expect(localeManager.translationManager.setLocale).toHaveBeenCalledWith('ru');
+            expect(localeManager.storageManager.saveLocale).toHaveBeenCalledWith('ru');
+            expect(BaseManager.updateLocaleCache).toHaveBeenCalledWith('ru');
+        });
+
+        test('should use default locale when browser locale is not supported', async () => {
+            const BaseManager = require('../../../src/base/BaseManager.js');
+            jest.spyOn(BaseManager, 'detectBrowserLocale').mockReturnValue('fr');
+            jest.spyOn(BaseManager, 'updateLocaleCache');
+            
+            localeManager.storageManager.loadLocale = jest.fn().mockResolvedValue(null);
+            localeManager.translationManager.isLocaleSupported = jest.fn((locale) => locale !== 'fr');
+            localeManager.translationManager.setLocale = jest.fn().mockReturnValue(true);
+            localeManager.translationManager.getCurrentLocale = jest.fn().mockReturnValue('en');
+            localeManager.storageManager.saveLocale = jest.fn().mockResolvedValue(true);
+
+            await localeManager.init();
+
+            expect(BaseManager.detectBrowserLocale).toHaveBeenCalled();
+            expect(localeManager.translationManager.setLocale).toHaveBeenCalledWith('en');
+            expect(localeManager.storageManager.saveLocale).toHaveBeenCalledWith('en');
+            expect(BaseManager.updateLocaleCache).toHaveBeenCalledWith('en');
+        });
+
+        test('should use default locale when browser locale is null', async () => {
+            const BaseManager = require('../../../src/base/BaseManager.js');
+            jest.spyOn(BaseManager, 'detectBrowserLocale').mockReturnValue(null);
+            jest.spyOn(BaseManager, 'updateLocaleCache');
+            
+            localeManager.storageManager.loadLocale = jest.fn().mockResolvedValue(null);
+            localeManager.translationManager.isLocaleSupported = jest.fn().mockReturnValue(true);
+            localeManager.translationManager.setLocale = jest.fn().mockReturnValue(true);
+            localeManager.translationManager.getCurrentLocale = jest.fn().mockReturnValue('en');
+            localeManager.storageManager.saveLocale = jest.fn().mockResolvedValue(true);
+
+            await localeManager.init();
+
+            expect(BaseManager.detectBrowserLocale).toHaveBeenCalled();
+            expect(localeManager.translationManager.setLocale).toHaveBeenCalledWith('en');
+            expect(localeManager.storageManager.saveLocale).toHaveBeenCalledWith('en');
+            expect(BaseManager.updateLocaleCache).toHaveBeenCalledWith('en');
+        });
+
+        test('should call updateLocaleCache when loading saved locale', async () => {
+            const BaseManager = require('../../../src/base/BaseManager.js');
+            jest.spyOn(BaseManager, 'updateLocaleCache');
+            
+            localeManager.storageManager.loadLocale = jest.fn().mockResolvedValue('ru');
+            localeManager.translationManager.isLocaleSupported = jest.fn().mockReturnValue(true);
+            localeManager.translationManager.setLocale = jest.fn().mockReturnValue(true);
+            localeManager.translationManager.getCurrentLocale = jest.fn().mockReturnValue('ru');
+
+            await localeManager.init();
+
+            expect(BaseManager.updateLocaleCache).toHaveBeenCalledWith('ru');
+        });
+
+        test('should not use saved locale if it is not supported', async () => {
+            const BaseManager = require('../../../src/base/BaseManager.js');
+            jest.spyOn(BaseManager, 'detectBrowserLocale').mockReturnValue('en');
+            jest.spyOn(BaseManager, 'updateLocaleCache');
+            
+            localeManager.storageManager.loadLocale = jest.fn().mockResolvedValue('fr');
+            localeManager.translationManager.isLocaleSupported = jest.fn((locale) => locale !== 'fr');
+            localeManager.translationManager.setLocale = jest.fn().mockReturnValue(true);
+            localeManager.translationManager.getCurrentLocale = jest.fn().mockReturnValue('en');
+            localeManager.storageManager.saveLocale = jest.fn().mockResolvedValue(true);
+
+            await localeManager.init();
+
+            // Should not use 'fr', but should use browser locale or default
+            expect(localeManager.translationManager.setLocale).not.toHaveBeenCalledWith('fr');
+            expect(BaseManager.detectBrowserLocale).toHaveBeenCalled();
+        });
     });
 
     describe('t (translate)', () => {

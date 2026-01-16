@@ -81,7 +81,7 @@ class LocaleManager extends BaseManager {
                     BaseManager.updateLocaleCache(savedLocale);
                     this._log({ key: 'logs.locale.savedLocaleLoaded' }, { locale: savedLocale });
                 } else {
-
+                    // Если сохраненной локали нет, определяем язык браузера
                     const browserLocale = BaseManager.detectBrowserLocale();
                     if (browserLocale && this.translationManager.isLocaleSupported(browserLocale)) {
                         this.translationManager.setLocale(browserLocale);
@@ -89,6 +89,14 @@ class LocaleManager extends BaseManager {
 
                         BaseManager.updateLocaleCache(browserLocale);
                         this._log({ key: 'logs.locale.browserLocaleSet' }, { locale: browserLocale });
+                    } else {
+                        // Если язык браузера не поддерживается, используем локаль по умолчанию
+                        const defaultLocale = BaseManager.DEFAULT_LOCALE;
+                        this.translationManager.setLocale(defaultLocale);
+                        await this.storageManager.saveLocale(defaultLocale);
+
+                        BaseManager.updateLocaleCache(defaultLocale);
+                        this._log({ key: 'logs.locale.defaultLocaleSet' }, { locale: defaultLocale });
                     }
                 }
 
