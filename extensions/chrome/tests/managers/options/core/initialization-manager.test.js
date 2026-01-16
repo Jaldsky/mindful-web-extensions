@@ -256,4 +256,64 @@ describe('InitializationManager', () => {
         const diagnosticsLabel = document.querySelector('.diagnostics-status-label');
         expect(diagnosticsLabel.textContent).toBe('Status:');
     });
+
+    test('init вызывает initOnboarding когда authManager существует и имеет метод', async () => {
+        setupDiagnosticsLabel();
+        const manager = createBaseOptionsManager();
+        manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.example');
+        manager.domManager.setBackendUrlValue.mockReturnValue(true);
+        manager.uiManager.authManager = {
+            initOnboarding: jest.fn().mockResolvedValue()
+        };
+
+        const initializationManager = new InitializationManager(manager);
+        await initializationManager.init();
+
+        expect(manager.uiManager.authManager.initOnboarding).toHaveBeenCalled();
+    });
+
+    test('init не вызывает initOnboarding когда authManager не существует', async () => {
+        setupDiagnosticsLabel();
+        const manager = createBaseOptionsManager();
+        manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.example');
+        manager.domManager.setBackendUrlValue.mockReturnValue(true);
+        manager.uiManager.authManager = null;
+
+        const initializationManager = new InitializationManager(manager);
+        
+        await expect(initializationManager.init()).resolves.not.toThrow();
+        expect(manager.uiManager.setupEventHandlers).toHaveBeenCalled();
+        expect(manager.uiManager.refreshAuthStatus).toHaveBeenCalled();
+    });
+
+    test('init не вызывает initOnboarding когда authManager существует но не имеет метода', async () => {
+        setupDiagnosticsLabel();
+        const manager = createBaseOptionsManager();
+        manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.example');
+        manager.domManager.setBackendUrlValue.mockReturnValue(true);
+        manager.uiManager.authManager = {
+            // initOnboarding отсутствует
+        };
+
+        const initializationManager = new InitializationManager(manager);
+        
+        await expect(initializationManager.init()).resolves.not.toThrow();
+        expect(manager.uiManager.setupEventHandlers).toHaveBeenCalled();
+        expect(manager.uiManager.refreshAuthStatus).toHaveBeenCalled();
+    });
+
+    test('init обрабатывает ошибки при вызове initOnboarding', async () => {
+        setupDiagnosticsLabel();
+        const manager = createBaseOptionsManager();
+        manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.example');
+        manager.domManager.setBackendUrlValue.mockReturnValue(true);
+        manager.uiManager.authManager = {
+            initOnboarding: jest.fn().mockRejectedValue(new Error('Onboarding error'))
+        };
+
+        const initializationManager = new InitializationManager(manager);
+        
+        await expect(initializationManager.init()).rejects.toThrow('Onboarding error');
+        expect(manager.uiManager.authManager.initOnboarding).toHaveBeenCalled();
+    });
 });
