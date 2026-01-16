@@ -41,6 +41,8 @@ describe('EventHandlersManager', () => {
             <input id="domainExceptionInput" />
             <ul id="domainExceptionsList"></ul>
             <button id="toggleDeveloperTools">Dev Tools</button>
+            <button id="onboardingTryBtn">Try Anonymous</button>
+            <button id="onboardingLoginBtn">Sign In</button>
         `;
         
         manager.domManager.elements = {
@@ -51,7 +53,9 @@ describe('EventHandlersManager', () => {
             toggleDeveloperTools: document.getElementById('toggleDeveloperTools'),
             addDomainExceptionBtn: document.getElementById('addDomainExceptionBtn'),
             domainExceptionInput: document.getElementById('domainExceptionInput'),
-            domainExceptionsList: document.getElementById('domainExceptionsList')
+            domainExceptionsList: document.getElementById('domainExceptionsList'),
+            onboardingTryBtn: document.getElementById('onboardingTryBtn'),
+            onboardingLoginBtn: document.getElementById('onboardingLoginBtn')
         };
         
         manager.saveSettings = jest.fn();
@@ -74,7 +78,16 @@ describe('EventHandlersManager', () => {
             activityRangeKey: '1h',
             activityManager: {
                 setActivityRangeByKey: jest.fn()
+            },
+            authManager: {
+                hideOnboarding: jest.fn()
             }
+        };
+        manager.storageManager = {
+            saveOnboardingCompleted: jest.fn().mockResolvedValue()
+        };
+        manager.statusManager = {
+            showInfo: jest.fn()
         };
         manager.activityManager = {
             startActivityAutoRefresh: jest.fn(),
@@ -617,6 +630,85 @@ describe('EventHandlersManager', () => {
             
             // Восстанавливаем
             manager.domManager.elements.settingsForm = originalForm;
+        });
+
+        test('настраивает обработчик для onboardingTryBtn', async () => {
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('onboardingTryBtn')).toBe(true);
+            
+            const handler = manager.eventHandlers.get('onboardingTryBtn');
+            const mockEvent = {
+                preventDefault: jest.fn()
+            };
+            
+            await handler(mockEvent);
+            
+            expect(mockEvent.preventDefault).toHaveBeenCalled();
+            expect(manager.storageManager.saveOnboardingCompleted).toHaveBeenCalledWith(true);
+            expect(manager.uiManager.authManager.hideOnboarding).toHaveBeenCalled();
+        });
+
+        test('настраивает обработчик для onboardingLoginBtn', async () => {
+            manager.localeManager.t = jest.fn((key) => {
+                if (key === 'options.onboarding.signInHint') {
+                    return 'Click extension icon to sign in';
+                }
+                return key;
+            });
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('onboardingLoginBtn')).toBe(true);
+            
+            const handler = manager.eventHandlers.get('onboardingLoginBtn');
+            const mockEvent = {
+                preventDefault: jest.fn()
+            };
+            
+            await handler(mockEvent);
+            
+            expect(mockEvent.preventDefault).toHaveBeenCalled();
+            expect(manager.storageManager.saveOnboardingCompleted).toHaveBeenCalledWith(true);
+            expect(manager.uiManager.authManager.hideOnboarding).toHaveBeenCalled();
+            expect(manager.statusManager.showInfo).toHaveBeenCalledWith('Click extension icon to sign in');
+        });
+
+        test('onboardingLoginBtn использует fallback текст если перевод не найден', async () => {
+            // Если t() возвращает falsy значение, используется fallback
+            manager.localeManager.t = jest.fn((key) => {
+                if (key === 'options.onboarding.signInHint') {
+                    return null; // Возвращает null, значит перевод не найден
+                }
+                return key;
+            });
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            const handler = manager.eventHandlers.get('onboardingLoginBtn');
+            const mockEvent = {
+                preventDefault: jest.fn()
+            };
+            
+            await handler(mockEvent);
+            
+            expect(manager.statusManager.showInfo).toHaveBeenCalledWith('Для авторизации кликните на иконку расширения');
+        });
+
+        test('не настраивает обработчик для onboardingTryBtn если элемент не найден', () => {
+            manager.domManager.elements.onboardingTryBtn = null;
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('onboardingTryBtn')).toBe(false);
+        });
+
+        test('не настраивает обработчик для onboardingLoginBtn если элемент не найден', () => {
+            manager.domManager.elements.onboardingLoginBtn = null;
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager.eventHandlers.has('onboardingLoginBtn')).toBe(false);
         });
     });
 });
