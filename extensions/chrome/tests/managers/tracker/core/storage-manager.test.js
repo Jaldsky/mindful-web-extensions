@@ -237,6 +237,197 @@ describe('StorageManager (Tracker)', () => {
         });
     });
 
+    describe('loadAnonymousSession', () => {
+        test('должен загружать анонимную сессию из хранилища', async () => {
+            const testAnonId = 'anon-id-123';
+            const testAnonToken = 'anon-token-456';
+            memoryStorage.mindful_anon_id = testAnonId;
+            memoryStorage.mindful_anon_token = testAnonToken;
+
+            const result = await storageManager.loadAnonymousSession();
+
+            expect(result.anonId).toBe(testAnonId);
+            expect(result.anonToken).toBe(testAnonToken);
+            expect(storageManager.anonId).toBe(testAnonId);
+            expect(storageManager.anonToken).toBe(testAnonToken);
+        });
+
+        test('должен возвращать null если сессия не найдена', async () => {
+            const result = await storageManager.loadAnonymousSession();
+
+            expect(result.anonId).toBeNull();
+            expect(result.anonToken).toBeNull();
+        });
+
+        test('должен обрабатывать ошибки и возвращать null', async () => {
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
+
+            const result = await storageManager.loadAnonymousSession();
+
+            expect(result.anonId).toBeNull();
+            expect(result.anonToken).toBeNull();
+        });
+    });
+
+    describe('loadAuthSession', () => {
+        test('должен загружать авторизационную сессию из хранилища', async () => {
+            const testAccessToken = 'access-token-123';
+            const testRefreshToken = 'refresh-token-456';
+            memoryStorage.mindful_auth_access_token = testAccessToken;
+            memoryStorage.mindful_auth_refresh_token = testRefreshToken;
+
+            const result = await storageManager.loadAuthSession();
+
+            expect(result.accessToken).toBe(testAccessToken);
+            expect(result.refreshToken).toBe(testRefreshToken);
+            expect(storageManager.accessToken).toBe(testAccessToken);
+            expect(storageManager.refreshToken).toBe(testRefreshToken);
+        });
+
+        test('должен возвращать null если сессия не найдена', async () => {
+            const result = await storageManager.loadAuthSession();
+
+            expect(result.accessToken).toBeNull();
+            expect(result.refreshToken).toBeNull();
+        });
+
+        test('должен обрабатывать ошибки и возвращать null', async () => {
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
+
+            const result = await storageManager.loadAuthSession();
+
+            expect(result.accessToken).toBeNull();
+            expect(result.refreshToken).toBeNull();
+        });
+    });
+
+    describe('saveAnonymousSession', () => {
+        test('должен сохранять анонимную сессию в хранилище', async () => {
+            const testAnonId = 'anon-id-123';
+            const testAnonToken = 'anon-token-456';
+
+            const result = await storageManager.saveAnonymousSession(testAnonId, testAnonToken);
+
+            expect(result).toBe(true);
+            expect(storageManager.anonId).toBe(testAnonId);
+            expect(storageManager.anonToken).toBe(testAnonToken);
+            expect(memoryStorage.mindful_anon_id).toBe(testAnonId);
+            expect(memoryStorage.mindful_anon_token).toBe(testAnonToken);
+        });
+
+        test('должен обрабатывать ошибки при сохранении', async () => {
+            global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Save error'));
+
+            const result = await storageManager.saveAnonymousSession('anon-id', 'anon-token');
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('saveAuthSession', () => {
+        test('должен сохранять авторизационную сессию в хранилище', async () => {
+            const testAccessToken = 'access-token-123';
+            const testRefreshToken = 'refresh-token-456';
+
+            const result = await storageManager.saveAuthSession(testAccessToken, testRefreshToken);
+
+            expect(result).toBe(true);
+            expect(storageManager.accessToken).toBe(testAccessToken);
+            expect(storageManager.refreshToken).toBe(testRefreshToken);
+            expect(memoryStorage.mindful_auth_access_token).toBe(testAccessToken);
+            expect(memoryStorage.mindful_auth_refresh_token).toBe(testRefreshToken);
+        });
+
+        test('должен обрабатывать ошибки при сохранении', async () => {
+            global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Save error'));
+
+            const result = await storageManager.saveAuthSession('access-token', 'refresh-token');
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('clearAuthSession', () => {
+        test('должен очищать авторизационную сессию из хранилища', async () => {
+            storageManager.accessToken = 'access-token';
+            storageManager.refreshToken = 'refresh-token';
+            memoryStorage.mindful_auth_access_token = 'access-token';
+            memoryStorage.mindful_auth_refresh_token = 'refresh-token';
+
+            const result = await storageManager.clearAuthSession();
+
+            expect(result).toBe(true);
+            expect(storageManager.accessToken).toBeNull();
+            expect(storageManager.refreshToken).toBeNull();
+            expect(memoryStorage.mindful_auth_access_token).toBeUndefined();
+            expect(memoryStorage.mindful_auth_refresh_token).toBeUndefined();
+        });
+
+        test('должен обрабатывать ошибки при очистке', async () => {
+            global.chrome.storage.local.remove.mockRejectedValueOnce(new Error('Remove error'));
+
+            const result = await storageManager.clearAuthSession();
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('loadTrackingEnabled', () => {
+        test('должен загружать статус отслеживания из хранилища', async () => {
+            memoryStorage.mindful_tracking_enabled = true;
+
+            const result = await storageManager.loadTrackingEnabled();
+
+            expect(result).toBe(true);
+            expect(storageManager.trackingEnabled).toBe(true);
+        });
+
+        test('должен использовать значение по умолчанию если не найдено', async () => {
+            const result = await storageManager.loadTrackingEnabled();
+
+            expect(result).toBe(true); // DEFAULT_TRACKING_ENABLED
+            expect(storageManager.trackingEnabled).toBe(true);
+        });
+
+        test('должен использовать значение по умолчанию если тип не boolean', async () => {
+            memoryStorage.mindful_tracking_enabled = 'true';
+
+            const result = await storageManager.loadTrackingEnabled();
+
+            expect(result).toBe(true); // DEFAULT_TRACKING_ENABLED
+        });
+
+        test('должен обрабатывать ошибки и возвращать значение по умолчанию', async () => {
+            global.chrome.storage.local.get.mockRejectedValueOnce(new Error('Storage error'));
+
+            const result = await storageManager.loadTrackingEnabled();
+
+            expect(result).toBe(true); // DEFAULT_TRACKING_ENABLED
+        });
+    });
+
+    describe('saveTrackingEnabled', () => {
+        test('должен сохранять статус отслеживания в хранилище', async () => {
+            const result = await storageManager.saveTrackingEnabled(false);
+
+            expect(result).toBe(true);
+            expect(storageManager.trackingEnabled).toBe(false);
+            expect(memoryStorage.mindful_tracking_enabled).toBe(false);
+        });
+
+        test('должен выбрасывать TypeError для неверного типа', async () => {
+            await expect(storageManager.saveTrackingEnabled('true')).rejects.toThrow(TypeError);
+        });
+
+        test('должен обрабатывать ошибки при сохранении', async () => {
+            global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Save error'));
+
+            const result = await storageManager.saveTrackingEnabled(true);
+
+            expect(result).toBe(false);
+        });
+    });
+
     describe('getUserId / getBackendUrl', () => {
         test('getUserId должен возвращать текущий userId', () => {
             storageManager.userId = 'test-id';
@@ -248,6 +439,39 @@ describe('StorageManager (Tracker)', () => {
             storageManager.backendUrl = 'http://test.com/api';
 
             expect(storageManager.getBackendUrl()).toBe('http://test.com/api');
+        });
+    });
+
+    describe('getAccessToken / getRefreshToken / getAnonId / getAnonToken', () => {
+        test('getAccessToken должен возвращать текущий access токен', () => {
+            storageManager.accessToken = 'access-token-123';
+
+            expect(storageManager.getAccessToken()).toBe('access-token-123');
+        });
+
+        test('getRefreshToken должен возвращать текущий refresh токен', () => {
+            storageManager.refreshToken = 'refresh-token-456';
+
+            expect(storageManager.getRefreshToken()).toBe('refresh-token-456');
+        });
+
+        test('getAnonId должен возвращать текущий anon ID', () => {
+            storageManager.anonId = 'anon-id-789';
+
+            expect(storageManager.getAnonId()).toBe('anon-id-789');
+        });
+
+        test('getAnonToken должен возвращать текущий anon токен', () => {
+            storageManager.anonToken = 'anon-token-012';
+
+            expect(storageManager.getAnonToken()).toBe('anon-token-012');
+        });
+
+        test('должны возвращать null если значения не установлены', () => {
+            expect(storageManager.getAccessToken()).toBeNull();
+            expect(storageManager.getRefreshToken()).toBeNull();
+            expect(storageManager.getAnonId()).toBeNull();
+            expect(storageManager.getAnonToken()).toBeNull();
         });
     });
 
