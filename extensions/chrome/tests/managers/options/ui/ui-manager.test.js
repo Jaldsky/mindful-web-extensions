@@ -12,6 +12,7 @@ jest.mock('../../../../src/managers/options/ui/SettingsManager.js');
 jest.mock('../../../../src/managers/options/ui/EventHandlersManager.js');
 jest.mock('../../../../src/managers/options/ui/LocaleDisplayManager.js');
 jest.mock('../../../../src/managers/options/ui/ThemeDisplayManager.js');
+jest.mock('../../../../src/managers/options/ui/AuthManager.js');
 
 const DomainExceptionsManager = require('../../../../src/managers/options/ui/DomainExceptionsManager.js');
 const ActivityManager = require('../../../../src/managers/options/ui/ActivityManager.js');
@@ -19,6 +20,7 @@ const SettingsManager = require('../../../../src/managers/options/ui/SettingsMan
 const EventHandlersManager = require('../../../../src/managers/options/ui/EventHandlersManager.js');
 const LocaleDisplayManager = require('../../../../src/managers/options/ui/LocaleDisplayManager.js');
 const ThemeDisplayManager = require('../../../../src/managers/options/ui/ThemeDisplayManager.js');
+const AuthManager = require('../../../../src/managers/options/ui/AuthManager.js');
 
 describe('UIManager', () => {
     let manager;
@@ -29,6 +31,7 @@ describe('UIManager', () => {
     let mockEventHandlersManager;
     let mockLocaleDisplayManager;
     let mockThemeDisplayManager;
+    let mockAuthManager;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -75,6 +78,10 @@ describe('UIManager', () => {
             updateThemeDisplay: jest.fn()
         };
 
+        mockAuthManager = {
+            refreshAuthStatus: jest.fn().mockResolvedValue()
+        };
+
         // Настраиваем конструкторы моков
         DomainExceptionsManager.mockImplementation(() => mockDomainExceptionsManager);
         ActivityManager.mockImplementation(() => mockActivityManager);
@@ -82,6 +89,7 @@ describe('UIManager', () => {
         EventHandlersManager.mockImplementation(() => mockEventHandlersManager);
         LocaleDisplayManager.mockImplementation(() => mockLocaleDisplayManager);
         ThemeDisplayManager.mockImplementation(() => mockThemeDisplayManager);
+        AuthManager.mockImplementation(() => mockAuthManager);
 
         manager = createBaseOptionsManager();
         uiManager = new UIManager(manager);
@@ -108,6 +116,11 @@ describe('UIManager', () => {
             expect(uiManager.eventHandlersManager).toBe(mockEventHandlersManager);
             expect(uiManager.localeDisplayManager).toBe(mockLocaleDisplayManager);
             expect(uiManager.themeDisplayManager).toBe(mockThemeDisplayManager);
+            expect(uiManager.authManager).toBe(mockAuthManager);
+        });
+
+        test('создает экземпляр AuthManager', () => {
+            expect(AuthManager).toHaveBeenCalledWith(manager);
         });
     });
 
@@ -275,6 +288,14 @@ describe('UIManager', () => {
             uiManager.updateThemeDisplay('dark');
             
             expect(mockThemeDisplayManager.updateThemeDisplay).toHaveBeenCalledWith('dark');
+        });
+    });
+
+    describe('AuthManager делегирование', () => {
+        test('refreshAuthStatus делегирует вызов', async () => {
+            await uiManager.refreshAuthStatus();
+            
+            expect(mockAuthManager.refreshAuthStatus).toHaveBeenCalled();
         });
     });
 });
