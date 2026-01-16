@@ -531,4 +531,101 @@ describe('MessageHandlerManager', () => {
             );
         });
     });
+
+    describe('Auth Message Routing', () => {
+        let sendResponse;
+
+        beforeEach(() => {
+            sendResponse = jest.fn();
+            messageHandlerManager.init();
+            
+            // Mock authHandler methods
+            messageHandlerManager.authHandler.handleLogin = jest.fn();
+            messageHandlerManager.authHandler.handleLogout = jest.fn();
+            messageHandlerManager.authHandler.handleGetAuthStatus = jest.fn();
+            messageHandlerManager.authHandler.handleRegister = jest.fn();
+            messageHandlerManager.authHandler.handleVerify = jest.fn();
+            messageHandlerManager.authHandler.handleResendCode = jest.fn();
+        });
+
+        test('должен роутить AUTH_LOGIN к authHandler.handleLogin', () => {
+            const request = {
+                type: MessageHandlerManager.MESSAGE_TYPES.AUTH_LOGIN,
+                data: { username: 'testuser', password: 'password123' }
+            };
+
+            messageHandlerManager._handleMessage(request, {}, sendResponse);
+
+            expect(messageHandlerManager.authHandler.handleLogin).toHaveBeenCalledWith(
+                request,
+                sendResponse
+            );
+        });
+
+        test('должен роутить AUTH_LOGOUT к authHandler.handleLogout', () => {
+            const request = {
+                type: MessageHandlerManager.MESSAGE_TYPES.AUTH_LOGOUT
+            };
+
+            messageHandlerManager._handleMessage(request, {}, sendResponse);
+
+            expect(messageHandlerManager.authHandler.handleLogout).toHaveBeenCalledWith(
+                sendResponse
+            );
+        });
+
+        test('должен роутить GET_AUTH_STATUS к authHandler.handleGetAuthStatus', () => {
+            const request = {
+                type: MessageHandlerManager.MESSAGE_TYPES.GET_AUTH_STATUS
+            };
+
+            messageHandlerManager._handleMessage(request, {}, sendResponse);
+
+            expect(messageHandlerManager.authHandler.handleGetAuthStatus).toHaveBeenCalledWith(
+                sendResponse
+            );
+        });
+
+        test('должен роутить AUTH_REGISTER к authHandler.handleRegister', () => {
+            const request = {
+                type: MessageHandlerManager.MESSAGE_TYPES.AUTH_REGISTER,
+                data: { username: 'testuser', email: 'test@example.com', password: 'password123' }
+            };
+
+            messageHandlerManager._handleMessage(request, {}, sendResponse);
+
+            expect(messageHandlerManager.authHandler.handleRegister).toHaveBeenCalledWith(
+                request,
+                sendResponse
+            );
+        });
+
+        test('должен роутить AUTH_VERIFY к authHandler.handleVerify', () => {
+            const request = {
+                type: MessageHandlerManager.MESSAGE_TYPES.AUTH_VERIFY,
+                data: { email: 'test@example.com', code: '123456' }
+            };
+
+            messageHandlerManager._handleMessage(request, {}, sendResponse);
+
+            expect(messageHandlerManager.authHandler.handleVerify).toHaveBeenCalledWith(
+                request,
+                sendResponse
+            );
+        });
+
+        test('должен роутить AUTH_RESEND_CODE к authHandler.handleResendCode', () => {
+            const request = {
+                type: MessageHandlerManager.MESSAGE_TYPES.AUTH_RESEND_CODE,
+                data: { email: 'test@example.com' }
+            };
+
+            messageHandlerManager._handleMessage(request, {}, sendResponse);
+
+            expect(messageHandlerManager.authHandler.handleResendCode).toHaveBeenCalledWith(
+                request,
+                sendResponse
+            );
+        });
+    });
 });

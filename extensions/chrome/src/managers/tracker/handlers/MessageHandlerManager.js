@@ -4,6 +4,7 @@ const StatusHandlerManager = require('./StatusHandlerManager.js');
 const ConnectionHandlerManager = require('./ConnectionHandlerManager.js');
 const SettingsHandlerManager = require('./SettingsHandlerManager.js');
 const DebugHandlerManager = require('./DebugHandlerManager.js');
+const AuthHandlerManager = require('./AuthHandlerManager.js');
 
 /**
  * @typedef {Object} MessageResponse
@@ -133,6 +134,14 @@ class MessageHandlerManager extends BaseManager {
             },
             { enableLogging: this.enableLogging }
         );
+
+        this.authHandler = new AuthHandlerManager(
+            {
+                backendManager: this.backendManager,
+                storageManager: this.storageManager
+            },
+            { enableLogging: this.enableLogging }
+        );
     }
 
     /**
@@ -239,6 +248,28 @@ class MessageHandlerManager extends BaseManager {
 
                 case MessageHandlerManager.MESSAGE_TYPES.SET_TRACKING_ENABLED:
                     this.settingsHandler.handleSetTrackingEnabled(request, sendResponse);
+                    break;
+
+                case MessageHandlerManager.MESSAGE_TYPES.AUTH_LOGIN:
+                    this.authHandler.handleLogin(request, sendResponse);
+                    break;
+
+                case MessageHandlerManager.MESSAGE_TYPES.AUTH_LOGOUT:
+                    this.authHandler.handleLogout(sendResponse);
+                    break;
+
+                case MessageHandlerManager.MESSAGE_TYPES.GET_AUTH_STATUS:
+                    this.authHandler.handleGetAuthStatus(sendResponse);
+                    break;
+
+                case MessageHandlerManager.MESSAGE_TYPES.AUTH_REGISTER:
+                    this.authHandler.handleRegister(request, sendResponse);
+                    break;
+                case MessageHandlerManager.MESSAGE_TYPES.AUTH_VERIFY:
+                    this.authHandler.handleVerify(request, sendResponse);
+                    break;
+                case MessageHandlerManager.MESSAGE_TYPES.AUTH_RESEND_CODE:
+                    this.authHandler.handleResendCode(request, sendResponse);
                     break;
 
                 default: {
