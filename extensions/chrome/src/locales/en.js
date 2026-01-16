@@ -28,9 +28,19 @@ const EN = {
             initializationError: 'AppManager initialization error',
             initialStatusLoaded: 'Initial status loaded',
             initialStatusError: 'Initial status loading error',
+            onboardingLoadError: 'Error loading onboarding state',
+            onboardingSaveError: 'Error saving onboarding state',
+            authLoginError: 'Auth login error',
+            authLogoutError: 'Auth logout error',
+            authRegisterError: 'Auth register error',
+            authVerifyError: 'Auth verify error',
+            authResendCodeError: 'Auth resend code error',
+            authStatusCheckError: 'Error checking authentication status',
             handlersSetup: 'Setting up event handlers',
             handlersCount: 'Handlers set up: {count}',
             openSettings: 'Open settings page',
+            openLogin: 'Open login form',
+            closeLogin: 'Close login form',
             testConnection: {
                 start: 'Testing connection',
                 success: 'Test connection: success',
@@ -217,6 +227,7 @@ const EN = {
             initStart: 'Starting LocaleManager initialization',
             savedLocaleLoaded: 'Saved locale loaded',
             browserLocaleSet: 'Browser locale set',
+            defaultLocaleSet: 'Default locale set (browser locale not supported)',
             initError: 'LocaleManager initialization error',
             detectBrowserLocaleError: 'Error detecting browser locale',
             unsupported: 'Unsupported locale: {locale}',
@@ -417,10 +428,17 @@ const EN = {
             eventHandlers: {
                 setupEventHandlersStart: 'Setting up event handlers',
                 settingsFormNotFound: 'Warning: settings form not found, submit handler not set',
+                authFormNotFound: 'Warning: auth form not found, submit handler not set',
                 resetBtnNotFound: 'Warning: reset button not found, handler not set',
                 saveBtnNotFound: 'Warning: save button not found',
                 runDiagnosticsBtnNotFound: 'Warning: diagnostics button not found, handler not set',
                 toggleDeveloperToolsBtnNotFound: 'Warning: developer tools button not found, handler not set'
+            },
+            auth: {
+                statusError: 'Error loading auth status',
+                loginError: 'Error during login',
+                logoutError: 'Error during logout',
+                registerError: 'Error during registration'
             },
             localeDisplay: {
                 toggleLanguageError: 'Error toggling language',
@@ -484,6 +502,8 @@ const EN = {
             criticalInitError: 'Critical initialization error',
             invalidValueUsingDefault: 'Invalid value, using default value',
             loadDomainExceptionsError: 'Error loading domain exceptions',
+            onboardingLoadError: 'Error loading onboarding state',
+            onboardingSaveError: 'Error saving onboarding state',
             backendUrlMustBeString: 'backendUrl must be a non-empty string',
             verificationFailed: 'Verification failed',
             domainsMustBeArray: 'domains must be an array of strings',
@@ -589,6 +609,8 @@ const EN = {
             created: 'BackendManager initialized',
             userIdUpdated: 'User ID updated',
             authTokenUpdated: 'Auth token updated',
+            authSessionUpdated: 'Auth session updated',
+            authSessionCleared: 'Auth session cleared',
             sendingEvents: 'Sending events to backend',
             backendResponse: 'Response from backend',
             backendResponseError: 'Backend response error',
@@ -604,6 +626,14 @@ const EN = {
             creatingAnonymousSession: 'Creating anonymous session',
             anonymousSessionError: 'Anonymous session error',
             anonymousSessionInvalidResponse: 'Invalid anonymous session response',
+            authLoginError: 'Auth login error',
+            authLoginInvalidResponse: 'Invalid auth login response',
+            authRefreshError: 'Auth refresh error',
+            authRefreshInvalidResponse: 'Invalid auth refresh response',
+            authRegisterError: 'Auth register error',
+            authRegisterInvalidResponse: 'Invalid auth register response',
+            authVerifyError: 'Auth verify error',
+            authResendCodeError: 'Auth resend code error',
             noEventsToSend: 'No events to send',
             unknownError: 'Unknown error',
             destroyed: 'BackendManager destroyed'
@@ -727,6 +757,12 @@ const EN = {
             anonSessionLoadError: 'Error loading anonymous session',
             anonSessionSaved: 'Anonymous session saved',
             anonSessionSaveError: 'Error saving anonymous session',
+            authSessionLoaded: 'Auth session loaded',
+            authSessionLoadError: 'Error loading auth session',
+            authSessionSaved: 'Auth session saved',
+            authSessionSaveError: 'Error saving auth session',
+            authSessionCleared: 'Auth session cleared',
+            authSessionClearError: 'Error clearing auth session',
             backendUrlLoadError: 'Error loading Backend URL',
             backendUrlSaved: 'Backend URL saved',
             backendUrlSaveError: 'Error saving Backend URL',
@@ -785,6 +821,18 @@ const EN = {
             extensionSuspending: 'Extension suspending, saving event queue',
             destroying: 'Destroying TrackerManager',
             destroyed: 'TrackerManager destroyed'
+        },
+        authHandler: {
+            dependenciesRequired: 'AuthHandlerManager requires backendManager and storageManager',
+            credentialsRequired: 'Username and password are required',
+            registrationRequired: 'Username, email and password are required',
+            verifyRequired: 'Email and code are required',
+            resendCodeRequired: 'Email is required',
+            sessionSaveError: 'Failed to save auth session',
+            loginError: 'Auth login error',
+            logoutError: 'Auth logout error',
+            statusError: 'Auth status error',
+            registerError: 'Auth register error'
         }
     },
 
@@ -792,6 +840,67 @@ const EN = {
     app: {
         title: 'Mindful Web',
         subtitle: 'Track your attention',
+
+        onboarding: {
+            title: 'Welcome to Mindful Web',
+            description: 'Track your web browsing habits and understand how you spend your time online. Monitor your attention, analyze your activity, and make more conscious decisions about your digital life.',
+            subtitle: 'You can sign in, register, or try the service anonymously.',
+            tryButton: 'Try anonymous',
+            signInButton: 'Sign in'
+        },
+
+        auth: {
+            title: 'Sign in',
+            subtitle: 'Enter your credentials',
+            usernameLabel: 'Email or username:',
+            usernamePlaceholder: 'email@example.com',
+            passwordLabel: 'Password:',
+            passwordPlaceholder: '••••••••',
+            loginButton: 'Sign in',
+            backButton: 'Back',
+            registerLink: 'Don\'t have an account? Register',
+            loginSuccess: 'Signed in successfully',
+            loginError: 'Sign in failed'
+        },
+
+        register: {
+            title: 'Register',
+            subtitle: 'Create a new account',
+            usernameLabel: 'Username:',
+            usernamePlaceholder: 'username',
+            emailLabel: 'Email:',
+            emailPlaceholder: 'email@example.com',
+            passwordLabel: 'Password:',
+            passwordPlaceholder: '••••••••',
+            confirmPasswordLabel: 'Confirm Password:',
+            confirmPasswordPlaceholder: '••••••••',
+            submitButton: 'Register',
+            cancelButton: 'Back',
+            success: 'Registration successful. Please verify your email.',
+            error: 'Registration failed',
+            passwordMismatch: 'Passwords do not match',
+            usernameInvalid: 'Username can only contain English letters, numbers, and underscores',
+            alreadyHaveCode: 'Already received the verification code?'
+        },
+
+        verify: {
+            title: 'Verify Email',
+            description: 'We sent a verification code to {email}. Please enter it below.',
+            descriptionManual: 'Enter your email and the verification code you received.',
+            emailLabel: 'Email:',
+            emailPlaceholder: 'email@example.com',
+            codeLabel: 'Verification Code:',
+            codePlaceholder: '123456',
+            submitButton: 'Verify',
+            backButton: 'Back',
+            resendCodeLink: "Didn't receive the code? Resend",
+            success: 'Email verified successfully',
+            error: 'Verification failed',
+            resendSuccess: 'Verification code sent',
+            resendError: 'Failed to resend code',
+            status: 'Status',
+            detail: 'Detail'
+        },
         
         // Status section
         status: {
@@ -824,7 +933,8 @@ const EN = {
             enableTracking: 'Enable Tracking',
             disableTracking: 'Disable Tracking',
             trackingEnableLoading: 'Enabling...',
-            trackingDisableLoading: 'Disabling...'
+            trackingDisableLoading: 'Disabling...',
+            login: 'Sign in'
         },
         
         // Notifications
@@ -857,6 +967,49 @@ const EN = {
             domainExceptionsInvalid: 'Please enter a valid domain (example.com)',
             domainExceptionsDuplicate: 'This domain is already in the exclusion list',
             domainExceptionsListLabel: 'Excluded domains list'
+        },
+
+        auth: {
+            sectionTitle: 'Account',
+            statusLabel: 'Status:',
+            statusAnonymous: 'Anonymous',
+            statusLoggedIn: 'Logged in',
+            statusUnknown: 'Unknown',
+            usernameLabel: 'Email or username:',
+            usernamePlaceholder: 'email@example.com',
+            passwordLabel: 'Password:',
+            passwordPlaceholder: '••••••••',
+            loginButton: 'Log in',
+            logoutButton: 'Log out',
+            loginLoading: 'Logging in...',
+            logoutLoading: 'Logging out...',
+            loginSuccess: 'Logged in successfully',
+            logoutSuccess: 'Logged out successfully',
+            loginError: 'Login failed',
+            logoutError: 'Logout failed',
+            registerLink: 'Register'
+        },
+
+        register: {
+            usernameLabel: 'Username:',
+            usernamePlaceholder: 'username',
+            emailLabel: 'Email:',
+            emailPlaceholder: 'email@example.com',
+            passwordLabel: 'Password:',
+            passwordPlaceholder: '••••••••',
+            submitButton: 'Register',
+            cancelButton: 'Back',
+            success: 'Registration successful. Please verify your email.',
+            error: 'Registration failed',
+            status: 'Status',
+            detail: 'Detail'
+        },
+
+        onboarding: {
+            title: 'Welcome to Mindful Web',
+            subtitle: 'You can sign in or try the service anonymously.',
+            tryButton: 'Try anonymous',
+            loginButton: 'Sign in'
         },
         
         // Theme
