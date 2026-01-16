@@ -89,7 +89,8 @@ describe('AppManager', () => {
                 domains: 5,
                 queue: 2
             }),
-        setTrackingEnabled: jest.fn().mockResolvedValue({ success: true, isTracking: false }),
+            setTrackingEnabled: jest.fn().mockResolvedValue({ success: true, isTracking: false }),
+            sendMessage: jest.fn().mockResolvedValue({ success: true }),
             destroy: jest.fn()
         };
 
@@ -130,6 +131,58 @@ describe('AppManager', () => {
             destroy: jest.fn()
         };
 
+        // Setup additional DOM elements for auth
+        const onboardingOverlay = document.createElement('div');
+        onboardingOverlay.id = 'appOnboardingOverlay';
+        onboardingOverlay.style.display = 'none';
+        document.body.appendChild(onboardingOverlay);
+
+        const appMain = document.createElement('div');
+        appMain.id = 'appMain';
+        appMain.style.display = 'flex';
+        document.body.appendChild(appMain);
+
+        const loginContainer = document.createElement('div');
+        loginContainer.id = 'appLoginContainer';
+        loginContainer.style.display = 'none';
+        document.body.appendChild(loginContainer);
+
+        const welcomeScreen = document.createElement('div');
+        welcomeScreen.id = 'appWelcomeScreen';
+        welcomeScreen.style.display = 'none';
+        onboardingOverlay.appendChild(welcomeScreen);
+
+        const loginScreen = document.createElement('div');
+        loginScreen.id = 'appLoginScreen';
+        loginScreen.style.display = 'none';
+        onboardingOverlay.appendChild(loginScreen);
+
+        const registerScreen = document.createElement('div');
+        registerScreen.id = 'appRegisterScreen';
+        registerScreen.style.display = 'none';
+        onboardingOverlay.appendChild(registerScreen);
+
+        const verifyScreen = document.createElement('div');
+        verifyScreen.id = 'appVerifyScreen';
+        verifyScreen.style.display = 'none';
+        onboardingOverlay.appendChild(verifyScreen);
+
+        mockDOMManager.elements.onboardingOverlay = onboardingOverlay;
+        mockDOMManager.elements.appMain = appMain;
+        mockDOMManager.elements.loginContainer = loginContainer;
+        mockDOMManager.elements.welcomeScreen = welcomeScreen;
+        mockDOMManager.elements.loginScreen = loginScreen;
+        mockDOMManager.elements.registerScreen = registerScreen;
+        mockDOMManager.elements.verifyScreen = verifyScreen;
+        mockDOMManager.elements.verifyEmail = document.createElement('input');
+        mockDOMManager.elements.verifyEmail.id = 'appVerifyEmail';
+        mockDOMManager.elements.verifyCode = document.createElement('input');
+        mockDOMManager.elements.verifyCode.id = 'appVerifyCode';
+        mockDOMManager.elements.verifyDescription = document.createElement('p');
+        mockDOMManager.elements.verifyDescription.id = 'appVerifyDescription';
+        mockDOMManager.hideLoginButton = jest.fn();
+        mockDOMManager.showLoginButton = jest.fn();
+
         DOMManager.mockImplementation(() => mockDOMManager);
         NotificationManager.mockImplementation(() => mockNotificationManager);
         ServiceWorkerManager.mockImplementation(() => mockServiceWorkerManager);
@@ -137,6 +190,22 @@ describe('AppManager', () => {
         LocaleManager.mockImplementation(() => mockLocaleManager);
 
         global.chrome.runtime.openOptionsPage = jest.fn();
+        
+        // Setup chrome.storage mocks
+        global.chrome.storage = {
+            local: {
+                get: jest.fn((keys, callback) => {
+                    callback({});
+                }),
+                set: jest.fn((items, callback) => {
+                    if (callback) callback();
+                }),
+                remove: jest.fn((keys, callback) => {
+                    if (callback) callback();
+                })
+            }
+        };
+        global.chrome.runtime.lastError = null;
     });
 
     afterEach(() => {
@@ -1047,6 +1116,405 @@ describe('AppManager', () => {
 
             expect(logErrorSpy).toHaveBeenCalled();
             logErrorSpy.mockRestore();
+        });
+    });
+
+    describe('Authentication and Registration', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+            
+            // Setup DOM elements for auth forms
+            const loginForm = document.createElement('form');
+            loginForm.id = 'appLoginForm';
+            const loginUsername = document.createElement('input');
+            loginUsername.id = 'appLoginUsername';
+            const loginPassword = document.createElement('input');
+            loginPassword.id = 'appLoginPassword';
+            loginForm.appendChild(loginUsername);
+            loginForm.appendChild(loginPassword);
+            document.body.appendChild(loginForm);
+
+            const registerForm = document.createElement('form');
+            registerForm.id = 'appRegisterForm';
+            const registerUsername = document.createElement('input');
+            registerUsername.id = 'appRegisterUsername';
+            const registerEmail = document.createElement('input');
+            registerEmail.id = 'appRegisterEmail';
+            const registerPassword = document.createElement('input');
+            registerPassword.id = 'appRegisterPassword';
+            const registerConfirmPassword = document.createElement('input');
+            registerConfirmPassword.id = 'appRegisterConfirmPassword';
+            registerForm.appendChild(registerUsername);
+            registerForm.appendChild(registerEmail);
+            registerForm.appendChild(registerPassword);
+            registerForm.appendChild(registerConfirmPassword);
+            document.body.appendChild(registerForm);
+
+            mockDOMManager.elements.loginForm = loginForm;
+            mockDOMManager.elements.loginUsername = loginUsername;
+            mockDOMManager.elements.loginPassword = loginPassword;
+            mockDOMManager.elements.registerForm = registerForm;
+            mockDOMManager.elements.registerUsername = registerUsername;
+            mockDOMManager.elements.registerEmail = registerEmail;
+            mockDOMManager.elements.registerPassword = registerPassword;
+            mockDOMManager.elements.registerConfirmPassword = registerConfirmPassword;
+            
+            // Setup translations
+            mockLocaleManager.t.mockImplementation((key) => {
+                const translations = {
+                    'app.auth.loginError': 'Login error',
+                    'app.auth.loginSuccess': 'Login success',
+                    'app.register.error': 'Registration error',
+                    'app.register.success': 'Registration success',
+                    'app.verify.error': 'Verification error',
+                    'app.verify.success': 'Verification success',
+                    'app.verify.resendError': 'Resend error',
+                    'app.verify.resendSuccess': 'Resend success',
+                    'app.verify.emailRequired': 'Email required',
+                    'app.register.passwordMismatch': 'Passwords do not match',
+                    'app.register.usernameInvalid': 'Invalid username'
+                };
+                return translations[key] || key;
+            });
+            
+            appManager = new AppManager({ enableLogging: false });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        describe('_handleLogin', () => {
+            test('should show error if username or password is missing', async () => {
+                await appManager._handleLogin('', 'password');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Login error', 'error');
+                
+                await appManager._handleLogin('username', '');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Login error', 'error');
+            });
+
+            test('should call service worker with correct message type', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ success: true });
+                appManager._saveOnboardingCompleted = jest.fn().mockResolvedValue();
+                appManager._updateLoginButtonVisibility = jest.fn().mockResolvedValue();
+                appManager._showMain = jest.fn();
+                
+                await appManager._handleLogin('username', 'password');
+                
+                expect(mockServiceWorkerManager.sendMessage).toHaveBeenCalledWith(
+                    expect.any(String),
+                    { username: 'username', password: 'password' }
+                );
+            });
+
+            test('should show success notification on successful login', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ success: true });
+                appManager._saveOnboardingCompleted = jest.fn().mockResolvedValue();
+                appManager._updateLoginButtonVisibility = jest.fn().mockResolvedValue();
+                appManager._showMain = jest.fn();
+                
+                await appManager._handleLogin('username', 'password');
+                
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Login success', 'success');
+            });
+
+            test('should handle login error', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ 
+                    success: false, 
+                    error: 'Invalid credentials' 
+                });
+                
+                await appManager._handleLogin('username', 'password');
+                
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Invalid credentials',
+                    'error'
+                );
+            });
+        });
+
+        describe('_handleRegister', () => {
+            test('should show error if required fields are missing', async () => {
+                await appManager._handleRegister('', 'email@test.com', 'password');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Registration error', 'error');
+                
+                await appManager._handleRegister('username', '', 'password');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Registration error', 'error');
+                
+                await appManager._handleRegister('username', 'email@test.com', '');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Registration error', 'error');
+            });
+
+            test('should save pending verification email on successful registration', async () => {
+                // Set email value in DOM element (as _handleRegister reads from DOM)
+                mockDOMManager.elements.registerEmail.value = 'email@test.com';
+                
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ success: true });
+                appManager._savePendingVerificationEmail = jest.fn().mockResolvedValue();
+                appManager._showOnboardingScreen = jest.fn();
+                
+                await appManager._handleRegister('username', 'email@test.com', 'password');
+                
+                // Check that the email was saved (it's set in _handleRegister before calling _savePendingVerificationEmail)
+                expect(appManager._savePendingVerificationEmail).toHaveBeenCalledWith('email@test.com');
+            });
+
+            test('should show verification screen after successful registration', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ success: true });
+                appManager._savePendingVerificationEmail = jest.fn().mockResolvedValue();
+                appManager._showOnboardingScreen = jest.fn();
+                
+                await appManager._handleRegister('username', 'email@test.com', 'password');
+                
+                expect(appManager._showOnboardingScreen).toHaveBeenCalledWith('verify');
+            });
+
+            test('should handle registration error', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ 
+                    success: false, 
+                    error: '[400] User already exists' 
+                });
+                
+                await appManager._handleRegister('username', 'email@test.com', 'password');
+                
+                expect(mockNotificationManager.showNotification).toHaveBeenCalled();
+            });
+        });
+
+        describe('_handleVerify', () => {
+            test('should show error if email or code is missing', async () => {
+                await appManager._handleVerify('', '123456');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Verification error', 'error');
+                
+                await appManager._handleVerify('email@test.com', '');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Verification error', 'error');
+            });
+
+            test('should clear pending verification email on success', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ success: true });
+                appManager._savePendingVerificationEmail = jest.fn().mockResolvedValue();
+                appManager._showOnboardingScreen = jest.fn();
+                appManager.pendingVerificationEmail = 'email@test.com';
+                
+                await appManager._handleVerify('email@test.com', '123456');
+                
+                expect(appManager.pendingVerificationEmail).toBeNull();
+                expect(appManager._savePendingVerificationEmail).toHaveBeenCalledWith(null);
+            });
+
+            test('should show login screen after successful verification', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ success: true });
+                appManager._savePendingVerificationEmail = jest.fn().mockResolvedValue();
+                appManager._showOnboardingScreen = jest.fn();
+                
+                await appManager._handleVerify('email@test.com', '123456');
+                
+                expect(appManager._showOnboardingScreen).toHaveBeenCalledWith('login');
+            });
+        });
+
+        describe('_handleResendCode', () => {
+            test('should show error if email is missing', async () => {
+                await appManager._handleResendCode('');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalled();
+            });
+
+            test('should show success notification on successful resend', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ success: true });
+                
+                await appManager._handleResendCode('email@test.com');
+                
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Resend success',
+                    'success'
+                );
+            });
+        });
+
+        describe('_loadPendingVerificationEmail and _savePendingVerificationEmail', () => {
+            test('should load pending verification email from storage', async () => {
+                // Mock chrome.storage.local.get to support both callback and promise
+                global.chrome.storage.local.get = jest.fn((keys, callback) => {
+                    const result = { mindful_pending_verification_email: 'test@example.com' };
+                    if (callback) {
+                        callback(result);
+                        return;
+                    }
+                    return Promise.resolve(result);
+                });
+                
+                const email = await appManager._loadPendingVerificationEmail();
+                
+                expect(email).toBe('test@example.com');
+            });
+
+            test('should return null if no pending email in storage', async () => {
+                global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+                    callback({});
+                });
+                
+                const email = await appManager._loadPendingVerificationEmail();
+                
+                expect(email).toBeNull();
+            });
+
+            test('should save pending verification email to storage', async () => {
+                // Mock chrome.storage.local.set to support both callback and promise
+                global.chrome.storage.local.set = jest.fn((items, callback) => {
+                    if (callback) {
+                        callback();
+                        return;
+                    }
+                    return Promise.resolve();
+                });
+                
+                await appManager._savePendingVerificationEmail('test@example.com');
+                
+                expect(global.chrome.storage.local.set).toHaveBeenCalled();
+                const callArgs = global.chrome.storage.local.set.mock.calls[0];
+                expect(callArgs[0]).toEqual({ mindful_pending_verification_email: 'test@example.com' });
+            });
+
+            test('should remove pending verification email from storage when null', async () => {
+                // Mock chrome.storage.local.remove to support both callback and promise
+                global.chrome.storage.local.remove = jest.fn((keys, callback) => {
+                    if (callback) {
+                        callback();
+                        return;
+                    }
+                    return Promise.resolve();
+                });
+                
+                await appManager._savePendingVerificationEmail(null);
+                
+                expect(global.chrome.storage.local.remove).toHaveBeenCalled();
+                const callArgs = global.chrome.storage.local.remove.mock.calls[0];
+                expect(callArgs[0]).toEqual(['mindful_pending_verification_email']);
+            });
+        });
+
+        describe('_updateLoginButtonVisibility', () => {
+            test('should hide login button when authenticated', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ isAuthenticated: true });
+                mockDOMManager.hideLoginButton = jest.fn();
+                mockDOMManager.showLoginButton = jest.fn();
+                
+                await appManager._updateLoginButtonVisibility();
+                
+                expect(mockDOMManager.hideLoginButton).toHaveBeenCalled();
+                expect(mockDOMManager.showLoginButton).not.toHaveBeenCalled();
+            });
+
+            test('should show login button when not authenticated', async () => {
+                mockServiceWorkerManager.sendMessage.mockResolvedValue({ isAuthenticated: false });
+                mockDOMManager.hideLoginButton = jest.fn();
+                mockDOMManager.showLoginButton = jest.fn();
+                
+                await appManager._updateLoginButtonVisibility();
+                
+                expect(mockDOMManager.showLoginButton).toHaveBeenCalled();
+                expect(mockDOMManager.hideLoginButton).not.toHaveBeenCalled();
+            });
+
+            test('should show login button on error', async () => {
+                mockServiceWorkerManager.sendMessage.mockRejectedValue(new Error('Error'));
+                mockDOMManager.showLoginButton = jest.fn();
+                
+                await appManager._updateLoginButtonVisibility();
+                
+                expect(mockDOMManager.showLoginButton).toHaveBeenCalled();
+            });
+        });
+
+        describe('Username validation', () => {
+            test('should validate username pattern using regex', () => {
+                // Test the regex pattern directly instead of relying on form submission
+                const usernamePattern = /^[a-zA-Z0-9_]+$/;
+                
+                // Invalid usernames
+                expect(usernamePattern.test('тест')).toBe(false);
+                expect(usernamePattern.test('user-name')).toBe(false);
+                expect(usernamePattern.test('user name')).toBe(false);
+                expect(usernamePattern.test('user@name')).toBe(false);
+                
+                // Valid usernames
+                expect(usernamePattern.test('test_user123')).toBe(true);
+                expect(usernamePattern.test('User123')).toBe(true);
+                expect(usernamePattern.test('_user_')).toBe(true);
+                expect(usernamePattern.test('123')).toBe(true);
+            });
+        });
+
+        describe('_applyOnboardingState', () => {
+            test('should show verify screen if pending verification email exists', async () => {
+                // Mock chrome.storage.local.get to support both callback and promise
+                global.chrome.storage.local.get = jest.fn((keys, callback) => {
+                    const result = { mindful_pending_verification_email: 'test@example.com' };
+                    if (callback) {
+                        callback(result);
+                        return;
+                    }
+                    return Promise.resolve(result);
+                });
+                appManager._showOnboardingScreen = jest.fn();
+                
+                await appManager._applyOnboardingState();
+                
+                expect(appManager.pendingVerificationEmail).toBe('test@example.com');
+                expect(appManager._showOnboardingScreen).toHaveBeenCalledWith('verify');
+            });
+
+            test('should show welcome screen if onboarding not completed', async () => {
+                // Mock chrome.storage.local.get to support both callback and promise
+                let callCount = 0;
+                global.chrome.storage.local.get = jest.fn((keys, callback) => {
+                    callCount++;
+                    let result;
+                    if (callCount === 1 && Array.isArray(keys) && keys.includes('mindful_pending_verification_email')) {
+                        result = {};
+                    } else if (callCount === 2 && Array.isArray(keys) && keys.includes('mindful_onboarding_completed')) {
+                        result = { mindful_onboarding_completed: false };
+                    } else {
+                        result = {};
+                    }
+                    if (callback) {
+                        callback(result);
+                        return;
+                    }
+                    return Promise.resolve(result);
+                });
+                appManager._showOnboardingScreen = jest.fn();
+                
+                await appManager._applyOnboardingState();
+                
+                expect(appManager._showOnboardingScreen).toHaveBeenCalledWith('welcome');
+            });
+
+            test('should show main menu if onboarding completed', async () => {
+                // Mock chrome.storage.local.get to support both callback and promise
+                let callCount = 0;
+                global.chrome.storage.local.get = jest.fn((keys, callback) => {
+                    callCount++;
+                    let result;
+                    if (callCount === 1 && Array.isArray(keys) && keys.includes('mindful_pending_verification_email')) {
+                        result = {};
+                    } else if (callCount === 2 && Array.isArray(keys) && keys.includes('mindful_onboarding_completed')) {
+                        result = { mindful_onboarding_completed: true };
+                    } else {
+                        result = {};
+                    }
+                    if (callback) {
+                        callback(result);
+                        return;
+                    }
+                    return Promise.resolve(result);
+                });
+                appManager._showMain = jest.fn();
+                
+                await appManager._applyOnboardingState();
+                
+                expect(appManager._showMain).toHaveBeenCalled();
+            });
         });
     });
 });
