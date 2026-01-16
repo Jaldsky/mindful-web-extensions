@@ -219,6 +219,291 @@ describe('BackendManager', () => {
         });
     });
 
+    describe('setAuthSession', () => {
+        test('должен устанавливать access и refresh токены', () => {
+            backendManager.setAuthSession('access-token', 'refresh-token');
+
+            expect(backendManager.authToken).toBe('access-token');
+            expect(backendManager.refreshToken).toBe('refresh-token');
+        });
+
+        test('должен устанавливать только access токен если refresh не передан', () => {
+            backendManager.setAuthSession('access-token');
+
+            expect(backendManager.authToken).toBe('access-token');
+            expect(backendManager.refreshToken).toBeNull();
+        });
+    });
+
+    describe('clearAuthSession', () => {
+        test('должен очищать auth и refresh токены', () => {
+            backendManager.setAuthSession('access-token', 'refresh-token');
+            backendManager.clearAuthSession();
+
+            expect(backendManager.authToken).toBeNull();
+            expect(backendManager.refreshToken).toBeNull();
+            expect(backendManager.getState().authTokenSet).toBe(false);
+        });
+    });
+
+    describe('createAnonymousSession', () => {
+        test('должен создавать анонимную сессию', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ anon_id: 'test-anon-id', anon_token: 'test-anon-token' })
+            });
+
+            const result = await backendManager.createAnonymousSession();
+
+            expect(result.success).toBe(true);
+            expect(result.anonId).toBe('test-anon-id');
+            expect(result.anonToken).toBe('test-anon-token');
+            expect(fetchMock).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать ошибки при создании анонимной сессии', async () => {
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                text: async () => 'Server error'
+            });
+
+            const result = await backendManager.createAnonymousSession();
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('HTTP 500');
+        });
+
+        test('должен обрабатывать невалидный ответ', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({})
+            });
+
+            const result = await backendManager.createAnonymousSession();
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBeDefined();
+        });
+    });
+
+    describe('login', () => {
+        test('должен успешно логинить пользователя', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ access_token: 'access-token', refresh_token: 'refresh-token' })
+            });
+
+            const result = await backendManager.login('username', 'password');
+
+            expect(result.success).toBe(true);
+            expect(result.accessToken).toBe('access-token');
+            expect(result.refreshToken).toBe('refresh-token');
+            expect(fetchMock).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать ошибки логина', async () => {
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 401,
+                statusText: 'Unauthorized',
+                text: async () => 'Invalid credentials'
+            });
+
+            const result = await backendManager.login('username', 'wrong-password');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('HTTP 401');
+        });
+
+        test('должен обрабатывать невалидный ответ', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({})
+            });
+
+            const result = await backendManager.login('username', 'password');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBeDefined();
+        });
+    });
+
+    describe('register', () => {
+        test('должен успешно регистрировать пользователя', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 201,
+                json: async () => ({ user_id: 'user-123' })
+            });
+
+            const result = await backendManager.register('username', 'email@test.com', 'password');
+
+            expect(result.success).toBe(true);
+            expect(result.userId).toBe('user-123');
+            expect(fetchMock).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать ошибки регистрации с детальным сообщением', async () => {
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 400,
+                statusText: 'Bad Request',
+                text: async () => JSON.stringify({ detail: 'User already exists' })
+            });
+
+            const result = await backendManager.register('username', 'email@test.com', 'password');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('[400]');
+            expect(result.error).toContain('User already exists');
+            expect(result.status).toBe(400);
+        });
+
+        test('должен обрабатывать ошибки регистрации без детального сообщения', async () => {
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 400,
+                statusText: 'Bad Request',
+                text: async () => 'Bad Request'
+            });
+
+            const result = await backendManager.register('username', 'email@test.com', 'password');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('[400]');
+        });
+    });
+
+    describe('verify', () => {
+        test('должен успешно подтверждать email', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({})
+            });
+
+            const result = await backendManager.verify('email@test.com', '123456');
+
+            expect(result.success).toBe(true);
+            expect(fetchMock).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать ошибки верификации с детальным сообщением', async () => {
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 400,
+                statusText: 'Bad Request',
+                text: async () => JSON.stringify({ detail: 'Invalid verification code' })
+            });
+
+            const result = await backendManager.verify('email@test.com', 'wrong-code');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('[400]');
+            expect(result.error).toContain('Invalid verification code');
+            expect(result.status).toBe(400);
+        });
+
+        test('должен обрабатывать ошибки сети', async () => {
+            fetchMock.mockRejectedValue(new Error('Network error'));
+
+            const result = await backendManager.verify('email@test.com', '123456');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Network error');
+        });
+    });
+
+    describe('resendCode', () => {
+        test('должен успешно отправлять код повторно', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({})
+            });
+
+            const result = await backendManager.resendCode('email@test.com');
+
+            expect(result.success).toBe(true);
+            expect(fetchMock).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать ошибки повторной отправки с детальным сообщением', async () => {
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 429,
+                statusText: 'Too Many Requests',
+                text: async () => JSON.stringify({ detail: 'Too many requests. Please wait.' })
+            });
+
+            const result = await backendManager.resendCode('email@test.com');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('[429]');
+            expect(result.error).toContain('Too many requests');
+            expect(result.status).toBe(429);
+        });
+
+        test('должен обрабатывать ошибки сети', async () => {
+            fetchMock.mockRejectedValue(new Error('Network error'));
+
+            const result = await backendManager.resendCode('email@test.com');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Network error');
+        });
+    });
+
+    describe('refreshAccessToken', () => {
+        test('должен успешно обновлять access токен', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ access_token: 'new-access-token', refresh_token: 'new-refresh-token' })
+            });
+
+            const result = await backendManager.refreshAccessToken('refresh-token');
+
+            expect(result.success).toBe(true);
+            expect(result.accessToken).toBe('new-access-token');
+            expect(result.refreshToken).toBe('new-refresh-token');
+            expect(fetchMock).toHaveBeenCalled();
+        });
+
+        test('должен обрабатывать ошибки обновления токена', async () => {
+            fetchMock.mockResolvedValue({
+                ok: false,
+                status: 401,
+                statusText: 'Unauthorized',
+                text: async () => 'Token expired'
+            });
+
+            const result = await backendManager.refreshAccessToken('expired-token');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('HTTP 401');
+        });
+
+        test('должен обрабатывать невалидный ответ', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({})
+            });
+
+            const result = await backendManager.refreshAccessToken('refresh-token');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBeDefined();
+        });
+    });
+
     describe('Наследование от BaseManager', () => {
         test('должен иметь методы BaseManager', () => {
             expect(backendManager.getState).toBeDefined();

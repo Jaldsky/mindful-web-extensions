@@ -46,6 +46,12 @@ class BackendManager extends BaseManager {
         this.authToken = options.authToken || null;
         
         /** 
+         * Refresh токен для обновления авторизации
+         * @type {string|null}
+         */
+        this.refreshToken = options.refreshToken || null;
+        
+        /** 
          * Метрики производительности операций
          * @type {Map<string, number>}
          */
@@ -105,6 +111,31 @@ class BackendManager extends BaseManager {
     }
 
     /**
+     * Устанавливает access и refresh токены авторизации.
+     *
+     * @param {string} accessToken - JWT access токен
+     * @param {string|null} refreshToken - JWT refresh токен
+     * @returns {void}
+     */
+    setAuthSession(accessToken, refreshToken = null) {
+        this.setAuthToken(accessToken);
+        this.refreshToken = refreshToken || null;
+        this._log({ key: 'logs.backend.authSessionUpdated' }, { hasRefresh: Boolean(this.refreshToken) });
+    }
+
+    /**
+     * Сбрасывает авторизационные токены.
+     *
+     * @returns {void}
+     */
+    clearAuthSession() {
+        this.authToken = null;
+        this.refreshToken = null;
+        this.updateState({ authTokenSet: false });
+        this._log({ key: 'logs.backend.authSessionCleared' });
+    }
+
+    /**
      * Отправляет события на backend.
      * 
      * Отправляет массив событий на backend API через POST запрос.
@@ -142,7 +173,8 @@ class BackendManager extends BaseManager {
                     payload: payload
                 });
 
-                const response = await fetch(this.backendUrl, {
+                const sendRequest = async () => {
+                    return await fetch(this.backendUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
                         [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
@@ -150,6 +182,17 @@ class BackendManager extends BaseManager {
                     },
                     body: JSON.stringify(payload)
                 });
+                };
+
+                let response = await sendRequest();
+
+                if (response.status === 401 && this.refreshToken) {
+                    const refreshResult = await this.refreshAccessToken(this.refreshToken);
+                    if (refreshResult.success) {
+                        this.setAuthSession(refreshResult.accessToken, refreshResult.refreshToken || this.refreshToken);
+                        response = await sendRequest();
+                    }
+                }
 
                 this._log({ key: 'logs.backend.backendResponse' }, { 
                     method: CONFIG.BACKEND.METHODS.POST,
@@ -253,6 +296,283 @@ class BackendManager extends BaseManager {
                 const t = this._getTranslateFn();
                 const errorMessage = error.message || t('logs.backend.unknownError');
                 return { success: false, error: errorMessage };
+            }
+        });
+    }
+
+    /**
+     * Логин пользователя.
+     *
+     * @async
+     * @param {string} username - Логин или email
+     * @param {string} password - Пароль
+     * @returns {Promise<{success: boolean, accessToken?: string, refreshToken?: string, error?: string}>}
+     */
+    async login(username, password) {
+        return await this._executeWithTimingAsync('login', async () => {
+            try {
+                const backendUrlObj = new URL(this.backendUrl);
+                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_LOGIN_PATH;
+                const loginUrl = backendUrlObj.toString();
+
+                const response = await fetch(loginUrl, {
+                    method: CONFIG.BACKEND.METHODS.POST,
+                    headers: {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
+                        .replace('{status}', response.status)
+                        .replace('{message}', errorText || response.statusText);
+                    this._logError({ key: 'logs.backend.authLoginError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                const data = await response.json();
+                if (!data || !data.access_token || !data.refresh_token) {
+                    const t = this._getTranslateFn();
+                    const errorMessage = t('logs.backend.authLoginInvalidResponse');
+                    this._logError({ key: 'logs.backend.authLoginError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                return { success: true, accessToken: data.access_token, refreshToken: data.refresh_token };
+            } catch (error) {
+                this._logError({ key: 'logs.backend.authLoginError' }, error);
+                const t = this._getTranslateFn();
+                const errorMessage = error.message || t('logs.backend.unknownError');
+                return { success: false, error: errorMessage };
+            }
+        });
+    }
+
+    /**
+     * Обновляет access токен.
+     *
+     * @async
+     * @param {string} refreshToken - Refresh токен
+     * @returns {Promise<{success: boolean, accessToken?: string, refreshToken?: string, error?: string}>}
+     */
+    async refreshAccessToken(refreshToken) {
+        return await this._executeWithTimingAsync('refreshAccessToken', async () => {
+            try {
+                const backendUrlObj = new URL(this.backendUrl);
+                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_REFRESH_PATH;
+                const refreshUrl = backendUrlObj.toString();
+
+                const response = await fetch(refreshUrl, {
+                    method: CONFIG.BACKEND.METHODS.POST,
+                    headers: {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                    },
+                    body: JSON.stringify({ refresh_token: refreshToken })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
+                        .replace('{status}', response.status)
+                        .replace('{message}', errorText || response.statusText);
+                    this._logError({ key: 'logs.backend.authRefreshError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                const data = await response.json();
+                if (!data || !data.access_token) {
+                    const t = this._getTranslateFn();
+                    const errorMessage = t('logs.backend.authRefreshInvalidResponse');
+                    this._logError({ key: 'logs.backend.authRefreshError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                return { success: true, accessToken: data.access_token, refreshToken: data.refresh_token };
+            } catch (error) {
+                this._logError({ key: 'logs.backend.authRefreshError' }, error);
+                const t = this._getTranslateFn();
+                const errorMessage = error.message || t('logs.backend.unknownError');
+                return { success: false, error: errorMessage };
+            }
+        });
+    }
+
+    /**
+     * Регистрация пользователя.
+     *
+     * @async
+     * @param {string} username - Логин
+     * @param {string} email - Email
+     * @param {string} password - Пароль
+     * @returns {Promise<{success: boolean, userId?: string, error?: string}>}
+     */
+    async register(username, email, password) {
+        return await this._executeWithTimingAsync('register', async () => {
+            try {
+                const backendUrlObj = new URL(this.backendUrl);
+                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_REGISTER_PATH;
+                const registerUrl = backendUrlObj.toString();
+
+                const response = await fetch(registerUrl, {
+                    method: CONFIG.BACKEND.METHODS.POST,
+                    headers: {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                if (!response.ok) {
+                    let errorMessage = '';
+                    let errorDetail = '';
+                    
+                    try {
+                        const errorText = await response.text();
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorDetail = errorJson.detail || errorJson.message || errorJson.error || '';
+                            errorMessage = errorDetail || errorText;
+                        } catch {
+                            errorMessage = errorText || response.statusText;
+                        }
+                    } catch {
+                        errorMessage = response.statusText || 'Unknown error';
+                    }
+
+                    const formattedError = errorDetail 
+                        ? `[${response.status}] ${errorDetail}`
+                        : `[${response.status}] ${errorMessage}`;
+                    
+                    this._logError({ key: 'logs.backend.authRegisterError' }, new Error(formattedError));
+                    return { success: false, error: formattedError, status: response.status };
+                }
+
+                const data = await response.json();
+                if (!data || !data.user_id) {
+                    const t = this._getTranslateFn();
+                    const errorMessage = t('logs.backend.authRegisterInvalidResponse');
+                    this._logError({ key: 'logs.backend.authRegisterError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                return { success: true, userId: data.user_id };
+            } catch (error) {
+                this._logError({ key: 'logs.backend.authRegisterError' }, error);
+                const t = this._getTranslateFn();
+                const errorMessage = error.message || t('logs.backend.unknownError');
+                return { success: false, error: errorMessage };
+            }
+        });
+    }
+
+    /**
+     * Подтверждение email по коду.
+     *
+     * @async
+     * @param {string} email - Email пользователя
+     * @param {string} code - 6-значный код подтверждения
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    async verify(email, code) {
+        return await this._executeWithTimingAsync('verify', async () => {
+            try {
+                const backendUrlObj = new URL(this.backendUrl);
+                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_VERIFY_PATH;
+                const verifyUrl = backendUrlObj.toString();
+
+                const response = await fetch(verifyUrl, {
+                    method: CONFIG.BACKEND.METHODS.POST,
+                    headers: {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                    },
+                    body: JSON.stringify({ email, code })
+                });
+
+                if (!response.ok) {
+                    let errorMessage = '';
+                    let errorDetail = '';
+                    
+                    try {
+                        const errorText = await response.text();
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorDetail = errorJson.detail || errorJson.message || errorJson.error || '';
+                            errorMessage = errorDetail || errorText;
+                        } catch {
+                            errorMessage = errorText || response.statusText;
+                        }
+                    } catch {
+                        errorMessage = response.statusText || 'Unknown error';
+                    }
+                    
+                    const formattedError = errorDetail 
+                        ? `[${response.status}] ${errorDetail}`
+                        : `[${response.status}] ${errorMessage}`;
+                    
+                    this._logError({ key: 'logs.backend.authVerifyError' }, new Error(formattedError));
+                    return { success: false, error: formattedError, status: response.status };
+                }
+
+                return { success: true };
+            } catch (error) {
+                this._logError({ key: 'logs.backend.authVerifyError' }, error);
+                return { success: false, error: error.message };
+            }
+        });
+    }
+
+    /**
+     * Повторная отправка кода подтверждения.
+     *
+     * @async
+     * @param {string} email - Email пользователя
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    async resendCode(email) {
+        return await this._executeWithTimingAsync('resendCode', async () => {
+            try {
+                const backendUrlObj = new URL(this.backendUrl);
+                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_RESEND_CODE_PATH;
+                const resendUrl = backendUrlObj.toString();
+
+                const response = await fetch(resendUrl, {
+                    method: CONFIG.BACKEND.METHODS.POST,
+                    headers: {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                if (!response.ok) {
+                    let errorMessage = '';
+                    let errorDetail = '';
+                    
+                    try {
+                        const errorText = await response.text();
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorDetail = errorJson.detail || errorJson.message || errorJson.error || '';
+                            errorMessage = errorDetail || errorText;
+                        } catch {
+                            errorMessage = errorText || response.statusText;
+                        }
+                    } catch {
+                        errorMessage = response.statusText || 'Unknown error';
+                    }
+                    
+                    const formattedError = errorDetail 
+                        ? `[${response.status}] ${errorDetail}`
+                        : `[${response.status}] ${errorMessage}`;
+                    
+                    this._logError({ key: 'logs.backend.authResendCodeError' }, new Error(formattedError));
+                    return { success: false, error: formattedError, status: response.status };
+                }
+
+                return { success: true };
+            } catch (error) {
+                this._logError({ key: 'logs.backend.authResendCodeError' }, error);
+                return { success: false, error: error.message };
             }
         });
     }
@@ -395,6 +715,7 @@ class BackendManager extends BaseManager {
         this.performanceMetrics.clear();
         this.backendUrl = null;
         this.authToken = null;
+        this.refreshToken = null;
         super.destroy();
         this._log({ key: 'logs.backend.destroyed' });
     }
