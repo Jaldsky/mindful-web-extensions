@@ -102,7 +102,11 @@ class TrackerManager extends BaseManager {
                 const backendUrl = await this.storageManager.loadBackendUrl();
                 this.backendManager.setBackendUrl(backendUrl);
 
-                const { anonId, anonToken } = await this.storageManager.loadAnonymousSession();
+                const { accessToken, refreshToken } = await this.storageManager.loadAuthSession();
+                if (accessToken) {
+                    this.backendManager.setAuthSession(accessToken, refreshToken);
+                } else {
+                const { anonToken } = await this.storageManager.loadAnonymousSession();
                 if (anonToken) {
                     this.backendManager.setAuthToken(anonToken);
                 } else {
@@ -112,6 +116,7 @@ class TrackerManager extends BaseManager {
                         this.backendManager.setAuthToken(anonResult.anonToken);
                     } else {
                         this._logError({ key: 'logs.tracker.anonSessionInitError' }, new Error(anonResult.error));
+                        }
                     }
                 }
 
