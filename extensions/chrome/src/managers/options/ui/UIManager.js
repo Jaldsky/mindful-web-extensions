@@ -4,6 +4,7 @@ const SettingsManager = require('./SettingsManager.js');
 const EventHandlersManager = require('./EventHandlersManager.js');
 const LocaleDisplayManager = require('./LocaleDisplayManager.js');
 const ThemeDisplayManager = require('./ThemeDisplayManager.js');
+const AuthManager = require('./AuthManager.js');
 
 /**
  * Менеджер для управления пользовательским интерфейсом.
@@ -27,6 +28,7 @@ class UIManager {
         this.eventHandlersManager = new EventHandlersManager(manager);
         this.localeDisplayManager = new LocaleDisplayManager(manager);
         this.themeDisplayManager = new ThemeDisplayManager(manager);
+        this.authManager = new AuthManager(manager);
     }
 
     /**
@@ -142,6 +144,15 @@ class UIManager {
      */
     setupEventHandlers() {
         return this.eventHandlersManager.setupEventHandlers();
+    }
+
+    /**
+     * Обновляет статус авторизации.
+     *
+     * @returns {Promise<void>}
+     */
+    async refreshAuthStatus() {
+        return this.authManager.refreshAuthStatus();
     }
 
     /**
