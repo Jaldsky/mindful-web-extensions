@@ -44,6 +44,10 @@ class InitializationManager {
             manager.diagnosticsWorkflowManager.updateStatus('notRun');
             await this.loadSettings();
             manager.uiManager.setupEventHandlers();
+            if (manager.uiManager.authManager && typeof manager.uiManager.authManager.initOnboarding === 'function') {
+                await manager.uiManager.authManager.initOnboarding();
+            }
+            await manager.uiManager.refreshAuthStatus();
 
             if (manager.uiManager && typeof manager.uiManager.loadActivityStats === 'function') {
                 try {
