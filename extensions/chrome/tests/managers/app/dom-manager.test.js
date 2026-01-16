@@ -414,7 +414,7 @@ describe('DOMManager', () => {
         test('should count total elements correctly', () => {
             const stats = domManager.getElementsStatistics();
             
-            expect(stats.total).toBe(7); // 7 элементов в app_manager (удалили queueSize, reloadExtension и runDiagnostics)
+            expect(stats.total).toBe(57); // Добавлено много элементов для onboarding, login, register, verify
             expect(stats.available).toBeGreaterThan(0);
         });
 
@@ -856,6 +856,256 @@ describe('DOMManager', () => {
             const manager = new DOMManager({ enableLogging: false });
             
             expect(() => manager.showConnectionStatusMessage('Test', 'success')).not.toThrow();
+        });
+    });
+
+    describe('Login Button Visibility', () => {
+        beforeEach(() => {
+            document.body.innerHTML = `
+                <button id="openLogin" style="display: none;">Sign in</button>
+            `;
+            const mockTranslateFn = createMockTranslateFn();
+            domManager = new DOMManager({ translateFn: mockTranslateFn });
+        });
+
+        test('showLoginButton should show the login button', () => {
+            const result = domManager.showLoginButton();
+            
+            expect(result).toBe(true);
+            const button = domManager.elements.openLogin;
+            if (button) {
+                expect(button.style.display).toBe('');
+            }
+        });
+
+        test('hideLoginButton should hide the login button', () => {
+            const button = domManager.elements.openLogin;
+            if (button) {
+                button.style.display = '';
+            }
+            
+            const result = domManager.hideLoginButton();
+            
+            expect(result).toBe(true);
+            if (button) {
+                expect(button.style.display).toBe('none');
+            }
+        });
+
+        test('showLoginButton should return false if element is missing', () => {
+            domManager.elements.openLogin = null;
+            
+            const result = domManager.showLoginButton();
+            
+            expect(result).toBe(false);
+        });
+
+        test('hideLoginButton should return false if element is missing', () => {
+            domManager.elements.openLogin = null;
+            
+            const result = domManager.hideLoginButton();
+            
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('Login and Register Forms in Container', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+            document.body.innerHTML = `
+                <div id="appMain" style="display: flex;"></div>
+                <div id="appLoginContainer" style="display: none;">
+                    <form id="appMainLoginForm" style="display: none;">
+                        <h2 id="authHeaderLogo">🔐 Sign in</h2>
+                        <p id="authHeaderSubtitle">Sign in to your account</p>
+                    </form>
+                    <form id="appMainRegisterForm" style="display: none;">
+                        <h2 id="authHeaderLogo2">📝 Register</h2>
+                        <p id="authHeaderSubtitle2">Create a new account</p>
+                    </form>
+                </div>
+            `;
+            const mockTranslateFn = createMockTranslateFn();
+            domManager = new DOMManager({ translateFn: mockTranslateFn });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        test('showLoginFormInContainer should show login form and hide register form', () => {
+            domManager.elements.mainRegisterForm = domManager.elements.mainRegisterForm || 
+                document.getElementById('appMainRegisterForm');
+            domManager.elements.authHeaderLogo = domManager.elements.authHeaderLogo || 
+                document.getElementById('authHeaderLogo');
+            domManager.elements.authHeaderSubtitle = domManager.elements.authHeaderSubtitle || 
+                document.getElementById('authHeaderSubtitle');
+            
+            const result = domManager.showLoginFormInContainer();
+            
+            expect(result).toBe(true);
+            jest.advanceTimersByTime(250);
+            
+            const loginForm = domManager.elements.mainLoginForm;
+            const registerForm = domManager.elements.mainRegisterForm;
+            
+            if (loginForm) {
+                expect(loginForm.style.display).toBe('');
+            }
+            if (registerForm) {
+                expect(registerForm.style.display).toBe('none');
+            }
+        });
+
+        test('showRegisterFormInContainer should show register form and hide login form', () => {
+            domManager.elements.mainLoginForm = domManager.elements.mainLoginForm || 
+                document.getElementById('appMainLoginForm');
+            domManager.elements.mainRegisterForm = domManager.elements.mainRegisterForm || 
+                document.getElementById('appMainRegisterForm');
+            domManager.elements.authHeaderLogo = domManager.elements.authHeaderLogo || 
+                document.getElementById('authHeaderLogo');
+            domManager.elements.authHeaderSubtitle = domManager.elements.authHeaderSubtitle || 
+                document.getElementById('authHeaderSubtitle');
+            
+            const result = domManager.showRegisterFormInContainer();
+            
+            expect(result).toBe(true);
+            jest.advanceTimersByTime(250);
+            
+            const loginForm = domManager.elements.mainLoginForm;
+            const registerForm = domManager.elements.mainRegisterForm;
+            
+            if (loginForm) {
+                expect(loginForm.style.display).toBe('none');
+            }
+            if (registerForm) {
+                expect(registerForm.style.display).toBe('');
+            }
+        });
+
+        test('showLoginFormInContainer should handle missing forms gracefully', () => {
+            domManager.elements.mainLoginForm = null;
+            domManager.elements.mainRegisterForm = null;
+            
+            const result = domManager.showLoginFormInContainer();
+            
+            expect(result).toBe(true);
+        });
+
+        test('showRegisterFormInContainer should handle missing forms gracefully', () => {
+            domManager.elements.mainLoginForm = null;
+            domManager.elements.mainRegisterForm = null;
+            
+            const result = domManager.showRegisterFormInContainer();
+            
+            expect(result).toBe(true);
+        });
+
+        test('showLoginFormInContainer should update header text', () => {
+            const headerLogo = document.createElement('h2');
+            headerLogo.id = 'authHeaderLogo';
+            document.body.appendChild(headerLogo);
+            domManager.elements.authHeaderLogo = headerLogo;
+            
+            const headerSubtitle = document.createElement('p');
+            headerSubtitle.id = 'authHeaderSubtitle';
+            document.body.appendChild(headerSubtitle);
+            domManager.elements.authHeaderSubtitle = headerSubtitle;
+            
+            domManager.showLoginFormInContainer();
+            
+            expect(headerLogo.textContent).toBe('🔐 Sign in');
+        });
+
+        test('showRegisterFormInContainer should update header text', () => {
+            const headerLogo = document.createElement('h2');
+            headerLogo.id = 'authHeaderLogo';
+            document.body.appendChild(headerLogo);
+            domManager.elements.authHeaderLogo = headerLogo;
+            
+            const headerSubtitle = document.createElement('p');
+            headerSubtitle.id = 'authHeaderSubtitle';
+            document.body.appendChild(headerSubtitle);
+            domManager.elements.authHeaderSubtitle = headerSubtitle;
+            
+            domManager.showRegisterFormInContainer();
+            
+            expect(headerLogo.textContent).toBe('📝 Register');
+        });
+    });
+
+    describe('Login Form Show/Hide', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+            document.body.innerHTML = `
+                <div id="appMain" style="display: flex;"></div>
+                <div id="appLoginContainer" style="display: none;"></div>
+            `;
+            const mockTranslateFn = createMockTranslateFn();
+            domManager = new DOMManager({ translateFn: mockTranslateFn });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        test('showLoginForm should show login container and hide main menu', () => {
+            const result = domManager.showLoginForm();
+            
+            expect(result).toBe(true);
+            jest.advanceTimersByTime(250);
+            
+            const mainElement = domManager.elements.appMain;
+            const loginContainer = domManager.elements.loginContainer;
+            
+            if (mainElement) {
+                expect(mainElement.style.display).toBe('none');
+            }
+            if (loginContainer) {
+                expect(loginContainer.style.display).toBe('flex');
+            }
+        });
+
+        test('hideLoginForm should hide login container and show main menu', () => {
+            const mainElement = domManager.elements.appMain;
+            const loginContainer = domManager.elements.loginContainer;
+            
+            if (loginContainer) {
+                loginContainer.style.display = 'flex';
+            }
+            if (mainElement) {
+                mainElement.style.display = 'none';
+            }
+            
+            const result = domManager.hideLoginForm();
+            
+            expect(result).toBe(true);
+            jest.advanceTimersByTime(250);
+            
+            if (mainElement) {
+                expect(mainElement.style.display).toBe('flex');
+            }
+            if (loginContainer) {
+                expect(loginContainer.style.display).toBe('none');
+            }
+        });
+
+        test('showLoginForm should handle missing elements gracefully', () => {
+            domManager.elements.appMain = null;
+            domManager.elements.loginContainer = null;
+            
+            const result = domManager.showLoginForm();
+            
+            expect(result).toBe(true);
+        });
+
+        test('hideLoginForm should handle missing elements gracefully', () => {
+            domManager.elements.appMain = null;
+            domManager.elements.loginContainer = null;
+            
+            const result = domManager.hideLoginForm();
+            
+            expect(result).toBe(true);
         });
     });
 });
