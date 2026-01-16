@@ -119,7 +119,10 @@ class DOMManager extends BaseManager {
             toggleDeveloperTools: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS),
             domainExceptionInput: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.DOMAIN_EXCEPTION_INPUT),
             addDomainExceptionBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ADD_DOMAIN_EXCEPTION_BTN),
-            domainExceptionsList: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.DOMAIN_EXCEPTIONS_LIST)
+            domainExceptionsList: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.DOMAIN_EXCEPTIONS_LIST),
+            onboardingOverlay: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ONBOARDING_OVERLAY),
+            onboardingTryBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ONBOARDING_TRY_BTN),
+            onboardingLoginBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ONBOARDING_LOGIN_BTN)
         };
     }
 
@@ -133,9 +136,12 @@ class DOMManager extends BaseManager {
     _validateElements() {
         const t = this._getTranslateFn();
         const missingElements = [];
+        
+        // Onboarding elements are optional (onboarding is now handled in app.html)
+        const optionalElements = ['onboardingOverlay', 'onboardingTryBtn', 'onboardingLoginBtn'];
 
         Object.entries(this.elements).forEach(([key, element]) => {
-            if (!element) {
+            if (!element && !optionalElements.includes(key)) {
                 missingElements.push(key);
             }
         });

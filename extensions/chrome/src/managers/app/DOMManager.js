@@ -145,7 +145,57 @@ class DOMManager extends BaseManager {
             domainsCount: getElement(DOMManager.ELEMENT_IDS.DOMAINS_COUNT),
             openSettings: getElement(DOMManager.ELEMENT_IDS.OPEN_SETTINGS),
             testConnection: getElement(DOMManager.ELEMENT_IDS.TEST_CONNECTION),
-            toggleTracking: getElement(DOMManager.ELEMENT_IDS.TOGGLE_TRACKING)
+            toggleTracking: getElement(DOMManager.ELEMENT_IDS.TOGGLE_TRACKING),
+            appMain: getElement(DOMManager.ELEMENT_IDS.APP_MAIN),
+            onboardingOverlay: getElement(DOMManager.ELEMENT_IDS.APP_ONBOARDING_OVERLAY),
+            welcomeScreen: getElement(DOMManager.ELEMENT_IDS.APP_WELCOME_SCREEN),
+            loginScreen: getElement(DOMManager.ELEMENT_IDS.APP_LOGIN_SCREEN),
+            registerScreen: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_SCREEN),
+            verifyScreen: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_SCREEN),
+            verifyForm: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_FORM),
+            verifyDescription: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_DESCRIPTION),
+            verifyEmail: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_EMAIL),
+            verifyCode: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_CODE),
+            registerVerifyLink: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_VERIFY_LINK),
+            verifySubmit: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_SUBMIT),
+            verifyBack: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_BACK),
+            resendCodeLink: getElement(DOMManager.ELEMENT_IDS.APP_RESEND_CODE_LINK),
+            tryAnonBtn: getElement(DOMManager.ELEMENT_IDS.APP_TRY_ANON_BTN),
+            signInBtn: getElement(DOMManager.ELEMENT_IDS.APP_SIGN_IN_BTN),
+            loginForm: getElement(DOMManager.ELEMENT_IDS.APP_LOGIN_FORM),
+            loginUsername: getElement(DOMManager.ELEMENT_IDS.APP_LOGIN_USERNAME),
+            loginPassword: getElement(DOMManager.ELEMENT_IDS.APP_LOGIN_PASSWORD),
+            loginSubmit: getElement(DOMManager.ELEMENT_IDS.APP_LOGIN_SUBMIT),
+            loginBack: getElement(DOMManager.ELEMENT_IDS.APP_LOGIN_BACK),
+            registerLink: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_LINK),
+            registerForm: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_FORM),
+            registerUsername: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_USERNAME),
+            registerUsernameError: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_USERNAME_ERROR),
+            registerEmail: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_EMAIL),
+            registerPassword: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_PASSWORD),
+            registerConfirmPassword: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_CONFIRM_PASSWORD),
+            registerConfirmPasswordError: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_CONFIRM_PASSWORD_ERROR),
+            registerSubmit: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_SUBMIT),
+            registerCancel: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_CANCEL),
+            loginContainer: getElement(DOMManager.ELEMENT_IDS.APP_LOGIN_CONTAINER),
+            mainLoginForm: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_LOGIN_FORM),
+            mainLoginUsername: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_LOGIN_USERNAME),
+            mainLoginPassword: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_LOGIN_PASSWORD),
+            mainLoginSubmit: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_LOGIN_SUBMIT),
+            mainLoginBack: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_LOGIN_BACK),
+            mainRegisterLink: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_LINK),
+            mainRegisterForm: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_FORM),
+            mainRegisterUsername: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_USERNAME),
+            mainRegisterUsernameError: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_USERNAME_ERROR),
+            mainRegisterEmail: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_EMAIL),
+            mainRegisterPassword: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_PASSWORD),
+            mainRegisterConfirmPassword: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_CONFIRM_PASSWORD),
+            mainRegisterConfirmPasswordError: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_CONFIRM_PASSWORD_ERROR),
+            mainRegisterSubmit: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_SUBMIT),
+            mainRegisterBack: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_BACK),
+            authHeaderLogo: getElement(DOMManager.ELEMENT_IDS.APP_AUTH_HEADER_LOGO),
+            authHeaderSubtitle: getElement(DOMManager.ELEMENT_IDS.APP_AUTH_HEADER_SUBTITLE),
+            openLogin: getElement(DOMManager.ELEMENT_IDS.OPEN_LOGIN)
         };
     }
 
@@ -504,6 +554,208 @@ class DOMManager extends BaseManager {
             this.updateTrackingToggle(this.state.isTracking);
         }
         this._log({ key: 'logs.dom.statusesRefreshed' });
+    }
+
+    /**
+     * Показывает форму входа и скрывает основное меню.
+     * 
+     * @returns {boolean} true если операция успешна
+     */
+    showLoginForm() {
+        const mainElement = this.elements.appMain;
+        const loginElement = this.elements.loginContainer;
+        
+        if (mainElement && loginElement) {
+            // Remove any existing animation classes
+            mainElement.classList.remove('fade-in', 'fade-out');
+            loginElement.classList.remove('fade-in', 'fade-out');
+            
+            // Fade out main, then fade in login
+            mainElement.classList.add('fade-out');
+            setTimeout(() => {
+                mainElement.style.display = 'none';
+                mainElement.classList.remove('fade-out');
+                loginElement.style.display = 'flex';
+                // Start from top for forward navigation
+                loginElement.style.transform = 'translateY(-20px)';
+                loginElement.style.opacity = '0';
+                // Force reflow for animation
+                // eslint-disable-next-line no-unused-expressions
+                loginElement.offsetWidth;
+                loginElement.style.transform = '';
+                loginElement.style.opacity = '';
+                loginElement.classList.add('fade-in');
+            }, 250);
+        } else {
+            if (mainElement) {
+                mainElement.style.display = 'none';
+            }
+            if (loginElement) {
+                loginElement.style.display = 'flex';
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Скрывает форму входа и показывает основное меню.
+     * 
+     * @returns {boolean} true если операция успешна
+     */
+    hideLoginForm() {
+        const mainElement = this.elements.appMain;
+        const loginElement = this.elements.loginContainer;
+        
+        if (mainElement && loginElement) {
+            // Remove any existing animation classes
+            mainElement.classList.remove('fade-in', 'fade-out', 'fade-out-down');
+            loginElement.classList.remove('fade-in', 'fade-out', 'fade-out-down');
+            
+            // Fade out login down, then fade in main from bottom
+            loginElement.classList.add('fade-out-down');
+            setTimeout(() => {
+                loginElement.style.display = 'none';
+                loginElement.classList.remove('fade-out-down');
+                mainElement.style.display = 'flex';
+                // Start from bottom
+                mainElement.style.transform = 'translateY(20px)';
+                mainElement.style.opacity = '0';
+                // Force reflow for animation
+                // eslint-disable-next-line no-unused-expressions
+                mainElement.offsetWidth;
+                mainElement.style.transform = '';
+                mainElement.style.opacity = '';
+                mainElement.classList.add('fade-in');
+            }, 250);
+        } else {
+            if (mainElement) {
+                mainElement.style.display = 'flex';
+            }
+            if (loginElement) {
+                loginElement.style.display = 'none';
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Показывает кнопку входа.
+     * 
+     * @returns {boolean} true если операция успешна
+     */
+    showLoginButton() {
+        return this._safeUpdateElement(
+            this.elements.openLogin,
+            (element) => {
+                element.style.display = '';
+            },
+            'openLogin'
+        );
+    }
+
+    /**
+     * Скрывает кнопку входа.
+     * 
+     * @returns {boolean} true если операция успешна
+     */
+    hideLoginButton() {
+        return this._safeUpdateElement(
+            this.elements.openLogin,
+            (element) => {
+                element.style.display = 'none';
+            },
+            'openLogin'
+        );
+    }
+
+    /**
+     * Показывает форму входа и скрывает форму регистрации.
+     * 
+     * @returns {boolean} true если операция успешна
+     */
+    showLoginFormInContainer() {
+        const loginForm = this.elements.mainLoginForm;
+        const registerForm = this.elements.mainRegisterForm;
+        const headerLogo = this.elements.authHeaderLogo;
+        const headerSubtitle = this.elements.authHeaderSubtitle;
+        
+        if (loginForm && registerForm) {
+            // Remove any existing animation classes
+            loginForm.classList.remove('fade-in', 'fade-out', 'fade-out-down');
+            registerForm.classList.remove('fade-in', 'fade-out', 'fade-out-down');
+            
+            // Fade out register down (back button), then fade in login from bottom
+            registerForm.classList.add('fade-out-down');
+            setTimeout(() => {
+                registerForm.style.display = 'none';
+                registerForm.classList.remove('fade-out-down');
+                loginForm.style.display = '';
+                // Start from bottom
+                loginForm.style.transform = 'translateY(20px)';
+                loginForm.style.opacity = '0';
+                // Force reflow for animation
+                // eslint-disable-next-line no-unused-expressions
+                loginForm.offsetWidth;
+                loginForm.style.transform = '';
+                loginForm.style.opacity = '';
+                loginForm.classList.add('fade-in');
+            }, 250);
+        } else {
+            if (loginForm) loginForm.style.display = '';
+            if (registerForm) registerForm.style.display = 'none';
+        }
+        
+        if (headerLogo) headerLogo.textContent = '🔐 Sign in';
+        if (headerSubtitle) {
+            const t = this._getTranslateFn();
+            headerSubtitle.textContent = t('app.auth.subtitle');
+        }
+        return true;
+    }
+
+    /**
+     * Показывает форму регистрации и скрывает форму входа.
+     * 
+     * @returns {boolean} true если операция успешна
+     */
+    showRegisterFormInContainer() {
+        const loginForm = this.elements.mainLoginForm;
+        const registerForm = this.elements.mainRegisterForm;
+        const headerLogo = this.elements.authHeaderLogo;
+        const headerSubtitle = this.elements.authHeaderSubtitle;
+        
+        if (loginForm && registerForm) {
+            // Remove any existing animation classes
+            loginForm.classList.remove('fade-in', 'fade-out');
+            registerForm.classList.remove('fade-in', 'fade-out');
+            
+            // Fade out login, then fade in register
+            loginForm.classList.add('fade-out');
+            setTimeout(() => {
+                loginForm.style.display = 'none';
+                loginForm.classList.remove('fade-out');
+                registerForm.style.display = '';
+                // Start from top for forward navigation
+                registerForm.style.transform = 'translateY(-20px)';
+                registerForm.style.opacity = '0';
+                // Force reflow for animation
+                // eslint-disable-next-line no-unused-expressions
+                registerForm.offsetWidth;
+                registerForm.style.transform = '';
+                registerForm.style.opacity = '';
+                registerForm.classList.add('fade-in');
+            }, 250);
+        } else {
+            if (loginForm) loginForm.style.display = 'none';
+            if (registerForm) registerForm.style.display = '';
+        }
+        
+        if (headerLogo) headerLogo.textContent = '📝 Register';
+        if (headerSubtitle) {
+            const t = this._getTranslateFn();
+            headerSubtitle.textContent = t('app.register.subtitle') || 'Create a new account';
+        }
+        return true;
     }
 
     /**
