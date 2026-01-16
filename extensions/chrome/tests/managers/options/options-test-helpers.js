@@ -79,7 +79,11 @@ function createBaseOptionsManager() {
             toggleTheme: jest.fn(),
             updateThemeDisplay: jest.fn(),
             getDomainExceptions: jest.fn(() => []),
-            setDomainExceptions: jest.fn()
+            setDomainExceptions: jest.fn(),
+            refreshAuthStatus: jest.fn().mockResolvedValue(),
+            authManager: {
+                initOnboarding: jest.fn().mockResolvedValue()
+            }
         },
         domainExceptionsManager: {
             getDomainExceptions: jest.fn(() => []),

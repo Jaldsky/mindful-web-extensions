@@ -4,10 +4,154 @@
 
 body {
     margin: 0;
-    width: 320px;
+    min-width: 360px;
+    width: 360px;
+    height: 600px;
+    min-height: 600px;
+    max-height: 600px;
     padding: 0;
+    padding-bottom: 0;
     background-color: var(--color-bg-primary);
     transition: none !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.app-onboarding-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+}
+
+.app-onboarding-modal {
+    background: var(--color-bg-primary);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xxl);
+    box-shadow: var(--shadow-lg);
+    width: calc(100% - 32px);
+    max-width: 340px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    margin: auto;
+}
+
+.app-onboarding-modal h2 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-xl);
+    font-size: var(--font-size-xl);
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.app-onboarding-modal p {
+    margin-bottom: var(--spacing-xxl);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.app-onboarding-description {
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.app-onboarding-modal .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.app-register-link {
+    margin-top: var(--spacing-sm);
+}
+
+.app-register-link a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+}
+
+.app-register-link a:hover {
+    text-decoration: underline;
+}
+
+/* Primary button - matches main window button style */
+.primary-btn {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.08));
+}
+
+.primary-btn:hover:not(:disabled)::before {
+    content: '👤';
+}
+
+/* Login button - checkmark emoji */
+#appLoginSubmit:hover:not(:disabled)::before,
+#appMainLoginSubmit:hover:not(:disabled)::before {
+    content: '✅';
+}
+
+/* Register button - checkmark emoji */
+#appRegisterSubmit:hover:not(:disabled)::before,
+#appMainRegisterSubmit:hover:not(:disabled)::before {
+    content: '✅';
+}
+
+/* Verify button - envelope emoji */
+#appVerifySubmit:hover:not(:disabled)::before {
+    content: '✉️';
+}
+
+.primary-btn:hover:not(:disabled) {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-primary);
+    color: var(--color-text-primary);
+}
+
+.primary-btn:active:not(:disabled) {
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.08));
+}
+
+/* Secondary button - matches main window button style */
+.secondary-btn {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.08));
+}
+
+.secondary-btn:hover:not(:disabled)::before {
+    content: '🔐';
+}
+
+/* Back button - arrow emoji */
+#appLoginBack:hover:not(:disabled)::before,
+#appRegisterCancel:hover:not(:disabled)::before,
+#appMainLoginBack:hover:not(:disabled)::before,
+#appMainRegisterBack:hover:not(:disabled)::before {
+    content: '←';
+}
+
+.secondary-btn:hover:not(:disabled) {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-primary);
+    color: var(--color-text-primary);
+}
+
+.secondary-btn:active:not(:disabled) {
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.08));
 }
 
 .app-container {
@@ -18,6 +162,45 @@ body {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xl);
+    min-height: fit-content;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+
+#appLoginContainer {
+    padding: var(--spacing-xl);
+    gap: var(--spacing-xl);
+}
+
+.app-container.fade-out {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.app-container.fade-out-down {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.app-container.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.app-onboarding-overlay.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.app-onboarding-overlay.fade-out {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 /* Header section */
@@ -28,6 +211,7 @@ body {
     gap: var(--spacing-xs);
     text-align: center;
 }
+
 
 .logo {
     font-size: var(--font-size-xl);
@@ -260,6 +444,22 @@ body {
     color: var(--color-text-primary);
 }
 
+/* Dark theme styles for auth buttons */
+[data-theme="dark"] .primary-btn,
+[data-theme="dark"] .secondary-btn {
+    color: var(--color-text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(33, 33, 33, 0.9);
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.7));
+}
+
+[data-theme="dark"] .primary-btn:hover:not(:disabled),
+[data-theme="dark"] .secondary-btn:hover:not(:disabled) {
+    background-color: rgba(55, 55, 55, 0.9);
+    border-color: var(--color-primary);
+    color: var(--color-text-primary);
+}
+
 /* Test button */
 .test-btn {
     color: var(--color-secondary);
@@ -274,6 +474,22 @@ body {
 .test-btn:hover:not(:disabled) {
     background-color: var(--color-secondary-transparent, rgba(33, 150, 243, 0.12));
     border-color: var(--color-primary);
+}
+
+.login-btn {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    background-color: var(--color-bg-secondary);
+}
+
+.login-btn::before {
+    content: '🔐';
+}
+
+.login-btn:hover:not(:disabled) {
+    background-color: var(--color-primary-transparent, rgba(76, 175, 80, 0.12));
+    border-color: var(--color-primary);
+    color: var(--color-primary);
 }
 
 .notification {
@@ -360,5 +576,240 @@ body {
 .notification.position-top-left.hiding,
 .notification.position-bottom-left.hiding {
     transform: translateX(-100%);
+}
+
+/* Auth form styles - unified for all forms */
+.auth-form {
+    width: 100%;
+    text-align: left;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.auth-form.fade-out,
+#appWelcomeScreen.fade-out,
+#appLoginScreen.fade-out,
+#appRegisterScreen.fade-out {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.auth-form.fade-out-down,
+#appWelcomeScreen.fade-out-down,
+#appLoginScreen.fade-out-down,
+#appRegisterScreen.fade-out-down,
+#appVerifyScreen.fade-out-down {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.auth-form.fade-in,
+#appWelcomeScreen.fade-in,
+#appLoginScreen.fade-in,
+#appRegisterScreen.fade-in,
+#appVerifyScreen.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.app-verify-description {
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-align: center;
+}
+
+.auth-form h2 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-xl);
+    font-size: var(--font-size-xl);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    text-align: center;
+}
+
+.auth-card {
+    padding: var(--spacing-lg);
+}
+
+#appLoginContainer .auth-card {
+    padding: var(--spacing-xl);
+}
+
+.auth-form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+#appLoginContainer .auth-form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.auth-form-group label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.app-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-sm);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+    transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+    box-sizing: border-box;
+}
+
+.app-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.app-input.error {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.1);
+}
+
+.app-input.error:focus {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}
+
+.app-input::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.6;
+}
+
+.error-message {
+    display: block;
+    margin-top: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    color: var(--color-danger);
+    min-height: 16px;
+    line-height: 1.4;
+}
+
+.error-message::before {
+    content: '⚠️ ';
+    margin-right: 4px;
+}
+
+.error-message:empty {
+    display: none;
+}
+
+.auth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+}
+
+#appLoginContainer .auth-buttons {
+    margin-top: var(--spacing-xl);
+}
+
+.app-register-link {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+}
+
+#appLoginContainer .app-register-link {
+    margin-top: var(--spacing-lg);
+}
+
+.app-register-link a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    transition: color var(--transition-normal);
+}
+
+.app-register-link a:hover {
+    text-decoration: underline;
+    color: var(--color-primary-hover);
+}
+
+/* Apply unified styles to onboarding modal forms */
+.app-onboarding-modal .auth-form {
+    text-align: left;
+}
+
+.app-onboarding-modal .auth-form h2 {
+    text-align: center;
+}
+
+.app-onboarding-modal .auth-form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.app-onboarding-modal .auth-form-group label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.app-onboarding-modal .app-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-sm);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+    transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+    box-sizing: border-box;
+}
+
+.app-onboarding-modal .app-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.app-onboarding-modal .app-input::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.6;
+}
+
+.app-onboarding-modal .auth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.app-onboarding-modal .app-register-link {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+}
+
+.app-onboarding-modal .app-register-link a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    transition: color var(--transition-normal);
+}
+
+.app-onboarding-modal .app-register-link a:hover {
+    text-decoration: underline;
+    color: var(--color-primary-hover);
 }
 
