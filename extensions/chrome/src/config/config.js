@@ -34,6 +34,11 @@ const CONFIG = {
         const EVENTS_ENDPOINT = '/api/v1/events/save'; // Эндпоинт для отправки событий
         const HEALTHCHECK_PATH = '/api/v1/healthcheck'; // Путь для healthcheck endpoint
         const AUTH_ANON_PATH = '/api/v1/auth/anonymous'; // Путь для создания анонимной сессии
+        const AUTH_LOGIN_PATH = '/api/v1/auth/login'; // Путь для логина пользователя
+        const AUTH_REFRESH_PATH = '/api/v1/auth/refresh'; // Путь для обновления токена
+        const AUTH_REGISTER_PATH = '/api/v1/auth/register'; // Путь для регистрации пользователя
+        const AUTH_VERIFY_PATH = '/api/v1/auth/verify'; // Путь для подтверждения email
+        const AUTH_RESEND_CODE_PATH = '/api/v1/auth/resend-code'; // Путь для повторной отправки кода
         const DEFAULT_URL = BASE_URL + EVENTS_ENDPOINT; // Полный URL по умолчанию
         
         return {
@@ -41,6 +46,11 @@ const CONFIG = {
             EVENTS_ENDPOINT,
             HEALTHCHECK_PATH,
             AUTH_ANON_PATH,
+            AUTH_LOGIN_PATH,
+            AUTH_REFRESH_PATH,
+            AUTH_REGISTER_PATH,
+            AUTH_VERIFY_PATH,
+            AUTH_RESEND_CODE_PATH,
             DEFAULT_URL,
             TIMEOUT: 10000, // Таймаут запроса (мс)
             RETRY_ATTEMPTS: 3, // Количество попыток повтора
@@ -169,7 +179,57 @@ const CONFIG = {
             QUEUE_SIZE: 'queueSize',
             OPEN_SETTINGS: 'openSettings',
             TEST_CONNECTION: 'testConnection',
-            TOGGLE_TRACKING: 'toggleTracking'
+            TOGGLE_TRACKING: 'toggleTracking',
+            APP_MAIN: 'appMain',
+            APP_ONBOARDING_OVERLAY: 'appOnboardingOverlay',
+            APP_WELCOME_SCREEN: 'appWelcomeScreen',
+            APP_LOGIN_SCREEN: 'appLoginScreen',
+            APP_REGISTER_SCREEN: 'appRegisterScreen',
+            APP_VERIFY_SCREEN: 'appVerifyScreen',
+            APP_VERIFY_FORM: 'appVerifyForm',
+            APP_VERIFY_DESCRIPTION: 'appVerifyDescription',
+            APP_VERIFY_EMAIL: 'appVerifyEmail',
+            APP_VERIFY_CODE: 'appVerifyCode',
+            APP_REGISTER_VERIFY_LINK: 'appRegisterVerifyLink',
+            APP_VERIFY_SUBMIT: 'appVerifySubmit',
+            APP_VERIFY_BACK: 'appVerifyBack',
+            APP_RESEND_CODE_LINK: 'appResendCodeLink',
+            APP_TRY_ANON_BTN: 'appTryAnonBtn',
+            APP_SIGN_IN_BTN: 'appSignInBtn',
+            APP_LOGIN_FORM: 'appLoginForm',
+            APP_LOGIN_USERNAME: 'appLoginUsername',
+            APP_LOGIN_PASSWORD: 'appLoginPassword',
+            APP_LOGIN_SUBMIT: 'appLoginSubmit',
+            APP_LOGIN_BACK: 'appLoginBack',
+            APP_REGISTER_LINK: 'appRegisterLink',
+            APP_REGISTER_FORM: 'appRegisterForm',
+            APP_REGISTER_USERNAME: 'appRegisterUsername',
+            APP_REGISTER_USERNAME_ERROR: 'appRegisterUsernameError',
+            APP_REGISTER_EMAIL: 'appRegisterEmail',
+            APP_REGISTER_PASSWORD: 'appRegisterPassword',
+            APP_REGISTER_CONFIRM_PASSWORD: 'appRegisterConfirmPassword',
+            APP_REGISTER_CONFIRM_PASSWORD_ERROR: 'appRegisterConfirmPasswordError',
+            APP_REGISTER_SUBMIT: 'appRegisterSubmit',
+            APP_REGISTER_CANCEL: 'appRegisterCancel',
+            APP_LOGIN_CONTAINER: 'appLoginContainer',
+            APP_MAIN_LOGIN_FORM: 'appMainLoginForm',
+            APP_MAIN_LOGIN_USERNAME: 'appMainLoginUsername',
+            APP_MAIN_LOGIN_PASSWORD: 'appMainLoginPassword',
+            APP_MAIN_LOGIN_SUBMIT: 'appMainLoginSubmit',
+            APP_MAIN_LOGIN_BACK: 'appMainLoginBack',
+            APP_MAIN_REGISTER_LINK: 'appMainRegisterLink',
+            APP_MAIN_REGISTER_FORM: 'appMainRegisterForm',
+            APP_MAIN_REGISTER_USERNAME: 'appMainRegisterUsername',
+            APP_MAIN_REGISTER_USERNAME_ERROR: 'appMainRegisterUsernameError',
+            APP_MAIN_REGISTER_EMAIL: 'appMainRegisterEmail',
+            APP_MAIN_REGISTER_PASSWORD: 'appMainRegisterPassword',
+            APP_MAIN_REGISTER_CONFIRM_PASSWORD: 'appMainRegisterConfirmPassword',
+            APP_MAIN_REGISTER_CONFIRM_PASSWORD_ERROR: 'appMainRegisterConfirmPasswordError',
+            APP_MAIN_REGISTER_SUBMIT: 'appMainRegisterSubmit',
+            APP_MAIN_REGISTER_BACK: 'appMainRegisterBack',
+            APP_AUTH_HEADER_LOGO: 'appAuthHeaderLogo',
+            APP_AUTH_HEADER_SUBTITLE: 'appAuthHeaderSubtitle',
+            OPEN_LOGIN: 'openLogin'
         }
     },
 
@@ -188,7 +248,23 @@ const CONFIG = {
             TOGGLE_DEVELOPER_TOOLS: 'toggleDeveloperTools',
             DOMAIN_EXCEPTION_INPUT: 'domainExceptionInput',
             ADD_DOMAIN_EXCEPTION_BTN: 'addDomainExceptionBtn',
-            DOMAIN_EXCEPTIONS_LIST: 'domainExceptionsList'
+            DOMAIN_EXCEPTIONS_LIST: 'domainExceptionsList',
+            AUTH_FORM: 'authForm',
+            AUTH_USERNAME: 'authUsername',
+            AUTH_PASSWORD: 'authPassword',
+            AUTH_LOGIN_BTN: 'authLoginBtn',
+            AUTH_LOGOUT_BTN: 'authLogoutBtn',
+            AUTH_STATUS: 'authStatus',
+            ONBOARDING_OVERLAY: 'onboardingOverlay',
+            ONBOARDING_TRY_BTN: 'onboardingTryBtn',
+            ONBOARDING_LOGIN_BTN: 'onboardingLoginBtn',
+            REGISTER_FORM: 'registerForm',
+            REGISTER_USERNAME: 'registerUsername',
+            REGISTER_EMAIL: 'registerEmail',
+            REGISTER_PASSWORD: 'registerPassword',
+            REGISTER_SUBMIT_BTN: 'registerSubmitBtn',
+            REGISTER_CANCEL_BTN: 'registerCancelBtn',
+            REGISTER_LINK: 'registerLink'
         },
         // Дефолтные названия элементов для логирования
         DEFAULT_ELEMENT_NAMES: {
@@ -206,6 +282,10 @@ const CONFIG = {
         USER_ID: 'mindful_user_id',
         ANON_ID: 'mindful_anon_id',
         ANON_TOKEN: 'mindful_anon_token',
+        AUTH_ACCESS_TOKEN: 'mindful_auth_access_token',
+        AUTH_REFRESH_TOKEN: 'mindful_auth_refresh_token',
+        ONBOARDING_COMPLETED: 'mindful_onboarding_completed',
+        PENDING_VERIFICATION_EMAIL: 'mindful_pending_verification_email',
         BACKEND_URL: 'mindful_backend_url',
         LOCALE: 'mindful_locale',
         DOMAIN_EXCEPTIONS: 'mindful_domain_exceptions',
@@ -288,6 +368,12 @@ const CONFIG = {
         // Настройки
         UPDATE_BACKEND_URL: 'updateBackendUrl',
         UPDATE_DOMAIN_EXCEPTIONS: 'updateDomainExceptions',
+        AUTH_LOGIN: 'authLogin',
+        AUTH_LOGOUT: 'authLogout',
+        GET_AUTH_STATUS: 'getAuthStatus',
+        AUTH_REGISTER: 'authRegister',
+        AUTH_VERIFY: 'authVerify',
+        AUTH_RESEND_CODE: 'authResendCode',
         RELOAD_EXTENSION: 'reloadExtension',
         OPEN_OPTIONS: 'openOptions',
         
@@ -305,7 +391,13 @@ const CONFIG = {
             'SET_TRACKING_ENABLED',
             'CHECK_CONNECTION',
             'UPDATE_BACKEND_URL',
-            'UPDATE_DOMAIN_EXCEPTIONS'
+            'UPDATE_DOMAIN_EXCEPTIONS',
+            'AUTH_LOGIN',
+            'AUTH_LOGOUT',
+            'GET_AUTH_STATUS',
+            'AUTH_REGISTER',
+            'AUTH_VERIFY',
+            'AUTH_RESEND_CODE'
         ],
         
         // Паттерны для определения блокирующих ошибок

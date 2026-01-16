@@ -28,9 +28,19 @@ const RU = {
             initializationError: 'Ошибка инициализации AppManager',
             initialStatusLoaded: 'Начальный статус загружен',
             initialStatusError: 'Ошибка загрузки начального статуса',
+            onboardingLoadError: 'Ошибка загрузки onboarding',
+            onboardingSaveError: 'Ошибка сохранения onboarding',
+            authLoginError: 'Ошибка входа',
+            authLogoutError: 'Ошибка выхода',
+            authRegisterError: 'Ошибка регистрации',
+            authVerifyError: 'Ошибка подтверждения email',
+            authResendCodeError: 'Ошибка повторной отправки кода',
+            authStatusCheckError: 'Ошибка проверки статуса авторизации',
             handlersSetup: 'Настройка обработчиков событий',
             handlersCount: 'Настроено обработчиков: {count}',
             openSettings: 'Открытие страницы настроек',
+            openLogin: 'Открытие формы входа',
+            closeLogin: 'Закрытие формы входа',
             testConnection: {
                 start: 'Тестирование подключения',
                 success: 'Тест подключения: успешно',
@@ -217,6 +227,7 @@ const RU = {
             initStart: 'Начало инициализации LocaleManager',
             savedLocaleLoaded: 'Загружена сохранённая локаль',
             browserLocaleSet: 'Установлена локаль браузера',
+            defaultLocaleSet: 'Установлена локаль по умолчанию (язык браузера не поддерживается)',
             initError: 'Ошибка инициализации LocaleManager',
             detectBrowserLocaleError: 'Ошибка определения локали браузера',
             unsupported: 'Неподдерживаемая локаль: {locale}',
@@ -418,10 +429,17 @@ const RU = {
             eventHandlers: {
                 setupEventHandlersStart: 'Настройка обработчиков событий',
                 settingsFormNotFound: 'Предупреждение: форма настроек не найдена, обработчик submit не установлен',
+                authFormNotFound: 'Предупреждение: форма авторизации не найдена, обработчик submit не установлен',
                 resetBtnNotFound: 'Предупреждение: кнопка сброса не найдена, обработчик не установлен',
                 saveBtnNotFound: 'Предупреждение: кнопка сохранения не найдена',
                 runDiagnosticsBtnNotFound: 'Предупреждение: кнопка диагностики не найдена, обработчик не установлен',
                 toggleDeveloperToolsBtnNotFound: 'Предупреждение: кнопка developer tools не найдена, обработчик не установлен'
+            },
+            auth: {
+                statusError: 'Ошибка получения статуса авторизации',
+                loginError: 'Ошибка авторизации',
+                logoutError: 'Ошибка выхода',
+                registerError: 'Ошибка регистрации'
             },
             localeDisplay: {
                 toggleLanguageError: 'Ошибка переключения языка',
@@ -485,6 +503,8 @@ const RU = {
             criticalInitError: 'Критическая ошибка инициализации',
             invalidValueUsingDefault: 'Некорректное значение, используется значение по умолчанию',
             loadDomainExceptionsError: 'Ошибка загрузки исключений доменов',
+            onboardingLoadError: 'Ошибка загрузки onboarding',
+            onboardingSaveError: 'Ошибка сохранения onboarding',
             backendUrlMustBeString: 'backendUrl должен быть непустой строкой',
             verificationFailed: 'Верификация сохранения не удалась',
             domainsMustBeArray: 'domains должен быть массивом строк',
@@ -590,6 +610,8 @@ const RU = {
             created: 'BackendManager инициализирован',
             userIdUpdated: 'User ID обновлен',
             authTokenUpdated: 'Auth токен обновлен',
+            authSessionUpdated: 'Auth сессия обновлена',
+            authSessionCleared: 'Auth сессия очищена',
             sendingEvents: 'Отправка событий на backend',
             backendResponse: 'Ответ от backend',
             backendResponseError: 'Ошибка ответа от backend',
@@ -605,6 +627,14 @@ const RU = {
             creatingAnonymousSession: 'Создание анонимной сессии',
             anonymousSessionError: 'Ошибка анонимной сессии',
             anonymousSessionInvalidResponse: 'Некорректный ответ анонимной сессии',
+            authLoginError: 'Ошибка входа',
+            authLoginInvalidResponse: 'Некорректный ответ входа',
+            authRefreshError: 'Ошибка обновления токена',
+            authRefreshInvalidResponse: 'Некорректный ответ обновления токена',
+            authRegisterError: 'Ошибка регистрации',
+            authRegisterInvalidResponse: 'Некорректный ответ регистрации',
+            authVerifyError: 'Ошибка подтверждения email',
+            authResendCodeError: 'Ошибка повторной отправки кода',
             noEventsToSend: 'Нет событий для отправки',
             unknownError: 'Неизвестная ошибка',
             destroyed: 'BackendManager уничтожен'
@@ -731,6 +761,12 @@ const RU = {
             anonSessionLoadError: 'Ошибка загрузки анонимной сессии',
             anonSessionSaved: 'Анонимная сессия сохранена',
             anonSessionSaveError: 'Ошибка сохранения анонимной сессии',
+            authSessionLoaded: 'Auth сессия загружена',
+            authSessionLoadError: 'Ошибка загрузки auth сессии',
+            authSessionSaved: 'Auth сессия сохранена',
+            authSessionSaveError: 'Ошибка сохранения auth сессии',
+            authSessionCleared: 'Auth сессия очищена',
+            authSessionClearError: 'Ошибка очистки auth сессии',
             backendUrlLoadError: 'Ошибка загрузки Backend URL',
             backendUrlSaved: 'Backend URL сохранен',
             backendUrlSaveError: 'Ошибка сохранения Backend URL',
@@ -789,6 +825,18 @@ const RU = {
             extensionSuspending: 'Расширение приостанавливается, сохранение очереди событий',
             destroying: 'Уничтожение TrackerManager',
             destroyed: 'TrackerManager уничтожен'
+        },
+        authHandler: {
+            dependenciesRequired: 'AuthHandlerManager требует backendManager и storageManager',
+            credentialsRequired: 'Логин и пароль обязательны',
+            registrationRequired: 'Логин, email и пароль обязательны',
+            verifyRequired: 'Требуются email и код',
+            resendCodeRequired: 'Требуется email',
+            sessionSaveError: 'Не удалось сохранить auth сессию',
+            loginError: 'Ошибка авторизации',
+            logoutError: 'Ошибка выхода',
+            statusError: 'Ошибка статуса авторизации',
+            registerError: 'Ошибка регистрации'
         }
     },
 
@@ -796,6 +844,68 @@ const RU = {
     app: {
         title: 'Mindful Web',
         subtitle: 'Отслеживайте своё внимание',
+
+        onboarding: {
+            title: 'Добро пожаловать в Mindful Web',
+            subtitle: 'Вы можете войти, зарегистрироваться или попробовать сервис анонимно.',
+            tryButton: 'Попробовать анонимно',
+            signInButton: 'Войти'
+        },
+
+        auth: {
+            title: 'Вход',
+            subtitle: 'Введите ваши данные',
+            usernameLabel: 'Email или логин:',
+            usernamePlaceholder: 'email@example.com',
+            passwordLabel: 'Пароль:',
+            passwordPlaceholder: '••••••••',
+            loginButton: 'Войти',
+            backButton: 'Назад',
+            registerLink: 'Нет аккаунта? Зарегистрироваться',
+            loginSuccess: 'Вход выполнен',
+            loginError: 'Ошибка входа'
+        },
+
+        register: {
+            title: 'Регистрация',
+            subtitle: 'Создайте новый аккаунт',
+            usernameLabel: 'Логин:',
+            usernamePlaceholder: 'username',
+            emailLabel: 'Email:',
+            emailPlaceholder: 'email@example.com',
+            passwordLabel: 'Пароль:',
+            passwordPlaceholder: '••••••••',
+            confirmPasswordLabel: 'Подтвердите пароль:',
+            confirmPasswordPlaceholder: '••••••••',
+            submitButton: 'Зарегистрироваться',
+            cancelButton: 'Назад',
+            success: 'Регистрация успешна. Проверьте email.',
+            error: 'Ошибка регистрации',
+            passwordMismatch: 'Пароли не совпадают',
+            usernameInvalid: 'Логин может содержать только английские буквы, цифры и подчеркивания',
+            status: 'Статус',
+            detail: 'Детали',
+            alreadyHaveCode: 'Уже получили код подтверждения?'
+        },
+
+        verify: {
+            title: 'Подтверждение Email',
+            description: 'Мы отправили код подтверждения на {email}. Пожалуйста, введите его ниже.',
+            descriptionManual: 'Введите ваш email и код подтверждения, который вы получили.',
+            emailLabel: 'Email:',
+            emailPlaceholder: 'email@example.com',
+            codeLabel: 'Код подтверждения:',
+            codePlaceholder: '123456',
+            submitButton: 'Подтвердить',
+            backButton: 'Назад',
+            resendCodeLink: 'Не получили код? Отправить повторно',
+            success: 'Email успешно подтверждён',
+            error: 'Ошибка подтверждения',
+            resendSuccess: 'Код подтверждения отправлен',
+            resendError: 'Не удалось отправить код повторно',
+            status: 'Статус',
+            detail: 'Детали'
+        },
         
         // Секция статуса
         status: {
@@ -828,7 +938,8 @@ const RU = {
             enableTracking: 'Включить отслеживание',
             disableTracking: 'Отключить отслеживание',
             trackingEnableLoading: 'Включение...',
-            trackingDisableLoading: 'Отключение...'
+            trackingDisableLoading: 'Отключение...',
+            login: 'Войти'
         },
         
         // Уведомления
@@ -861,6 +972,48 @@ const RU = {
             domainExceptionsInvalid: 'Введите корректный домен (например, example.com)',
             domainExceptionsDuplicate: 'Этот домен уже добавлен в список исключений',
             domainExceptionsListLabel: 'Список исключённых доменов'
+        },
+
+        auth: {
+            sectionTitle: 'Аккаунт',
+            statusLabel: 'Статус:',
+            statusAnonymous: 'Аноним',
+            statusLoggedIn: 'Вход выполнен',
+            statusUnknown: 'Неизвестно',
+            usernameLabel: 'Email или логин:',
+            usernamePlaceholder: 'email@example.com',
+            passwordLabel: 'Пароль:',
+            passwordPlaceholder: '••••••••',
+            loginButton: 'Войти',
+            logoutButton: 'Выйти',
+            loginLoading: 'Вход...',
+            logoutLoading: 'Выход...',
+            loginSuccess: 'Вход выполнен',
+            logoutSuccess: 'Выход выполнен',
+            loginError: 'Ошибка входа',
+            logoutError: 'Ошибка выхода',
+            registerLink: 'Зарегистрироваться'
+        },
+
+        register: {
+            usernameLabel: 'Логин:',
+            usernamePlaceholder: 'username',
+            emailLabel: 'Email:',
+            emailPlaceholder: 'email@example.com',
+            passwordLabel: 'Пароль:',
+            passwordPlaceholder: '••••••••',
+            submitButton: 'Зарегистрироваться',
+            cancelButton: 'Назад',
+            success: 'Регистрация успешна. Проверьте email.',
+            error: 'Ошибка регистрации'
+        },
+
+        onboarding: {
+            title: 'Добро пожаловать в Mindful Web',
+            description: 'Отслеживайте свои привычки веб-серфинга и понимайте, как вы проводите время в интернете. Мониторьте своё внимание, анализируйте активность и принимайте более осознанные решения о своей цифровой жизни.',
+            subtitle: 'Вы можете войти или попробовать сервис анонимно.',
+            tryButton: 'Попробовать анонимно',
+            loginButton: 'Войти'
         },
         
         // Тема
