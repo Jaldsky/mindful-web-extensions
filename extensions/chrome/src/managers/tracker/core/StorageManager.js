@@ -51,6 +51,12 @@ class StorageManager extends BaseManager {
         this.userId = null;
 
         /** @type {string|null} */
+        this.accessToken = null;
+
+        /** @type {string|null} */
+        this.refreshToken = null;
+
+        /** @type {string|null} */
         this.anonId = null;
 
         /** @type {string|null} */
@@ -128,6 +134,32 @@ class StorageManager extends BaseManager {
     }
 
     /**
+     * Загружает авторизационные токены из хранилища.
+     *
+     * @async
+     * @returns {Promise<{accessToken: string | null, refreshToken: string | null}>}
+     */
+    async loadAuthSession() {
+        return await this._executeWithTimingAsync('loadAuthSession', async () => {
+            try {
+                const result = await chrome.storage.local.get([
+                    StorageManager.STORAGE_KEYS.AUTH_ACCESS_TOKEN,
+                    StorageManager.STORAGE_KEYS.AUTH_REFRESH_TOKEN
+                ]);
+                this.accessToken = result[StorageManager.STORAGE_KEYS.AUTH_ACCESS_TOKEN] || null;
+                this.refreshToken = result[StorageManager.STORAGE_KEYS.AUTH_REFRESH_TOKEN] || null;
+                this._log({ key: 'logs.trackerStorage.authSessionLoaded' }, { hasAccess: Boolean(this.accessToken) });
+                return { accessToken: this.accessToken, refreshToken: this.refreshToken };
+            } catch (error) {
+                this._logError({ key: 'logs.trackerStorage.authSessionLoadError' }, error);
+                this.accessToken = null;
+                this.refreshToken = null;
+                return { accessToken: null, refreshToken: null };
+            }
+        });
+    }
+
+    /**
      * Сохраняет анонимную сессию в хранилище.
      *
      * @async
@@ -149,6 +181,56 @@ class StorageManager extends BaseManager {
                 return true;
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.anonSessionSaveError' }, error);
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Сохраняет авторизационные токены в хранилище.
+     *
+     * @async
+     * @param {string} accessToken - Access токен
+     * @param {string} refreshToken - Refresh токен
+     * @returns {Promise<boolean>} Успешность операции
+     */
+    async saveAuthSession(accessToken, refreshToken) {
+        return await this._executeWithTimingAsync('saveAuthSession', async () => {
+            try {
+                await chrome.storage.local.set({
+                    [StorageManager.STORAGE_KEYS.AUTH_ACCESS_TOKEN]: accessToken,
+                    [StorageManager.STORAGE_KEYS.AUTH_REFRESH_TOKEN]: refreshToken
+                });
+                this.accessToken = accessToken;
+                this.refreshToken = refreshToken;
+                this._log({ key: 'logs.trackerStorage.authSessionSaved' });
+                return true;
+            } catch (error) {
+                this._logError({ key: 'logs.trackerStorage.authSessionSaveError' }, error);
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Очищает авторизационные токены.
+     *
+     * @async
+     * @returns {Promise<boolean>} Успешность операции
+     */
+    async clearAuthSession() {
+        return await this._executeWithTimingAsync('clearAuthSession', async () => {
+            try {
+                await chrome.storage.local.remove([
+                    StorageManager.STORAGE_KEYS.AUTH_ACCESS_TOKEN,
+                    StorageManager.STORAGE_KEYS.AUTH_REFRESH_TOKEN
+                ]);
+                this.accessToken = null;
+                this.refreshToken = null;
+                this._log({ key: 'logs.trackerStorage.authSessionCleared' });
+                return true;
+            } catch (error) {
+                this._logError({ key: 'logs.trackerStorage.authSessionClearError' }, error);
                 return false;
             }
         });
@@ -407,6 +489,24 @@ class StorageManager extends BaseManager {
     }
 
     /**
+     * Получает текущий access токен.
+     *
+     * @returns {string|null} access token
+     */
+    getAccessToken() {
+        return this.accessToken;
+    }
+
+    /**
+     * Получает текущий refresh токен.
+     *
+     * @returns {string|null} refresh token
+     */
+    getRefreshToken() {
+        return this.refreshToken;
+    }
+
+    /**
      * Получает текущий anon_id.
      *
      * @returns {string|null} anon_id
@@ -458,6 +558,8 @@ class StorageManager extends BaseManager {
                     StorageManager.STORAGE_KEYS.USER_ID,
                     StorageManager.STORAGE_KEYS.ANON_ID,
                     StorageManager.STORAGE_KEYS.ANON_TOKEN,
+                    StorageManager.STORAGE_KEYS.AUTH_ACCESS_TOKEN,
+                    StorageManager.STORAGE_KEYS.AUTH_REFRESH_TOKEN,
                     StorageManager.STORAGE_KEYS.BACKEND_URL,
                     StorageManager.STORAGE_KEYS.EVENT_QUEUE,
                     StorageManager.STORAGE_KEYS.DOMAIN_EXCEPTIONS,
@@ -467,6 +569,8 @@ class StorageManager extends BaseManager {
                 this.userId = null;
                 this.anonId = null;
                 this.anonToken = null;
+                this.accessToken = null;
+                this.refreshToken = null;
                 this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
                 this.domainExceptions = [];
                 this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
@@ -492,6 +596,8 @@ class StorageManager extends BaseManager {
         this.userId = null;
         this.anonId = null;
         this.anonToken = null;
+        this.accessToken = null;
+        this.refreshToken = null;
         this.backendUrl = null;
         this.domainExceptions = [];
         this.trackingEnabled = StorageManager.DEFAULT_TRACKING_ENABLED;
