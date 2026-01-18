@@ -121,4 +121,10 @@ Events sent to backend:
 
 ---
 
-**Mindful Web Extensions** — restore control over your attention! 🧘‍♀️
+<div align="center">
+
+**[🔌 Extensions](https://github.com/Jaldsky/mindful-web-extensions)** • **[🖥️ Frontend](https://github.com/Jaldsky/mindful-web-frontend)** • **[⚙️ Backend](https://github.com/Jaldsky/mindful-web-backend)**
+
+Restore control over your attention! 🧘‍♀️
+
+</div>
