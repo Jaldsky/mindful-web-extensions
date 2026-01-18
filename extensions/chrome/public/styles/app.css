@@ -11,16 +11,19 @@ body {
     max-height: 600px;
     padding: 0;
     padding-bottom: 0;
-    background-color: var(--color-bg-primary);
+    background: var(--color-bg-overlay);
     transition: none !important;
     overflow-x: hidden;
     overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .app-onboarding-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--color-bg-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -37,10 +40,33 @@ body {
     width: calc(100% - 32px);
     max-width: 340px;
     max-height: calc(100vh - 40px);
-    overflow-y: auto;
+    overflow: hidden;
     text-align: center;
     border: 1px solid var(--border-color);
     margin: auto;
+    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Smooth container for forms to enable height transitions */
+#appWelcomeScreen,
+#appLoginScreen,
+#appRegisterScreen,
+#appVerifyScreen {
+    transition: max-height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+                opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    overflow: hidden;
 }
 
 .app-onboarding-modal h2 {
@@ -139,6 +165,7 @@ body {
 /* Back button - arrow emoji */
 #appLoginBack:hover:not(:disabled)::before,
 #appRegisterCancel:hover:not(:disabled)::before,
+#appVerifyBack:hover:not(:disabled)::before,
 #appMainLoginBack:hover:not(:disabled)::before,
 #appMainRegisterBack:hover:not(:disabled)::before {
     content: '←';
@@ -162,10 +189,12 @@ body {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xl);
-    min-height: fit-content;
+    width: 100%;
+    max-width: 360px;
     opacity: 1;
-    transform: translateY(0);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(0) scale(1);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -176,31 +205,33 @@ body {
 
 .app-container.fade-out {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-30px) scale(0.95);
 }
 
 .app-container.fade-out-down {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.95);
 }
 
 .app-container.fade-in {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
 }
 
 .app-onboarding-overlay.fade-in {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .app-onboarding-overlay.fade-out {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-30px);
     pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Header section */
@@ -231,6 +262,91 @@ body {
     padding: var(--spacing-lg);
     background: var(--color-bg-secondary);
     box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.08));
+    animation: cardFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stagger animation for cards */
+.app-section-card:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.app-section-card:nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+.app-section-card:nth-child(3) {
+    animation-delay: 0.1s;
+}
+
+.app-section-card:nth-child(4) {
+    animation-delay: 0.15s;
+}
+
+.app-section-card:nth-child(5) {
+    animation-delay: 0.2s;
+}
+
+/* Stagger animation for auth form elements on first show */
+.auth-form.animate-children > h2,
+.auth-form.animate-children > p,
+.auth-form.animate-children > .auth-form-group,
+.auth-form.animate-children > .button-group,
+.auth-form.animate-children > .app-register-link {
+    animation: formElementFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+@keyframes formElementFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auth-form.animate-children > h2 {
+    animation-delay: 0s;
+}
+
+.auth-form.animate-children > p {
+    animation-delay: 0.05s;
+}
+
+.auth-form.animate-children > .auth-form-group:nth-of-type(1) {
+    animation-delay: 0.1s;
+}
+
+.auth-form.animate-children > .auth-form-group:nth-of-type(2) {
+    animation-delay: 0.15s;
+}
+
+.auth-form.animate-children > .auth-form-group:nth-of-type(3) {
+    animation-delay: 0.2s;
+}
+
+.auth-form.animate-children > .auth-form-group:nth-of-type(4) {
+    animation-delay: 0.25s;
+}
+
+.auth-form.animate-children > .button-group {
+    animation-delay: 0.3s;
+}
+
+.auth-form.animate-children > .app-register-link {
+    animation-delay: 0.35s;
 }
 
 .status {
@@ -260,6 +376,32 @@ body {
     padding: 4px 8px;
     border-radius: var(--border-radius-xl);
     font-weight: 500;
+}
+
+/* Anonymous user status styling - same style as status-inactive but with gray color */
+.user-status-anonymous {
+    background-color: #e9ecef;
+    color: #495057;
+    border-radius: var(--border-radius-xl) !important;
+}
+
+[data-theme="dark"] .user-status-anonymous {
+    background-color: #495057;
+    color: #e9ecef;
+    border-radius: var(--border-radius-xl) !important;
+}
+
+/* Authenticated user status styling - same style as status-active (green) */
+.user-status-authenticated {
+    background-color: var(--color-success);
+    color: var(--color-success-text);
+    border-radius: var(--border-radius-xl) !important;
+}
+
+[data-theme="dark"] .user-status-authenticated {
+    background-color: var(--color-success);
+    color: var(--color-success-text);
+    border-radius: var(--border-radius-xl) !important;
 }
 
 /* Stats section */
@@ -583,8 +725,9 @@ body {
     width: 100%;
     text-align: left;
     opacity: 1;
-    transform: translateY(0);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: scale(1);
+    transition: opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), 
+                transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .auth-form.fade-out,
@@ -592,9 +735,10 @@ body {
 #appLoginScreen.fade-out,
 #appRegisterScreen.fade-out {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: scale(0.99);
     pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), 
+                transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .auth-form.fade-out-down,
@@ -603,9 +747,10 @@ body {
 #appRegisterScreen.fade-out-down,
 #appVerifyScreen.fade-out-down {
     opacity: 0;
-    transform: translateY(20px);
+    transform: scale(0.99);
     pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), 
+                transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .auth-form.fade-in,
@@ -614,9 +759,10 @@ body {
 #appRegisterScreen.fade-in,
 #appVerifyScreen.fade-in {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
     pointer-events: auto;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), 
+                transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .app-verify-description {
@@ -747,6 +893,7 @@ body {
 /* Apply unified styles to onboarding modal forms */
 .app-onboarding-modal .auth-form {
     text-align: left;
+    overflow: hidden;
 }
 
 .app-onboarding-modal .auth-form h2 {
@@ -811,5 +958,74 @@ body {
 .app-onboarding-modal .app-register-link a:hover {
     text-decoration: underline;
     color: var(--color-primary-hover);
+}
+
+/* User status with tooltip and click to copy for anonymous users */
+.user-status-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.user-status-clickable {
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    user-select: none;
+}
+
+.user-status-clickable:hover {
+    text-decoration: underline;
+}
+
+.user-status-clickable:active {
+    background-color: var(--color-primary-transparent, rgba(76, 175, 80, 0.12));
+}
+
+/* Tooltip styles */
+.user-status-tooltip {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    transform: translateY(-8px);
+    background-color: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 6px 10px;
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 1000;
+    box-shadow: var(--shadow-md);
+    max-width: 300px;
+    word-break: break-all;
+}
+
+[data-theme="dark"] .user-status-tooltip {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #1e1e1e;
+}
+
+.user-status-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 20px;
+    transform: translateX(0);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.85);
+}
+
+[data-theme="dark"] .user-status-tooltip::after {
+    border-top-color: rgba(255, 255, 255, 0.9);
+}
+
+.user-status-wrapper:hover .user-status-tooltip {
+    opacity: 1;
+}
+
+/* Show tooltip only when status element has the clickable class (anonymous user) */
+.user-status-wrapper .status-value:not(.user-status-clickable) + .user-status-tooltip {
+    display: none;
 }
 
