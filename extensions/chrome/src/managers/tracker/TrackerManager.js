@@ -106,17 +106,9 @@ class TrackerManager extends BaseManager {
                 if (accessToken) {
                     this.backendManager.setAuthSession(accessToken, refreshToken);
                 } else {
-                const { anonToken } = await this.storageManager.loadAnonymousSession();
-                if (anonToken) {
-                    this.backendManager.setAuthToken(anonToken);
-                } else {
-                    const anonResult = await this.backendManager.createAnonymousSession();
-                    if (anonResult.success) {
-                        await this.storageManager.saveAnonymousSession(anonResult.anonId, anonResult.anonToken);
-                        this.backendManager.setAuthToken(anonResult.anonToken);
-                    } else {
-                        this._logError({ key: 'logs.tracker.anonSessionInitError' }, new Error(anonResult.error));
-                        }
+                    const { anonToken } = await this.storageManager.loadAnonymousSession();
+                    if (anonToken) {
+                        this.backendManager.setAuthToken(anonToken);
                     }
                 }
 

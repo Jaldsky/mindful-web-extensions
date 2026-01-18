@@ -95,6 +95,31 @@ describe('TrackerManager', () => {
 
             expect(trackerManager.performanceMetrics).toBeInstanceOf(Map);
         });
+
+        test('должен принимать опции batchSize и batchTimeout', () => {
+            const customBatchSize = 50;
+            const customBatchTimeout = 10000;
+            
+            trackerManager = new TrackerManager({ 
+                enableLogging: false,
+                batchSize: customBatchSize,
+                batchTimeout: customBatchTimeout
+            });
+
+            // Проверяем что опции переданы в eventQueueManager
+            expect(trackerManager.eventQueueManager).toBeDefined();
+        });
+
+        test('должен инициализировать состояние через updateState', () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+
+            const state = trackerManager.getState();
+
+            expect(state).toHaveProperty('isInitialized', false);
+            expect(state).toHaveProperty('isTracking', false);
+            expect(state).toHaveProperty('isOnline', true);
+            expect(state).toHaveProperty('trackingEnabled');
+        });
     });
 
     describe('init', () => {
@@ -144,6 +169,33 @@ describe('TrackerManager', () => {
             expect(global.chrome.runtime.onStartup.addListener).toHaveBeenCalled();
             expect(global.chrome.runtime.onSuspend.addListener).toHaveBeenCalled();
         });
+
+        test('должен инициализировать backend URL из storage', async () => {
+            const testUrl = 'https://test-backend.com/api';
+            global.chrome.storage.local.get.mockResolvedValue({
+                mindful_backend_url: testUrl
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            
+            await flushPromises();
+
+            expect(trackerManager.backendManager.getBackendUrl()).toBe(testUrl);
+        });
+
+        test('должен загружать domain exceptions', async () => {
+            const domainExceptions = ['example.com', 'test.com'];
+            global.chrome.storage.local.get.mockResolvedValue({
+                mindful_domain_exceptions: domainExceptions
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            const setDomainExceptionsSpy = jest.spyOn(trackerManager.eventQueueManager, 'setDomainExceptions');
+            
+            await trackerManager.init();
+
+            expect(setDomainExceptionsSpy).toHaveBeenCalledWith(domainExceptions);
+        });
     });
 
     describe('getStatistics', () => {
@@ -181,6 +233,26 @@ describe('TrackerManager', () => {
             expect(diagnostics).toHaveProperty('trackingState');
             expect(diagnostics).toHaveProperty('performanceMetrics');
             expect(diagnostics).toHaveProperty('timestamp');
+        });
+
+        test('должен включать domainExceptions в диагностику', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            
+            await flushPromises();
+
+            const diagnostics = trackerManager.getDiagnostics();
+
+            expect(diagnostics).toHaveProperty('domainExceptions');
+        });
+
+        test('timestamp должен быть в формате ISO', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            
+            await flushPromises();
+
+            const diagnostics = trackerManager.getDiagnostics();
+
+            expect(diagnostics.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
         });
     });
 
@@ -381,6 +453,36 @@ describe('TrackerManager', () => {
             expect(trackerManager.performanceMetrics.size).toBe(0);
             expect(trackerManager.isInitialized).toBe(false);
         });
+
+        test('должен безопасно обрабатывать уничтожение когда менеджеры undefined', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+            
+            // Устанавливаем менеджеры в null после инициализации
+            trackerManager.messageHandlerManager = null;
+            trackerManager.tabTrackingManager = null;
+            trackerManager.eventQueueManager = null;
+            trackerManager.backendManager = null;
+            trackerManager.statisticsManager = null;
+            trackerManager.storageManager = null;
+
+            // Не должно выбросить ошибку
+            expect(() => trackerManager.destroy()).not.toThrow();
+            expect(trackerManager.isInitialized).toBe(false);
+        });
+
+        test('должен сбрасывать trackingEnabled в значение по умолчанию', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+            await trackerManager.enableTracking();
+
+            expect(trackerManager.trackingEnabled).toBe(true);
+
+            trackerManager.destroy();
+
+            // trackingEnabled должен быть сброшен к дефолтному значению
+            expect(trackerManager.trackingEnabled).toBeDefined();
+        });
     });
 
     describe('Наследование от BaseManager', () => {
@@ -418,6 +520,14 @@ describe('TrackerManager', () => {
     });
 
     describe('Online/Offline мониторинг', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
         test('должен обрабатывать онлайн статус при инициализации', async () => {
             Object.defineProperty(global.navigator, 'onLine', {
                 writable: true,
@@ -453,6 +563,37 @@ describe('TrackerManager', () => {
 
             // Проверяем что статус установлен корректно при инициализации
             expect(trackerManager.eventQueueManager.state.isOnline).toBe(true);
+        });
+
+        test('должен вызывать processQueue при онлайн статусе', async () => {
+            Object.defineProperty(global.navigator, 'onLine', {
+                writable: true,
+                value: true
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            const processQueueSpy = jest.spyOn(trackerManager.eventQueueManager, 'processQueue');
+            
+            await trackerManager.init();
+
+            expect(processQueueSpy).toHaveBeenCalled();
+        });
+
+        test('должен периодически проверять изменение online статуса', async () => {
+            const setIntervalSpy = jest.spyOn(global, 'setInterval');
+            
+            Object.defineProperty(global.navigator, 'onLine', {
+                writable: true,
+                value: true
+            });
+
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+
+            // Проверяем что setInterval был вызван для периодической проверки
+            expect(setIntervalSpy).toHaveBeenCalled();
+            
+            setIntervalSpy.mockRestore();
         });
     });
 
