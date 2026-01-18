@@ -483,12 +483,62 @@ describe('AuthHandlerManager', () => {
         });
     });
 
+    describe('_decodeJWT', () => {
+        test('декодирует валидный JWT токен', () => {
+            // Создаем валидный JWT токен (header.payload.signature)
+            const payload = { username: 'testuser', sub: 'user123' };
+            const encodedPayload = btoa(JSON.stringify(payload));
+            const token = `header.${encodedPayload}.signature`;
+
+            const result = authHandlerManager._decodeJWT(token);
+
+            expect(result).toEqual(payload);
+        });
+
+        test('возвращает null для невалидного токена (не строка)', () => {
+            expect(authHandlerManager._decodeJWT(null)).toBeNull();
+            expect(authHandlerManager._decodeJWT(undefined)).toBeNull();
+            expect(authHandlerManager._decodeJWT(123)).toBeNull();
+            expect(authHandlerManager._decodeJWT({})).toBeNull();
+        });
+
+        test('возвращает null для токена с неправильным количеством частей', () => {
+            expect(authHandlerManager._decodeJWT('invalid')).toBeNull();
+            expect(authHandlerManager._decodeJWT('invalid.token')).toBeNull();
+            expect(authHandlerManager._decodeJWT('invalid.token.with.too.many.parts')).toBeNull();
+        });
+
+        test('обрабатывает base64url символы в токене', () => {
+            const payload = { username: 'test-user_123' };
+            // Используем base64url кодирование (- вместо +, _ вместо /)
+            const jsonStr = JSON.stringify(payload);
+            const base64 = btoa(jsonStr);
+            const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+            const token = `header.${base64url}.signature`;
+
+            const result = authHandlerManager._decodeJWT(token);
+
+            expect(result).toEqual(payload);
+        });
+
+        test('возвращает null при ошибке парсинга JSON', () => {
+            // Создаем токен с невалидным JSON в payload
+            const invalidPayload = btoa('invalid json {');
+            const token = `header.${invalidPayload}.signature`;
+
+            const result = authHandlerManager._decodeJWT(token);
+
+            expect(result).toBeNull();
+        });
+    });
+
     describe('handleGetAuthStatus', () => {
         test('возвращает статус авторизации когда пользователь авторизован', async () => {
             storageManager.loadAuthSession.mockResolvedValue({
                 accessToken: 'access-token',
                 refreshToken: 'refresh-token'
             });
+            storageManager.loadAnonymousSession.mockResolvedValue(null);
 
             authHandlerManager.handleGetAuthStatus(sendResponse);
 
@@ -497,12 +547,90 @@ describe('AuthHandlerManager', () => {
             expect(sendResponse).toHaveBeenCalledWith({
                 success: true,
                 isAuthenticated: true,
-                hasRefreshToken: true
+                hasRefreshToken: true,
+                anonId: null,
+                username: null
             });
         });
 
-        test('возвращает статус неавторизован когда сессия отсутствует', async () => {
+        test('извлекает username из поля username в JWT', async () => {
+            const payload = { username: 'testuser' };
+            const encodedPayload = btoa(JSON.stringify(payload));
+            const token = `header.${encodedPayload}.signature`;
+
+            storageManager.loadAuthSession.mockResolvedValue({
+                accessToken: token,
+                refreshToken: 'refresh-token'
+            });
+            storageManager.loadAnonymousSession.mockResolvedValue(null);
+
+            authHandlerManager.handleGetAuthStatus(sendResponse);
+
+            await flushPromises();
+
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: true,
+                isAuthenticated: true,
+                hasRefreshToken: true,
+                anonId: null,
+                username: 'testuser'
+            });
+        });
+
+        test('извлекает username из поля sub в JWT', async () => {
+            const payload = { sub: 'user123' };
+            const encodedPayload = btoa(JSON.stringify(payload));
+            const token = `header.${encodedPayload}.signature`;
+
+            storageManager.loadAuthSession.mockResolvedValue({
+                accessToken: token,
+                refreshToken: 'refresh-token'
+            });
+            storageManager.loadAnonymousSession.mockResolvedValue(null);
+
+            authHandlerManager.handleGetAuthStatus(sendResponse);
+
+            await flushPromises();
+
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: true,
+                isAuthenticated: true,
+                hasRefreshToken: true,
+                anonId: null,
+                username: 'user123'
+            });
+        });
+
+        test('извлекает username из поля user_id в JWT', async () => {
+            const payload = { user_id: 'userid456' };
+            const encodedPayload = btoa(JSON.stringify(payload));
+            const token = `header.${encodedPayload}.signature`;
+
+            storageManager.loadAuthSession.mockResolvedValue({
+                accessToken: token,
+                refreshToken: 'refresh-token'
+            });
+            storageManager.loadAnonymousSession.mockResolvedValue(null);
+
+            authHandlerManager.handleGetAuthStatus(sendResponse);
+
+            await flushPromises();
+
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: true,
+                isAuthenticated: true,
+                hasRefreshToken: true,
+                anonId: null,
+                username: 'userid456'
+            });
+        });
+
+        test('возвращает anonId когда пользователь не авторизован', async () => {
             storageManager.loadAuthSession.mockResolvedValue(null);
+            storageManager.loadAnonymousSession.mockResolvedValue({
+                anonId: 'anon-123',
+                anonToken: 'anon-token'
+            });
 
             authHandlerManager.handleGetAuthStatus(sendResponse);
 
@@ -511,7 +639,26 @@ describe('AuthHandlerManager', () => {
             expect(sendResponse).toHaveBeenCalledWith({
                 success: true,
                 isAuthenticated: false,
-                hasRefreshToken: false
+                hasRefreshToken: false,
+                anonId: 'anon-123',
+                username: null
+            });
+        });
+
+        test('возвращает статус неавторизован когда сессия отсутствует', async () => {
+            storageManager.loadAuthSession.mockResolvedValue(null);
+            storageManager.loadAnonymousSession.mockResolvedValue(null);
+
+            authHandlerManager.handleGetAuthStatus(sendResponse);
+
+            await flushPromises();
+
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: true,
+                isAuthenticated: false,
+                hasRefreshToken: false,
+                anonId: null,
+                username: null
             });
         });
 
@@ -519,6 +666,7 @@ describe('AuthHandlerManager', () => {
             storageManager.loadAuthSession.mockResolvedValue({
                 refreshToken: 'refresh-token'
             });
+            storageManager.loadAnonymousSession.mockResolvedValue(null);
 
             authHandlerManager.handleGetAuthStatus(sendResponse);
 
@@ -527,7 +675,9 @@ describe('AuthHandlerManager', () => {
             expect(sendResponse).toHaveBeenCalledWith({
                 success: true,
                 isAuthenticated: false,
-                hasRefreshToken: true
+                hasRefreshToken: true,
+                anonId: null,
+                username: null
             });
         });
 

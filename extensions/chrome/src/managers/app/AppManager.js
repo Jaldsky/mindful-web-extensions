@@ -52,6 +52,7 @@ class AppManager extends BaseManager {
         this.isInitialized = false;
 
         this.pendingVerificationEmail = null;
+        this._cameFromMainMenu = false;
 
         this.init();
     }
@@ -64,7 +65,7 @@ class AppManager extends BaseManager {
      * - Статус онлайн/офлайн определяется по результатам отправки событий
      * - События отправляются автоматически каждые 30 секунд
      * - Дополнительные healthcheck запросы не нужны
-     * - Пользователь может проверить вручную кнопкой "Test Connection"
+     * - Проверка подключения доступна в настройках (options page)
      * 
      * @async
      * @returns {Promise<void>}
@@ -82,10 +83,38 @@ class AppManager extends BaseManager {
             this.domManager.setTranslateFn((key) => this.localeManager.t(key));
             this.localeManager.localizeDOM();
 
-            await this._applyOnboardingState();
+            const pendingEmail = await this._loadPendingVerificationEmail();
+            const onboardingCompleted = await this._loadOnboardingCompleted();
 
-            this.localeManager.localizeDOM();
-            await this.loadInitialStatus();
+            if (pendingEmail) {
+                this.pendingVerificationEmail = pendingEmail;
+                this._showOnboardingScreen('verify');
+                
+                setTimeout(() => {
+                    if (this.domManager.elements.verifyEmail && this.pendingVerificationEmail) {
+                        this.domManager.elements.verifyEmail.value = this.pendingVerificationEmail;
+                    }
+                    const descriptionElement = this.domManager.elements.verifyDescription;
+                    if (descriptionElement) {
+                        if (this.pendingVerificationEmail) {
+                            descriptionElement.textContent = this.localeManager.t(
+                                'app.verify.description',
+                                { email: this.pendingVerificationEmail }
+                            );
+                        } else {
+                            descriptionElement.textContent = this.localeManager.t(
+                                'app.verify.descriptionManual'
+                            );
+                        }
+                    }
+                }, 100);
+            } else if (!onboardingCompleted) {
+                this._showOnboardingScreen('welcome');
+            } else {
+                this._showMain();
+                this.localeManager.localizeDOM();
+                await this.loadInitialStatus();
+            }
 
             this.setupEventHandlers();
             this.localeManager.addLocaleChangeListener(() => {
@@ -111,24 +140,6 @@ class AppManager extends BaseManager {
      */
     async loadInitialStatus() {
         try {
-            const connectionResult = await this.serviceWorkerManager.checkConnection();
-
-            if (connectionResult.tooFrequent) {
-                const lastStatus = await this._loadConnectionStatusFromStorage();
-                if (lastStatus !== null) {
-                    this.domManager.updateConnectionStatus(lastStatus);
-                    this.updateState({ isOnline: lastStatus });
-                } else {
-                    const fallbackStatus = this.state?.isOnline ?? false;
-                    this.domManager.updateConnectionStatus(fallbackStatus);
-                }
-            } else {
-                const isOnline = connectionResult.success;
-                this.domManager.updateConnectionStatus(isOnline);
-                this.updateState({ isOnline });
-                await this._saveConnectionStatusToStorage(isOnline);
-            }
-
             const trackingStatus = await this.serviceWorkerManager.getTrackingStatus();
             this.domManager.updateTrackingStatus(trackingStatus.isTracking);
             this.domManager.updateTrackingToggle(trackingStatus.isTracking);
@@ -137,14 +148,94 @@ class AppManager extends BaseManager {
             const stats = await this.serviceWorkerManager.getTodayStats();
             this.domManager.updateCounters(stats);
 
+            await this.loadUserInfo();
             await this._updateLoginButtonVisibility();
             
         } catch (error) {
             this._logError({ key: 'logs.app.initialStatusError' }, error);
             this.notificationManager.showNotification(
-                this.localeManager.t('app.notifications.connectionError'),
+                this.localeManager.t('app.notifications.initialStatusError'),
                 'error'
             );
+        }
+    }
+
+    /**
+     * Загружает и отображает информацию о пользователе.
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    async loadUserInfo() {
+        try {
+            const response = await this.serviceWorkerManager.sendMessage(
+                CONFIG.MESSAGE_TYPES.GET_AUTH_STATUS
+            );
+
+            const userStatusElement = document.getElementById('userStatus');
+            const userStatusTooltip = document.getElementById('userStatusTooltip');
+
+            if (response && response.success) {
+                const username = response.username || null;
+                const anonId = response.anonId || null;
+                
+                if (username) {
+                    if (userStatusElement) {
+                        userStatusElement.textContent = this.localeManager.t('app.user.statusAuthenticated');
+                        userStatusElement.classList.remove('user-status-anonymous');
+                        userStatusElement.classList.add('user-status-clickable', 'user-status-authenticated');
+                        userStatusElement.style.cursor = 'pointer';
+                        userStatusElement.dataset.identifier = username;
+                    }
+                    if (userStatusTooltip) {
+                        userStatusTooltip.textContent = username;
+                    }
+                } else if (anonId) {
+                    if (userStatusElement) {
+                        userStatusElement.textContent = this.localeManager.t('app.user.statusAnonymous');
+                        userStatusElement.classList.remove('user-status-authenticated');
+                        userStatusElement.classList.add('user-status-clickable', 'user-status-anonymous');
+                        userStatusElement.style.cursor = 'pointer';
+                        userStatusElement.dataset.identifier = anonId;
+                    }
+                    if (userStatusTooltip) {
+                        userStatusTooltip.textContent = anonId;
+                    }
+                } else {
+                    if (userStatusElement) {
+                        userStatusElement.textContent = this.localeManager.t('app.status.unknown');
+                        userStatusElement.classList.remove('user-status-clickable', 'user-status-anonymous', 'user-status-authenticated');
+                        userStatusElement.style.cursor = 'default';
+                        userStatusElement.dataset.identifier = '';
+                    }
+                    if (userStatusTooltip) {
+                        userStatusTooltip.textContent = '';
+                    }
+                }
+            } else {
+                if (userStatusElement) {
+                    userStatusElement.textContent = this.localeManager.t('app.status.unknown');
+                    userStatusElement.classList.remove('user-status-clickable', 'user-status-anonymous', 'user-status-authenticated');
+                    userStatusElement.style.cursor = 'default';
+                    userStatusElement.dataset.identifier = '';
+                }
+                if (userStatusTooltip) {
+                    userStatusTooltip.textContent = '';
+                }
+            }
+        } catch (error) {
+            this._logError({ key: 'logs.app.userInfoLoadError' }, error);
+            const userStatusElement = document.getElementById('userStatus');
+            const userStatusTooltip = document.getElementById('userStatusTooltip');
+            if (userStatusElement) {
+                userStatusElement.textContent = this.localeManager.t('app.status.unknown');
+                userStatusElement.classList.remove('user-status-clickable', 'user-status-anonymous', 'user-status-authenticated');
+                userStatusElement.style.cursor = 'default';
+                userStatusElement.dataset.identifier = '';
+            }
+            if (userStatusTooltip) {
+                userStatusTooltip.textContent = '';
+            }
         }
     }
 
@@ -165,14 +256,6 @@ class AppManager extends BaseManager {
             this.eventHandlers.set('openSettings', handler);
         }
 
-        if (this.domManager.elements.testConnection) {
-            const handler = async () => {
-                await this.testConnection();
-            };
-            this.domManager.elements.testConnection.addEventListener('click', handler);
-            this.eventHandlers.set('testConnection', handler);
-        }
-
         if (this.domManager.elements.toggleTracking) {
             const handler = async () => {
                 await this.toggleTracking();
@@ -184,8 +267,16 @@ class AppManager extends BaseManager {
         if (this.domManager.elements.tryAnonBtn) {
             const handler = async () => {
                 await this._saveOnboardingCompleted(true);
+
+                try {
+                    await this.serviceWorkerManager.sendMessage(CONFIG.MESSAGE_TYPES.AUTH_LOGOUT);
+                } catch (error) {
+                    this._logError({ key: 'logs.app.authLogoutError' }, error);
+                }
+
                 this._showMain();
-                await this._sendAuthLogout();
+
+                await this.loadInitialStatus();
             };
             this.domManager.elements.tryAnonBtn.addEventListener('click', handler);
             this.eventHandlers.set('tryAnonBtn', handler);
@@ -200,16 +291,13 @@ class AppManager extends BaseManager {
         }
 
         if (this.domManager.elements.loginBack) {
-            const handler = () => {
-
-                const onboardingOverlay = this.domManager.elements.onboardingOverlay;
-                const appMain = this.domManager.elements.appMain;
-
-                if (appMain && onboardingOverlay && onboardingOverlay.style.display !== 'none') {
-
+            const handler = async () => {
+                const onboardingCompleted = await this._loadOnboardingCompleted();
+                
+                if (onboardingCompleted) {
                     this._showMain();
+                    this._cameFromMainMenu = false;
                 } else {
-
                     this._showOnboardingScreen('welcome');
                 }
             };
@@ -571,6 +659,48 @@ class AppManager extends BaseManager {
             this.domManager.elements.mainRegisterBack.addEventListener('click', handler);
             this.eventHandlers.set('mainRegisterBack', handler);
         }
+
+        const userStatusElement = document.getElementById('userStatus');
+        if (userStatusElement) {
+            const handler = async () => {
+                const identifier = userStatusElement.dataset.identifier;
+                if (!identifier || identifier === '') {
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(identifier);
+                    this.notificationManager.showNotification(
+                        this.localeManager.t('app.user.identifierCopied'),
+                        'success'
+                    );
+                } catch (error) {
+                    this._logError({ key: 'logs.app.copyToClipboardError' }, error);
+                    try {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = identifier;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        this.notificationManager.showNotification(
+                            this.localeManager.t('app.user.identifierCopied'),
+                            'success'
+                        );
+                    } catch (fallbackError) {
+                        this._logError({ key: 'logs.app.copyToClipboardFallbackError' }, fallbackError);
+                        this.notificationManager.showNotification(
+                            this.localeManager.t('app.notifications.copyError'),
+                            'error'
+                        );
+                    }
+                }
+            };
+            userStatusElement.addEventListener('click', handler);
+            this.eventHandlers.set('userStatus', handler);
+        }
     }
 
     async _applyOnboardingState() {
@@ -626,6 +756,7 @@ class AppManager extends BaseManager {
         if (loginContainer) loginContainer.style.display = 'none';
 
         if (isMainMenuVisible && main && overlay) {
+            this._cameFromMainMenu = true;
 
             main.classList.remove('fade-in', 'fade-out', 'fade-out-down');
             overlay.classList.remove('fade-in', 'fade-out', 'fade-out-down');
@@ -636,11 +767,16 @@ class AppManager extends BaseManager {
                 main.style.display = 'none';
                 main.classList.remove('fade-out');
 
+                if (welcome) welcome.style.display = 'none';
+                if (login) login.style.display = 'none';
+                if (register) register.style.display = 'none';
+                if (verify) verify.style.display = 'none';
+
                 overlay.style.display = 'flex';
-                overlay.style.transform = 'translateY(-20px)';
+                overlay.style.transform = 'scale(0.95)';
                 overlay.style.opacity = '0';
 
-                // Force reflow for animation
+                // Force reflow
                 // eslint-disable-next-line no-unused-expressions
                 overlay.offsetWidth;
                 
@@ -651,7 +787,18 @@ class AppManager extends BaseManager {
                 this._showScreenInOverlay(screen, welcome, login, register, verify);
             }, 250);
         } else {
+            this._cameFromMainMenu = false;
 
+            const isOverlayVisible = overlay && overlay.style.display !== 'none' && 
+                                     window.getComputedStyle(overlay).display !== 'none';
+            
+            if (!isOverlayVisible) {
+                if (welcome) welcome.style.display = 'none';
+                if (login) login.style.display = 'none';
+                if (register) register.style.display = 'none';
+                if (verify) verify.style.display = 'none';
+            }
+            
             if (overlay) overlay.style.display = 'flex';
             if (main) main.style.display = 'none';
             this._showScreenInOverlay(screen, welcome, login, register, verify);
@@ -659,6 +806,7 @@ class AppManager extends BaseManager {
     }
 
     _showScreenInOverlay(screen, welcome, login, register, verify) {
+        const modal = document.querySelector('.app-onboarding-modal');
 
         let currentScreen = null;
         const checkVisibility = (element) => {
@@ -705,20 +853,56 @@ class AppManager extends BaseManager {
             if (verify) verify.style.display = 'none';
 
             targetElement.style.display = 'block';
-            targetElement.style.transform = 'translateY(-20px)';
-            targetElement.style.opacity = '0';
 
-            // Force reflow for animation
+            // Force reflow
             // eslint-disable-next-line no-unused-expressions
-            targetElement.offsetWidth;
-            
-            targetElement.style.transform = '';
-            targetElement.style.opacity = '';
-            targetElement.classList.add('fade-in');
+            targetElement.offsetHeight;
+
+            if (modal) {
+                const targetHeight = modal.scrollHeight;
+                modal.style.height = `${targetHeight}px`;
+            }
+
+            setTimeout(() => {
+                const formElement = targetElement.querySelector('.auth-form');
+                if (formElement) {
+                    const children = formElement.children;
+
+                    Array.from(children).forEach((child) => {
+                        child.style.opacity = '0';
+                        child.style.transform = 'translateY(20px)';
+                    });
+
+                    // Force reflow
+                    // eslint-disable-next-line no-unused-expressions
+                    formElement.offsetHeight;
+
+                    Array.from(children).forEach((child, index) => {
+                        setTimeout(() => {
+                            child.style.transition = 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                            child.style.opacity = '1';
+                            child.style.transform = 'translateY(0)';
+                        }, 100 + (index * 80));
+                    });
+                }
+            }, 50);
 
             setTimeout(() => {
                 if (targetElement) {
                     this.localeManager.localizeDOM(targetElement);
+
+                    setTimeout(() => {
+                        const formElement = targetElement.querySelector('.auth-form');
+                        if (formElement) {
+                            const children = formElement.children;
+                            Array.from(children).forEach((child) => {
+                                child.style.opacity = '';
+                                child.style.transform = '';
+                                child.style.transition = '';
+                            });
+                        }
+                    }, 800);
+                    
                     if (screen === 'verify') {
                         const email = this.pendingVerificationEmail || 
                                     this.domManager.elements.verifyEmail?.value?.trim() || '';
@@ -748,6 +932,36 @@ class AppManager extends BaseManager {
         const isBackward = currentScreen && screenOrder[currentScreen] > screenOrder[screen];
 
         if (currentElement && targetElement && currentElement !== targetElement) {
+            if (currentElement) {
+                currentElement.style.display = 'none';
+            }
+
+            targetElement.style.display = 'block';
+            targetElement.style.opacity = '0';
+
+            // Force reflow
+            // eslint-disable-next-line no-unused-expressions
+            targetElement.offsetHeight;
+
+            const targetHeight = modal ? modal.scrollHeight : targetElement.offsetHeight;
+
+            if (currentElement) {
+                currentElement.style.display = 'block';
+            }
+            targetElement.style.display = 'none';
+            targetElement.style.opacity = '';
+
+            if (modal) {
+                const currentHeight = modal.offsetHeight;
+                modal.style.height = `${currentHeight}px`;
+
+                // Force reflow
+                // eslint-disable-next-line no-unused-expressions
+                modal.offsetHeight;
+
+                modal.style.height = `${targetHeight}px`;
+            }
+
             if (welcome) {
                 welcome.classList.remove('fade-in', 'fade-out', 'fade-out-down');
             }
@@ -777,14 +991,10 @@ class AppManager extends BaseManager {
 
                 if (targetElement) {
                     targetElement.style.display = 'block';
-                    if (isBackward) {
-                        targetElement.style.transform = 'translateY(20px)';
-                    } else {
-                        targetElement.style.transform = 'translateY(-20px)';
-                    }
+                    targetElement.style.transform = 'scale(0.98)';
                     targetElement.style.opacity = '0';
 
-                    // Force reflow for animation
+                    // Force reflow
                     // eslint-disable-next-line no-unused-expressions
                     targetElement.offsetWidth;
 
@@ -816,9 +1026,13 @@ class AppManager extends BaseManager {
                                 }
                             }
                         }
+
+                        if (modal) {
+                            modal.style.height = '';
+                        }
                     }, 50);
                 }
-            }, 250);
+            }, 400);
         } else {
             if (welcome) welcome.style.display = screen === 'welcome' ? 'block' : 'none';
             if (login) login.style.display = screen === 'login' ? 'block' : 'none';
@@ -880,7 +1094,7 @@ class AppManager extends BaseManager {
                 main.style.transform = 'translateY(20px)';
                 main.style.opacity = '0';
 
-                // Force reflow for animation
+                // Force reflow
                 // eslint-disable-next-line no-unused-expressions
                 main.offsetWidth;
                 
@@ -923,6 +1137,7 @@ class AppManager extends BaseManager {
             }
 
             await this._updateLoginButtonVisibility();
+            await this.loadUserInfo();
             this.notificationManager.showNotification(
                 this.localeManager.t('app.auth.loginSuccess'),
                 'success'
@@ -1195,70 +1410,6 @@ class AppManager extends BaseManager {
     }
 
     /**
-     * Тестирует подключение к серверу.
-     *
-     * @async
-     * @returns {Promise<boolean>} true если подключение успешно
-     */
-    async testConnection() {
-        const button = this.domManager.elements.testConnection;
-        const originalText = this.localeManager.t('app.buttons.testConnection');
-        
-        try {
-            this.domManager.setButtonState(
-                button,
-                this.localeManager.t('app.buttons.testConnectionLoading'),
-                true
-            );
-
-            const minDelay = new Promise(resolve => setTimeout(resolve, 500));
-            const connectionCheck = this.serviceWorkerManager.checkConnection();
-            
-            const [connectionResult] = await Promise.all([connectionCheck, minDelay]);
-            const isOnline = connectionResult.success;
-
-            let message;
-            let messageType;
-            if (isOnline) {
-                this.updateState({ isOnline });
-                this.domManager.updateConnectionStatus(isOnline);
-                await this._saveConnectionStatusToStorage(isOnline);
-                message = this.localeManager.t('app.status.connectionSuccess');
-                messageType = 'success';
-            } else if (connectionResult.tooFrequent) {
-                message = this.localeManager.t('app.status.requestTooFrequent');
-                messageType = 'warning';
-            } else {
-                this.updateState({ isOnline });
-                this.domManager.updateConnectionStatus(isOnline);
-                await this._saveConnectionStatusToStorage(isOnline);
-                message = this.localeManager.t('app.status.connectionFailed');
-                messageType = 'error';
-            }
-            
-            this.domManager.showConnectionStatusMessage(message, messageType);
-
-            return isOnline;
-        } catch (error) {
-            this._logError({ key: 'logs.app.testConnection.error' }, error);
-            this.domManager.updateConnectionStatus(false);
-            this.updateState({ isOnline: false });
-            await this._saveConnectionStatusToStorage(false);
-            this.domManager.showConnectionStatusMessage(
-                this.localeManager.t('app.status.connectionError'),
-                'error'
-            );
-            return false;
-        } finally {
-            this.domManager.setButtonState(
-                button,
-                originalText,
-                false
-            );
-        }
-    }
-
-    /**
      * Переключает состояние отслеживания (включить/отключить).
      * 
      * @async
@@ -1405,7 +1556,14 @@ class AppManager extends BaseManager {
     _removeEventHandlers() {
         try {
             this.eventHandlers.forEach((handler, key) => {
-                const element = this.domManager.elements[key];
+                let element;
+
+                if (key === 'userStatus') {
+                    element = document.getElementById('userStatus');
+                } else {
+                    element = this.domManager.elements[key];
+                }
+                
                 if (element && handler) {
                     element.removeEventListener('click', handler);
                 }
@@ -1416,57 +1574,6 @@ class AppManager extends BaseManager {
         } catch (error) {
             this._logError({ key: 'logs.app.eventHandlersRemoveError' }, error);
         }
-    }
-
-    /**
-     * Сохраняет статус подключения в chrome.storage.local.
-     * 
-     * @private
-     * @param {boolean} isOnline - Статус подключения
-     * @returns {Promise<void>}
-     */
-    async _saveConnectionStatusToStorage(isOnline) {
-        try {
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                await new Promise((resolve, reject) => {
-                    chrome.storage.local.set({ mindful_connection_status: isOnline }, () => {
-                        if (chrome.runtime.lastError) {
-                            reject(new Error(chrome.runtime.lastError.message));
-                        } else {
-                            resolve();
-                        }
-                    });
-                });
-            }
-        } catch (error) {
-            this._logError({ key: 'logs.app.saveConnectionStatusError' }, error);
-        }
-    }
-
-    /**
-     * Загружает статус подключения из chrome.storage.local.
-     * 
-     * @private
-     * @returns {Promise<boolean|null>} Статус подключения или null, если не найден
-     */
-    async _loadConnectionStatusFromStorage() {
-        try {
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                return await new Promise((resolve, reject) => {
-                    chrome.storage.local.get(['mindful_connection_status'], (result) => {
-                        if (chrome.runtime.lastError) {
-                            reject(new Error(chrome.runtime.lastError.message));
-                        } else {
-                            resolve(result.mindful_connection_status !== undefined ? result.mindful_connection_status : null);
-                        }
-                    });
-                });
-            }
-        } catch (error) {
-
-            this._logError({ key: 'logs.app.loadConnectionStatusError' }, error);
-        }
-        return null;
     }
 
     /**

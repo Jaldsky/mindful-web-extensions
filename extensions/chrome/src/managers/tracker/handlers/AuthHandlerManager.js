@@ -207,18 +207,63 @@ class AuthHandlerManager extends BaseManager {
     }
 
     /**
-     * Возвращает статус авторизации.
+     * Декодирует JWT токен и извлекает данные из payload.
+     *
+     * @private
+     * @param {string} token - JWT токен
+     * @returns {Object|null} Декодированный payload или null
+     */
+    _decodeJWT(token) {
+        try {
+            if (!token || typeof token !== 'string') {
+                return null;
+            }
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                return null;
+            }
+            const payload = parts[1];
+            const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+            const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+            const decoded = atob(padded);
+            return JSON.parse(decoded);
+        } catch (error) {
+            this._logError({ key: 'logs.authHandler.jwtDecodeError' }, error);
+            return null;
+        }
+    }
+
+    /**
+     * Возвращает статус авторизации и информацию о пользователе.
      *
      * @param {Function} sendResponse - Функция для отправки ответа
      * @returns {void}
      */
     handleGetAuthStatus(sendResponse) {
-        this.storageManager.loadAuthSession()
-            .then(session => {
+        Promise.all([
+            this.storageManager.loadAuthSession(),
+            this.storageManager.loadAnonymousSession()
+        ])
+            .then(([session, anonSession]) => {
+                const isAuthenticated = Boolean(session?.accessToken);
+                let username = null;
+                let anonId = null;
+
+                if (isAuthenticated && session.accessToken) {
+                    const payload = this._decodeJWT(session.accessToken);
+                    if (payload) {
+                        username = payload.username || payload.sub || payload.user_id || null;
+                    }
+                } else if (anonSession?.anonId) {
+                    anonId = anonSession.anonId;
+                }
+
                 sendResponse({
                     success: true,
-                    isAuthenticated: Boolean(session?.accessToken),
-                    hasRefreshToken: Boolean(session?.refreshToken)
+                    isAuthenticated,
+                    hasRefreshToken: Boolean(session?.refreshToken),
+                    username: username,
+                    anonId: anonId
                 });
             })
             .catch(error => {
