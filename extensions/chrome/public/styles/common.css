@@ -25,6 +25,7 @@
     --color-bg-primary: #ffffff;
     --color-bg-secondary: #f8f9fa;
     --color-bg-tertiary: #f5f5f5;
+    --color-bg-overlay: #d9d9d9;
     
     /* Status colors */
     --color-success: #d4edda;
@@ -92,6 +93,7 @@
     --color-bg-primary: #1e1e1e;
     --color-bg-secondary: #2a2a2a;
     --color-bg-tertiary: #121212;
+    --color-bg-overlay: #2d2d2d;
     
     /* Status colors */
     --color-success: #1b5e20;
