@@ -172,21 +172,24 @@
         </div>
     </div>
 
-    <div class="app-container" id="appMain">
+    <div class="app-container" id="appMain" style="display: none;">
         <div class="app-header">
             <div class="logo">🧘 Mindful Web</div>
             <div class="subtitle" data-i18n="app.subtitle">Track your attention</div>
         </div>
 
-        <div class="app-section-card status-card">
+        <div class="app-section-card user-status-card">
             <div class="status">
+                <div class="status-item">
+                    <span class="status-label" data-i18n="app.user.statusLabel">Пользовательский статус:</span>
+                    <div class="user-status-wrapper">
+                        <span class="status-value" id="userStatus" data-i18n="app.status.loading">Loading...</span>
+                        <span class="user-status-tooltip" id="userStatusTooltip"></span>
+                    </div>
+                </div>
                 <div class="status-item">
                     <span class="status-label" data-i18n="app.status.tracking">Tracking:</span>
                     <span class="status-value" id="trackingStatus" data-i18n="app.status.active">Active</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label" data-i18n="app.status.connection">Connection:</span>
-                    <span class="status-value" id="connectionStatus" data-i18n="app.status.checking">Checking...</span>
                 </div>
             </div>
         </div>
@@ -213,7 +216,6 @@
             <div class="actions">
                 <button class="app-action-btn login-btn" id="openLogin" data-i18n="app.buttons.login">Sign in</button>
                 <button class="app-action-btn toggle-btn toggle-btn--disable" id="toggleTracking" data-i18n="app.buttons.disableTracking">Disable Tracking</button>
-                <button class="app-action-btn test-btn" id="testConnection" data-i18n="app.buttons.testConnection">Test Connection</button>
                 <button class="app-action-btn settings-btn" id="openSettings" data-i18n="app.buttons.settings">Settings</button>
             </div>
         </div>
