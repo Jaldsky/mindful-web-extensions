@@ -316,4 +316,50 @@ describe('InitializationManager', () => {
         await expect(initializationManager.init()).rejects.toThrow('Onboarding error');
         expect(manager.uiManager.authManager.initOnboarding).toHaveBeenCalled();
     });
+
+    test('init вызывает loadConnectionStatus если функция существует', async () => {
+        setupDiagnosticsLabel();
+        const manager = createBaseOptionsManager();
+        manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.example');
+        manager.domManager.setBackendUrlValue.mockReturnValue(true);
+        manager.loadConnectionStatus = jest.fn().mockResolvedValue();
+
+        const initializationManager = new InitializationManager(manager);
+        await initializationManager.init();
+
+        expect(manager.loadConnectionStatus).toHaveBeenCalled();
+        expect(manager.isInitialized).toBe(true);
+    });
+
+    test('init обрабатывает ошибки loadConnectionStatus без прерывания инициализации', async () => {
+        setupDiagnosticsLabel();
+        const manager = createBaseOptionsManager();
+        manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.example');
+        manager.domManager.setBackendUrlValue.mockReturnValue(true);
+        manager.loadConnectionStatus = jest.fn().mockRejectedValue(new Error('Connection status error'));
+
+        const initializationManager = new InitializationManager(manager);
+        await initializationManager.init();
+
+        expect(manager.loadConnectionStatus).toHaveBeenCalled();
+        expect(manager._logError).toHaveBeenCalledWith(
+            { key: 'logs.initialization.connectionStatusLoadError' },
+            expect.any(Error)
+        );
+        expect(manager.isInitialized).toBe(true);
+    });
+
+    test('loadSettings логирует предупреждение когда statusManager не показывает warning', async () => {
+        const manager = createBaseOptionsManager();
+        manager.storageManager.loadBackendUrl.mockResolvedValue('https://api.test');
+        manager.storageManager.loadDomainExceptions.mockResolvedValue([]);
+        manager.domManager.setBackendUrlValue.mockReturnValue(false);
+        manager.statusManager.showWarning.mockReturnValue(false);
+
+        const initializationManager = new InitializationManager(manager);
+        await initializationManager.loadSettings();
+
+        expect(manager.statusManager.showWarning).toHaveBeenCalled();
+        expect(manager._log).toHaveBeenCalledWith({ key: 'logs.initialization.uiUpdateWarning' });
+    });
 });

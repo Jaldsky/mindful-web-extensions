@@ -43,6 +43,15 @@ class InitializationManager {
 
             manager.diagnosticsWorkflowManager.updateStatus('notRun');
             await this.loadSettings();
+
+            if (typeof manager.loadConnectionStatus === 'function') {
+                try {
+                    await manager.loadConnectionStatus();
+                } catch (e) {
+                    manager._logError({ key: 'logs.initialization.connectionStatusLoadError' }, e);
+                }
+            }
+            
             manager.uiManager.setupEventHandlers();
             if (manager.uiManager.authManager && typeof manager.uiManager.authManager.initOnboarding === 'function') {
                 await manager.uiManager.authManager.initOnboarding();
