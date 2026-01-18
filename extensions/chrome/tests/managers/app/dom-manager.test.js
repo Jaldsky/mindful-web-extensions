@@ -1108,4 +1108,172 @@ describe('DOMManager', () => {
             expect(result).toBe(true);
         });
     });
+
+    describe('setTranslateFn', () => {
+        test('should update translate function', () => {
+            const newTranslateFn = jest.fn((key) => `translated:${key}`);
+            
+            domManager.setTranslateFn(newTranslateFn);
+            
+            expect(domManager.translateFn).toBe(newTranslateFn);
+        });
+
+        test('should throw error if translateFn is not a function', () => {
+            expect(() => domManager.setTranslateFn(null)).toThrow(TypeError);
+            expect(() => domManager.setTranslateFn(undefined)).toThrow(TypeError);
+            expect(() => domManager.setTranslateFn('not a function')).toThrow(TypeError);
+            expect(() => domManager.setTranslateFn(123)).toThrow(TypeError);
+            expect(() => domManager.setTranslateFn({})).toThrow(TypeError);
+        });
+
+        test('should use new translate function in subsequent operations', () => {
+            const newTranslateFn = jest.fn((key) => {
+                if (key === 'app.status.online') return 'Custom Online';
+                if (key === 'app.status.offline') return 'Custom Offline';
+                return key;
+            });
+            
+            domManager.setTranslateFn(newTranslateFn);
+            domManager.updateConnectionStatus(true);
+            
+            expect(newTranslateFn).toHaveBeenCalled();
+            expect(domManager.elements.connectionStatus.textContent).toBe('Custom Online');
+        });
+    });
+
+    describe('refreshStatuses', () => {
+        beforeEach(() => {
+            // Set up initial state
+            domManager.state.isOnline = true;
+            domManager.state.isTracking = false;
+        });
+
+        test('should refresh connection status from state', () => {
+            domManager.state.isOnline = true;
+            
+            domManager.refreshStatuses();
+            
+            const statusElement = domManager.elements.connectionStatus;
+            expect(statusElement.textContent).toBe('Online');
+            expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_ONLINE);
+        });
+
+        test('should refresh tracking status from state', () => {
+            domManager.state.isTracking = true;
+            
+            domManager.refreshStatuses();
+            
+            const statusElement = domManager.elements.trackingStatus;
+            expect(statusElement.textContent).toBe('Active');
+            expect(statusElement.className).toBe(DOMManager.CSS_CLASSES.STATUS_ACTIVE);
+        });
+
+        test('should refresh tracking toggle from state', () => {
+            domManager.state.isTracking = false;
+            const toggleElement = domManager.elements.toggleTracking;
+            
+            domManager.refreshStatuses();
+            
+            expect(toggleElement.textContent).toBe('Enable Tracking');
+            expect(toggleElement.disabled).toBe(false);
+        });
+
+        test('should handle undefined state values gracefully', () => {
+            domManager.state.isOnline = undefined;
+            domManager.state.isTracking = undefined;
+            
+            expect(() => domManager.refreshStatuses()).not.toThrow();
+        });
+
+        test('should refresh all statuses together', () => {
+            domManager.state.isOnline = false;
+            domManager.state.isTracking = true;
+            
+            domManager.refreshStatuses();
+            
+            expect(domManager.elements.connectionStatus.textContent).toBe('Offline');
+            expect(domManager.elements.trackingStatus.textContent).toBe('Active');
+            expect(domManager.elements.toggleTracking.textContent).toBe('Disable Tracking');
+        });
+
+        test('should work with updated translate function', () => {
+            const newTranslateFn = jest.fn((key) => {
+                if (key === 'app.status.online') return 'Nueva En Línea';
+                if (key === 'app.status.active') return 'Nueva Activa';
+                if (key === 'app.buttons.disableTracking') return 'Nueva Parar';
+                return key;
+            });
+            
+            domManager.setTranslateFn(newTranslateFn);
+            domManager.state.isOnline = true;
+            domManager.state.isTracking = true;
+            
+            domManager.refreshStatuses();
+            
+            expect(domManager.elements.connectionStatus.textContent).toBe('Nueva En Línea');
+            expect(domManager.elements.trackingStatus.textContent).toBe('Nueva Activa');
+            expect(domManager.elements.toggleTracking.textContent).toBe('Nueva Parar');
+        });
+    });
+
+    describe('Login Form Animation Coverage', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+            document.body.innerHTML = `
+                <div id="connectionStatus"></div>
+                <div id="trackingStatus"></div>
+                <div id="eventsCount"></div>
+                <div id="domainsCount"></div>
+                <button id="openSettings"></button>
+                <button id="testConnection"></button>
+                <button id="toggleTracking"></button>
+                <div id="appMain"></div>
+                <div id="appLoginContainer">
+                    <div class="header-subtitle"></div>
+                </div>
+            `;
+            const mockTranslateFn = createMockTranslateFn();
+            domManager = new DOMManager({ translateFn: mockTranslateFn });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        test('showLoginForm should handle animation timing', () => {
+            const mainElement = document.getElementById('appMain');
+            const loginElement = document.getElementById('appLoginContainer');
+            
+            mainElement.style.display = 'block';
+            loginElement.style.display = 'none';
+            
+            domManager.showLoginForm();
+            
+            expect(mainElement.classList.contains('fade-out')).toBe(true);
+            
+            // Fast-forward animation
+            jest.advanceTimersByTime(300);
+            
+            expect(mainElement.style.display).toBe('none');
+            expect(loginElement.style.display).toBe('flex');
+        });
+
+        test('hideLoginForm should handle animation timing', () => {
+            const mainElement = document.getElementById('appMain');
+            const loginElement = document.getElementById('appLoginContainer');
+            
+            mainElement.style.display = 'none';
+            loginElement.style.display = 'flex';
+            
+            domManager.hideLoginForm();
+            
+            expect(loginElement.classList.contains('fade-out-down')).toBe(true);
+            
+            // Fast-forward animation
+            jest.advanceTimersByTime(300);
+            
+            expect(mainElement.style.display).toBe('flex');
+            expect(loginElement.style.display).toBe('none');
+        });
+    });
 });

@@ -122,7 +122,9 @@ class DOMManager extends BaseManager {
             domainExceptionsList: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.DOMAIN_EXCEPTIONS_LIST),
             onboardingOverlay: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ONBOARDING_OVERLAY),
             onboardingTryBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ONBOARDING_TRY_BTN),
-            onboardingLoginBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ONBOARDING_LOGIN_BTN)
+            onboardingLoginBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.ONBOARDING_LOGIN_BTN),
+            connectionStatus: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.CONNECTION_STATUS),
+            testConnection: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.TEST_CONNECTION)
         };
     }
 
