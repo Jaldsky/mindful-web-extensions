@@ -36,6 +36,9 @@ const RU = {
             authVerifyError: 'Ошибка подтверждения email',
             authResendCodeError: 'Ошибка повторной отправки кода',
             authStatusCheckError: 'Ошибка проверки статуса авторизации',
+            userInfoLoadError: 'Ошибка загрузки информации о пользователе',
+            copyToClipboardError: 'Ошибка копирования в буфер обмена',
+            copyToClipboardFallbackError: 'Ошибка резервного метода копирования',
             handlersSetup: 'Настройка обработчиков событий',
             handlersCount: 'Настроено обработчиков: {count}',
             openSettings: 'Открытие страницы настроек',
@@ -911,15 +914,27 @@ const RU = {
         status: {
             connection: 'Подключение:',
             tracking: 'Отслеживание:',
+            user: 'Пользователь:',
             checking: 'Проверка...',
+            loading: 'Загрузка...',
             online: 'Онлайн',
             offline: 'Офлайн',
             active: 'Активно',
             inactive: 'Неактивно',
+            unknown: 'Неизвестно',
             connectionSuccess: 'Подключено',
             connectionFailed: 'Нет связи',
             connectionError: 'Сбой связи',
             requestTooFrequent: 'Частый запрос'
+        },
+
+        // Секция пользователя
+        user: {
+            statusLabel: 'Пользовательский статус:',
+            statusAuthenticated: 'Авторизован',
+            statusAnonymous: 'Аноним',
+            usernameLabel: 'Имя пользователя:',
+            identifierCopied: 'Идентификатор скопирован в буфер обмена'
         },
         
         // Секция статистики
@@ -950,7 +965,9 @@ const RU = {
             initError: 'Ошибка инициализации',
             trackingEnabled: 'Отслеживание включено',
             trackingDisabled: 'Отслеживание отключено',
-            trackingToggleError: 'Не удалось обновить состояние отслеживания'
+            trackingToggleError: 'Не удалось обновить состояние отслеживания',
+            copyError: 'Не удалось скопировать в буфер обмена',
+            initialStatusError: 'Не удалось загрузить начальный статус'
         }
     },
 
@@ -993,6 +1010,28 @@ const RU = {
             loginError: 'Ошибка входа',
             logoutError: 'Ошибка выхода',
             registerLink: 'Зарегистрироваться'
+        },
+
+        connection: {
+            label: 'Подключение к бэкенду:',
+            statusLabel: 'Статус подключения',
+            checking: 'Проверка...',
+            online: 'Подключено',
+            offline: 'Отключено',
+            clickToTest: 'Нажмите для проверки',
+            testButton: 'Проверить',
+            testing: 'Проверка...',
+            success: 'Подключение успешно',
+            failed: 'Подключение не удалось',
+            error: 'Ошибка подключения',
+            tooFrequent: 'Запрос слишком частый',
+            helpText: 'Проверьте подключение к серверу бэкенда',
+            connectedSubtext: 'Бэкенд доступен',
+            disconnectedSubtext: 'Бэкенд недоступен',
+            pleaseWait: 'Пожалуйста, подождите...',
+            lastChecked: 'Проверено',
+            cachedStatus: 'Кэшированный статус',
+            checkError: 'Ошибка проверки статуса'
         },
 
         register: {

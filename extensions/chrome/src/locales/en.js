@@ -36,6 +36,9 @@ const EN = {
             authVerifyError: 'Auth verify error',
             authResendCodeError: 'Auth resend code error',
             authStatusCheckError: 'Error checking authentication status',
+            userInfoLoadError: 'Error loading user information',
+            copyToClipboardError: 'Error copying to clipboard',
+            copyToClipboardFallbackError: 'Fallback copy method error',
             handlersSetup: 'Setting up event handlers',
             handlersCount: 'Handlers set up: {count}',
             openSettings: 'Open settings page',
@@ -906,15 +909,27 @@ const EN = {
         status: {
             connection: 'Connection:',
             tracking: 'Tracking:',
+            user: 'User:',
             checking: 'Checking...',
+            loading: 'Loading...',
             online: 'Online',
             offline: 'Offline',
             active: 'Active',
             inactive: 'Inactive',
+            unknown: 'Unknown',
             connectionSuccess: 'Connection successful',
             connectionFailed: 'Connection failed',
             connectionError: 'Connection error',
             requestTooFrequent: 'Request too frequent'
+        },
+
+        // User section
+        user: {
+            statusLabel: 'User status:',
+            statusAuthenticated: 'Authenticated',
+            statusAnonymous: 'Anonymous',
+            usernameLabel: 'Username:',
+            identifierCopied: 'Identifier copied to clipboard'
         },
         
         // Stats section
@@ -945,7 +960,9 @@ const EN = {
             initError: 'Initialization Error',
             trackingEnabled: 'Tracking enabled',
             trackingDisabled: 'Tracking disabled',
-            trackingToggleError: 'Failed to update tracking state'
+            trackingToggleError: 'Failed to update tracking state',
+            copyError: 'Failed to copy to clipboard',
+            initialStatusError: 'Failed to load initial status'
         }
     },
 
@@ -988,6 +1005,28 @@ const EN = {
             loginError: 'Login failed',
             logoutError: 'Logout failed',
             registerLink: 'Register'
+        },
+
+        connection: {
+            label: 'Backend Connection:',
+            statusLabel: 'Connection Status',
+            checking: 'Checking...',
+            online: 'Online',
+            offline: 'Offline',
+            clickToTest: 'Click to test',
+            testButton: 'Test',
+            testing: 'Testing...',
+            success: 'Connection successful',
+            failed: 'Connection failed',
+            error: 'Connection error',
+            tooFrequent: 'Request too frequent',
+            helpText: 'Check the connection to the backend server',
+            connectedSubtext: 'Backend is reachable',
+            disconnectedSubtext: 'Cannot reach backend',
+            pleaseWait: 'Please wait...',
+            lastChecked: 'Last checked',
+            cachedStatus: 'Cached status',
+            checkError: 'Error checking status'
         },
 
         register: {
