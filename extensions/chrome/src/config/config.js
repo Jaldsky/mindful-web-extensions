@@ -174,6 +174,7 @@ const CONFIG = {
         ELEMENT_IDS: {
             CONNECTION_STATUS: 'connectionStatus',
             TRACKING_STATUS: 'trackingStatus',
+            USER_INFO: 'userInfo',
             EVENTS_COUNT: 'eventsCount',
             DOMAINS_COUNT: 'domainsCount',
             QUEUE_SIZE: 'queueSize',
@@ -264,7 +265,9 @@ const CONFIG = {
             REGISTER_PASSWORD: 'registerPassword',
             REGISTER_SUBMIT_BTN: 'registerSubmitBtn',
             REGISTER_CANCEL_BTN: 'registerCancelBtn',
-            REGISTER_LINK: 'registerLink'
+            REGISTER_LINK: 'registerLink',
+            CONNECTION_STATUS: 'connectionStatus',
+            TEST_CONNECTION: 'testConnection'
         },
         // Дефолтные названия элементов для логирования
         DEFAULT_ELEMENT_NAMES: {
