@@ -92,6 +92,19 @@ class EventHandlersManager {
             manager._log({ key: 'logs.ui.eventHandlers.runDiagnosticsBtnNotFound' });
         }
 
+        if (manager.domManager.elements.testConnection) {
+            manager.originalButtonTexts.set('testConnection', manager.domManager.elements.testConnection.textContent);
+
+            const testConnectionHandler = async () => {
+                await manager.testConnection();
+            };
+
+            manager.domManager.elements.testConnection.addEventListener('click', testConnectionHandler);
+            manager.eventHandlers.set('testConnection', testConnectionHandler);
+        } else {
+            manager._log({ key: 'logs.ui.eventHandlers.testConnectionBtnNotFound' });
+        }
+
         const clearDiagnostics = document.getElementById('clearDiagnostics');
         if (clearDiagnostics) {
             const handler = () => manager.clearDiagnostics();

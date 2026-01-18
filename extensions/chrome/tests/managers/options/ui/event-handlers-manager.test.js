@@ -43,6 +43,9 @@ describe('EventHandlersManager', () => {
             <button id="toggleDeveloperTools">Dev Tools</button>
             <button id="onboardingTryBtn">Try Anonymous</button>
             <button id="onboardingLoginBtn">Sign In</button>
+            <button id="testConnection" class="connection-status-interactive">
+                <span id="connectionStatus">Checking...</span>
+            </button>
         `;
         
         manager.domManager.elements = {
@@ -55,12 +58,14 @@ describe('EventHandlersManager', () => {
             domainExceptionInput: document.getElementById('domainExceptionInput'),
             domainExceptionsList: document.getElementById('domainExceptionsList'),
             onboardingTryBtn: document.getElementById('onboardingTryBtn'),
-            onboardingLoginBtn: document.getElementById('onboardingLoginBtn')
+            onboardingLoginBtn: document.getElementById('onboardingLoginBtn'),
+            testConnection: document.getElementById('testConnection')
         };
         
         manager.saveSettings = jest.fn();
         manager.resetToDefault = jest.fn();
         manager.runDiagnostics = jest.fn();
+        manager.testConnection = jest.fn();
         manager.clearDiagnostics = jest.fn();
         manager.closeDevToolsPanel = jest.fn();
         manager.openDevToolsPanel = jest.fn();
@@ -167,6 +172,28 @@ describe('EventHandlersManager', () => {
             
             expect(manager.runDiagnostics).toHaveBeenCalled();
             expect(manager.eventHandlers.has('runDiagnostics')).toBe(true);
+        });
+
+        test('настраивает обработчик для testConnection', () => {
+            eventHandlersManager.setupEventHandlers();
+            
+            const button = document.getElementById('testConnection');
+            button.click();
+            
+            expect(manager.testConnection).toHaveBeenCalled();
+            expect(manager.eventHandlers.has('testConnection')).toBe(true);
+            // textContent может содержать пробелы из HTML разметки
+            expect(manager.originalButtonTexts.get('testConnection').trim()).toContain('Checking...');
+        });
+
+        test('логирует если testConnection не найден', () => {
+            manager.domManager.elements.testConnection = null;
+            
+            eventHandlersManager.setupEventHandlers();
+            
+            expect(manager._log).toHaveBeenCalledWith(
+                expect.objectContaining({ key: 'logs.ui.eventHandlers.testConnectionBtnNotFound' })
+            );
         });
 
         test('настраивает обработчик для clearDiagnostics', () => {
