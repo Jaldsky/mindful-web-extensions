@@ -224,5 +224,53 @@ describe('LocaleDisplayManager', () => {
             
             expect(manager._logError).toHaveBeenCalled();
         });
+
+        test('вызывает updateConnectionLastCheckLocale если метод определен', () => {
+            manager.updateConnectionLastCheckLocale = jest.fn();
+            
+            localeDisplayManager.onLocaleChange();
+            
+            expect(manager.updateConnectionLastCheckLocale).toHaveBeenCalled();
+        });
+
+        test('не падает если updateConnectionLastCheckLocale не определен', () => {
+            manager.updateConnectionLastCheckLocale = undefined;
+            
+            expect(() => localeDisplayManager.onLocaleChange()).not.toThrow();
+        });
+
+        test('вызывает updateConnectionStatus если _lastConnectionStatus определен', () => {
+            manager._lastConnectionStatus = true;
+            manager.updateConnectionStatus = jest.fn();
+            
+            localeDisplayManager.onLocaleChange();
+            
+            expect(manager.updateConnectionStatus).toHaveBeenCalledWith(true);
+        });
+
+        test('вызывает updateConnectionStatus со значением false', () => {
+            manager._lastConnectionStatus = false;
+            manager.updateConnectionStatus = jest.fn();
+            
+            localeDisplayManager.onLocaleChange();
+            
+            expect(manager.updateConnectionStatus).toHaveBeenCalledWith(false);
+        });
+
+        test('не вызывает updateConnectionStatus если _lastConnectionStatus не определен', () => {
+            manager._lastConnectionStatus = undefined;
+            manager.updateConnectionStatus = jest.fn();
+            
+            localeDisplayManager.onLocaleChange();
+            
+            expect(manager.updateConnectionStatus).not.toHaveBeenCalled();
+        });
+
+        test('работает если updateConnectionStatus не определен', () => {
+            manager._lastConnectionStatus = true;
+            manager.updateConnectionStatus = undefined;
+            
+            expect(() => localeDisplayManager.onLocaleChange()).not.toThrow();
+        });
     });
 });

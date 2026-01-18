@@ -94,6 +94,14 @@ class LocaleDisplayManager {
                 manager.diagnosticsWorkflowManager.updateStatus(currentStatus);
             }
 
+            if (typeof manager.updateConnectionLastCheckLocale === 'function') {
+                manager.updateConnectionLastCheckLocale();
+            }
+
+            if (manager._lastConnectionStatus !== undefined) {
+                manager.updateConnectionStatus(manager._lastConnectionStatus);
+            }
+
         } catch (error) {
             manager._logError({ key: 'logs.ui.localeDisplay.localeChangeError' }, error);
         }
