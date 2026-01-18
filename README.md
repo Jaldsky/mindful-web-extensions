@@ -3,540 +3,122 @@
 
 [![Chrome](https://img.shields.io/badge/Chrome-Extension-green)](https://chrome.google.com/webstore)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)](https://developer.chrome.com/docs/extensions/mv3/)
-[![Privacy](https://img.shields.io/badge/Privacy-First-green)](https://github.com/Jaldsky/mindful-web)
-[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)](extensions/chrome)
+[![Tests](https://img.shields.io/badge/Tests-1861_Passing-brightgreen)](extensions/chrome)
 [![Coverage](https://img.shields.io/badge/Coverage-95%25-brightgreen)](extensions/chrome)
 
-> **Mindful Web Extensions** — browser extensions for tracking internet activity and restoring control over your attention.
+> Browser extension for tracking internet activity and restoring control over your attention.
+
+## 🔗 Project Links
+
+| Component | Repository | Description |
+|-----------|-----------|-------------|
+| 🔌 **Extensions** | [mindful-web-extensions](https://github.com/Jaldsky/mindful-web-extensions) | Browser extensions (Chrome) |
+| 🖥️ **Backend** | [mindful-web-backend](https://github.com/Jaldsky/mindful-web-backend) | FastAPI backend server |
+| 🌐 **Frontend** | [mindful-web-frontend](https://github.com/Jaldsky/mindful-web-frontend) | React dashboard and analytics |
 
 ---
 
-## 🌍 About / О проекте
+## ✨ Key Features
 
-### 🇬🇧 English
-Mindful Web Extensions is a set of browser extensions that help track your internet activity. The extension works in the background and collects data about tab switching, domains you visit, and activity time. All data is stored locally first and sent to your backend in batches for optimal performance.
-
-### 🇷🇺 Русский
-Mindful Web Extensions — это набор расширений для браузеров, которые помогают отслеживать активность пользователя в интернете. Расширение работает в фоновом режиме и собирает данные о переключении между вкладками, доменах, которые вы посещаете, и времени активности. Все данные сначала сохраняются локально и отправляются на ваш бэкенд батчами для оптимальной производительности.
-
-## ✨ Features / Возможности
-
-### 🇬🇧 English
-- 🕒 **Activity Tracking**: Automatic tracking of tab switching and focus changes
-- 📊 **Real-time Statistics**: Today's Activity dashboard with events, domains, and queue metrics
-- 📈 **Activity Charts**: Visual activity graphs with customizable time ranges (1m to 1d)
-- 🛑 **Tracking Control**: Enable/disable tracking with a single click
-- 🚫 **Domain Exceptions**: Exclude specific domains from tracking and data sending
-- 🔄 **Offline Mode**: Local data storage when internet is unavailable
-- 📦 **Batch Processing**: Optimized data sending to server with error handling limits
-- 🔒 **Privacy-First**: Only domains, never full URLs or content
-- ⚙️ **Configurable**: Customizable backend URL and settings
-- 🌓 **Theme Support**: Light and dark themes with seamless switching
-- 🌍 **Multilingual**: Full support for English and Russian languages with complete localization
-
-### 🇷🇺 Русский
-- 🕒 **Отслеживание активности**: Автоматическое отслеживание переключений между вкладками
-- 📊 **Статистика в реальном времени**: Панель "Активность за сегодня" с событиями, доменами и метриками очереди
-- 📈 **Графики активности**: Визуальные графики активности с настраиваемыми временными диапазонами (1м до 1д)
-- 🛑 **Управление трекингом**: Включение/отключение трекинга одним кликом
-- 🚫 **Исключения доменов**: Исключение определенных доменов из трекинга и отправки данных
-- 🔄 **Офлайн-режим**: Сохранение данных локально при отсутствии интернета
-- 📦 **Батчевая обработка**: Оптимизированная отправка данных на сервер с лимитами обработки ошибок
-- 🔒 **Приватность**: Только домены, никогда полные URL или содержимое
-- ⚙️ **Настраиваемость**: Настраиваемый URL бэкенда и параметры
-- 🌓 **Поддержка тем**: Светлая и темная темы с плавным переключением
-- 🌍 **Многоязычность**: Полная поддержка английского и русского языков с полной локализацией
-
-## 🛠️ Tech Stack / Технологии
-
-- **Browser**: Chrome 88+ with Manifest V3 support
-- **Storage**: Chrome Storage API for local data persistence
-- **Background**: Service Worker for background processing
-- **UI**: HTML/CSS/JavaScript for popup and options pages
-- **API**: RESTful communication with FastAPI backend
+- 🔐 **Authentication** — Token-based auth with login/registration
+- 👋 **Onboarding** — Welcome screen for new users
+- 📊 **Activity Dashboard** — Real-time statistics and activity charts
+- 🔌 **Connection Monitor** — Interactive backend status checking
+- 🛑 **Tracking Control** — Enable/disable with one click
+- 🚫 **Domain Exceptions** — Exclude specific sites from tracking
+- 🌓 **Themes** — Light and dark mode
+- 🌍 **i18n** — English and Russian localization
+- 🔒 **Privacy-First** — Only domains, never full URLs
 
 ---
 
-## 🚀 Quick Start / Быстрый старт
+## 🚀 Quick Start
 
-### 🇬🇧 English
+### 1. Prerequisites
+- Chrome 88+ with Manifest V3
+- FastAPI backend running on `http://localhost:8000`
 
-#### 1. Prerequisites
-- **Backend Server**: Ensure your FastAPI backend is running on `http://localhost:8000`
-- **API Endpoint**: Must be available `POST /api/v1/events/save`
-- **Chrome Browser**: Version 88+ with Manifest V3 support
-- **Node.js**: Version 14+ for building the extension
-
-#### 2. Build Extension
-```bash
-cd extensions/chrome
-npm install          # Install dependencies
-npm run build        # Build the extension
-```
-
-This will create a `dist/` folder with the bundled extension files.
-
-#### 3. Install Extension
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable **Developer mode** in the top right corner
-3. Click **"Load unpacked"**
-4. Select the folder `extensions/chrome/dist/`
-5. Verify installation: Extension should appear in the list and auto-activate
-
-#### 3. Configure
-1. Click the extension icon in the toolbar
-2. Click **"Settings"** to open the settings page
-3. Change backend URL if needed (default: `http://localhost:8000/api/v1/events/save`)
-4. Choose your preferred theme (☀️ Light or 🌙 Dark) using the theme toggle button
-5. Select your language (🌐 EN or RU) using the language toggle button
-6. Click **"Save Settings"**
-
-#### 4. Test
-1. In the popup, ensure status shows **"Connection: Online"**
-2. Click **"Test Connection"** to verify backend communication
-3. Open several tabs and switch between them
-4. Watch the **"Events tracked"** and **"Domains visited"** counters increase in the popup
-5. View detailed statistics in the **"Today's Activity"** section
-6. Use **"Disable Tracking"** button to pause tracking if needed
-
-### 🇷🇺 Русский
-
-#### 1. Предварительные требования
-- **Бэкенд сервер**: Убедитесь, что ваш FastAPI бэкенд запущен на `http://localhost:8000`
-- **Эндпоинт API**: Должен быть доступен `POST /api/v1/events/save`
-- **Chrome браузер**: Версия 88+ с поддержкой Manifest V3
-- **Node.js**: Версия 14+ для сборки расширения
-
-#### 2. Сборка расширения
-```bash
-cd extensions/chrome
-npm install          # Установка зависимостей
-npm run build        # Сборка расширения
-```
-
-Это создаст папку `dist/` с файлами расширения.
-
-#### 3. Установка расширения
-1. Откройте Chrome и перейдите в `chrome://extensions/`
-2. Включите **"Режим разработчика"** (Developer mode) в правом верхнем углу
-3. Нажмите **"Загрузить распакованное расширение"** (Load unpacked)
-4. Выберите папку `extensions/chrome/dist/`
-5. Проверьте установку: Расширение должно появиться в списке и автоматически активироваться
-
-#### 4. Настройка
-1. Кликните на иконку расширения в панели инструментов
-2. Нажмите **"Settings"** для открытия страницы настроек
-3. Измените URL бэкенда при необходимости (по умолчанию: `http://localhost:8000/api/v1/events/save`)
-4. Выберите предпочитаемую тему (☀️ Светлая или 🌙 Тёмная) с помощью кнопки переключения темы
-5. Выберите язык (🌐 EN или RU) с помощью кнопки переключения языка
-6. Нажмите **"Сохранить настройки"**
-
-#### 5. Проверка работы
-1. В popup расширения убедитесь, что статус **"Connection: Online"**
-2. Нажмите **"Test Connection"** для проверки связи с бэкендом
-3. Откройте несколько вкладок и переключайтесь между ними
-4. Следите за увеличением счетчиков **"Events tracked"** и **"Domains visited"** в popup
-5. Просмотрите детальную статистику в разделе **"Активность за сегодня"**
-6. Используйте кнопку **"Отключить трекинг"** для временной остановки трекинга при необходимости
-
----
-
-## 📊 How It Works / Как это работает
-
-### 🇬🇧 English
-
-#### Event Tracking
-The extension tracks the following events:
-- **`active`**: When a tab becomes active
-- **`inactive`**: When a tab loses focus
-- **`tab_removed`**: When a tab is closed
-- **`window_focus`**: When browser window gains/loses focus
-
-#### Data Format
-Events are sent in the following format:
-
-```json
-{
-  "data": [
-    {
-      "event": "active",
-      "domain": "example.com",
-      "timestamp": "2024-01-15T10:30:00.000Z"
-    }
-  ]
-}
-```
-
-#### Batch Processing
-- Events accumulate locally in a queue
-- Sending occurs in batches every 30 seconds
-- Data is stored locally when internet is unavailable
-- Queue is automatically processed when connection is restored
-- Error handling with limits to prevent excessive retry attempts
-- Domain exceptions allow excluding specific domains from tracking and sending
-
-### 🇷🇺 Русский
-
-#### Отслеживание событий
-Расширение отслеживает следующие события:
-- **`active`**: Когда вкладка становится активной
-- **`inactive`**: Когда вкладка теряет фокус
-- **`tab_removed`**: Когда вкладка закрывается
-- **`window_focus`**: Когда окно браузера получает/теряет фокус
-
-#### Формат данных
-События отправляются в следующем формате:
-
-```json
-{
-  "data": [
-    {
-      "event": "active",
-      "domain": "example.com",
-      "timestamp": "2024-01-15T10:30:00.000Z"
-    }
-  ]
-}
-```
-
-#### Батчевая обработка
-- События накапливаются локально в очереди
-- Отправка происходит батчами каждые 30 секунд
-- При отсутствии интернета данные сохраняются локально
-- При восстановлении соединения очередь автоматически обрабатывается
-- Обработка ошибок с лимитами для предотвращения избыточных повторных попыток
-- Исключения доменов позволяют исключить определенные домены из трекинга и отправки
-
----
-
-## 🛠️ Development / Разработка
-
-### 🇬🇧 English
-
-#### Architecture
-- **Service Worker** (`src/tracker.js`): Main tracking logic with modular structure
-- **Popup** (`src/app.js`): Entry point for popup interface with activity dashboard
-- **App Managers** (`src/managers/app/`): App, diagnostics, DOM, notification, and service worker managers
-- **Options** (`src/options.js`): Settings page with activity charts and domain exceptions
-- **Tracker Module** (`src/managers/tracker/`): 
-  - `core/`: Backend, storage, and statistics managers
-  - `handlers/`: Connection, debug, message, settings, and status handlers
-  - `queue/`: Batch processing, domain exceptions, event queue, and failure management
-  - `tracking/`: Tab tracking manager
-- **Options Module** (`src/managers/options/`):
-  - `core/`: DOM, initialization, lifecycle, logs, storage, and validation managers
-  - `diagnostics/`: Developer tools, diagnostics data, and workflow managers
-  - `status/`: Status history, queue, renderer, and status managers
-  - `ui/`: Activity, domain exceptions, event handlers, locale display, settings, theme display, and UI managers
-- **Theme Module** (`src/managers/theme/`): Application, storage, sync, theme initializer, and theme managers
-- **Locale Module** (`src/managers/locale/`): DOM, locale, storage, and translation managers
-- **Base Classes** (`src/base/`): BaseManager, LocaleManager, LoggingManager, MessageManager, PerformanceManager, StateManager
-- **Public Assets** (`public/`): HTML templates, icons, and styles
-- **Locales** (`src/locales/`): English and Russian translation files
-- **Manifest V3**: Modern Chrome extensions standard
-- **Webpack**: Module bundler for ES6 modules
-
-#### Building
-```bash
-cd extensions/chrome
-
-# Development build
-npm run build
-
-# Production build (minified)
-npm run build:prod
-
-# Watch mode (auto-rebuild)
-npm run watch
-```
-
-#### Debugging
-1. Open `chrome://extensions/`
-2. Find the extension and click **"Inspect views: service worker"**
-3. Use console to view logs
-4. In popup, click **"Run Diagnostics"** for diagnostics
-5. Use source maps for debugging bundled code
-
-#### Code Quality & Pre-commit Hooks
-This project uses automated code quality checks before every commit.
-
-**🔍 What is checked:**
-- ✅ **Tests** - All Jest tests must pass
-- ✅ **Linter** - ESLint with auto-fix for code quality
-- ✅ **Code style** - Automatic formatting corrections
-
-**⚡ Pre-commit Hooks Setup (First Time):**
-
-After cloning the repository, just run:
+### 2. Build & Install
 ```bash
 cd extensions/chrome
 npm install
+npm run build
 ```
 
-That's it! Hooks are configured automatically and will run on every commit.
+### 3. First Launch
+1. Click extension icon
+2. Choose **"Try Without Login"** (anonymous) or **"Login"** (with account)
+3. Configure settings, manage domain exceptions
+4. Start tracking!
 
-> **Note:** In CI environments, hooks installation is automatically skipped.
+---
 
-**What happens on commit:**
-1. 🧪 **npm test** - Runs all tests with comprehensive coverage
-2. 🔍 **npm run lint:fix** - Checks code quality and auto-fixes issues
-3. ❌ **Blocks commit** if tests fail or linter finds errors
-4. ✅ **Allows commit** if all checks pass (warnings are OK)
+## 🛠️ Development
 
-**Manual testing:**
+### Tech Stack
+- **Chrome Manifest V3**, Service Worker, Storage API
+- **Modular Architecture**: Core, Handlers, Queue, Tracking modules
+- **Testing**: Jest (1861 tests, 95%+ coverage)
+- **Code Quality**: ESLint, Pre-commit hooks
+
+### Build Commands
 ```bash
-# Run tests manually
 cd extensions/chrome
-npm test
 
-# Run linter with auto-fix
-npm run lint:fix
+npm install           # Install dependencies
+npm run build         # Development build
+npm run build:prod    # Production build
+npm run watch         # Watch mode
 
-# Test pre-commit hook manually
-cd ../..
-.husky/pre-commit
+npm test              # Run tests
+npm run test:coverage # Coverage report
+npm run lint:fix      # Fix linting issues
 ```
 
-**Commit from terminal (see full output):**
+### Pre-commit Hooks
+Automatically runs on every commit:
+- ✅ All tests must pass
+- ✅ ESLint checks and auto-fixes
+- ❌ Blocks commit if checks fail
+
 ```bash
-git add .
-git commit -m "your message"
-
-# You will see:
-# ==========================================
-# 🔍 PRE-COMMIT CHECKS
-# ==========================================
-# 🧪 Running tests...
-# ✅ Tests passed
-# 🔍 Running linter...
-# ✅ All checks passed!
-```
-
-**Commit from WebStorm/IDE:**
-- Open built-in Terminal (Alt+F12 / Option+F12)
-- Use `git commit` commands there to see full output
-- Or commit via IDE UI (output in Version Control → Console)
-
-**Skip hooks (if urgently needed):**
-```bash
-# Skip hooks for one commit
+# Skip hooks if urgently needed
 git commit --no-verify -m "urgent fix"
 ```
-
-### 🇷🇺 Русский
-
-#### Архитектура
-- **Service Worker** (`src/tracker.js`): Основная логика трекинга с модульной структурой
-- **Popup** (`src/app.js`): Точка входа для интерфейса popup с панелью активности
-- **App Managers** (`src/managers/app/`): Менеджеры приложения, диагностики, DOM, уведомлений и service worker
-- **Options** (`src/options.js`): Страница настроек с графиками активности и исключениями доменов
-- **Tracker Module** (`src/managers/tracker/`):
-  - `core/`: Менеджеры бэкенда, хранилища и статистики
-  - `handlers/`: Обработчики соединения, отладки, сообщений, настроек и статуса
-  - `queue/`: Батчевая обработка, исключения доменов, очередь событий и управление ошибками
-  - `tracking/`: Менеджер отслеживания вкладок
-- **Options Module** (`src/managers/options/`):
-  - `core/`: Менеджеры DOM, инициализации, жизненного цикла, логов, хранилища и валидации
-  - `diagnostics/`: Менеджеры инструментов разработчика, данных диагностики и рабочих процессов
-  - `status/`: Менеджеры истории статуса, очереди, рендеринга и статуса
-  - `ui/`: Менеджеры активности, исключений доменов, обработчиков событий, отображения локали, настроек, отображения темы и UI
-- **Theme Module** (`src/managers/theme/`): Менеджеры приложения, хранилища, синхронизации, инициализатора темы и темы
-- **Locale Module** (`src/managers/locale/`): Менеджеры DOM, локали, хранилища и переводов
-- **Base Classes** (`src/base/`): BaseManager, LocaleManager, LoggingManager, MessageManager, PerformanceManager, StateManager
-- **Public Assets** (`public/`): HTML шаблоны, иконки и стили
-- **Locales** (`src/locales/`): Файлы переводов на английский и русский языки
-- **Manifest V3**: Современный стандарт расширений Chrome
-
-#### Отладка
-1. Откройте `chrome://extensions/`
-2. Найдите расширение и нажмите **"Inspect views: service worker"**
-3. Используйте консоль для просмотра логов
-4. В popup нажмите **"Run Diagnostics"** для диагностики
-
-#### Качество кода и Pre-commit хуки
-Проект использует автоматизированные проверки качества кода перед каждым коммитом.
-
-**🔍 Что проверяется:**
-- ✅ **Тесты** - Все Jest тесты должны пройти
-- ✅ **Линтер** - ESLint с автоисправлениями для качества кода
-- ✅ **Стиль кода** - Автоматические исправления форматирования
-
-**⚡ Настройка Pre-commit хуков (первый раз):**
-
-После клонирования репозитория, просто выполните:
-```bash
-cd extensions/chrome
-npm install
-```
-
-Всё! Хуки настраиваются автоматически и будут запускаться при каждом коммите.
-
-> **Примечание:** В CI окружениях установка хуков автоматически пропускается.
-
-**Что происходит при коммите:**
-1. 🧪 **npm test** - Запускает все тесты с полным покрытием
-2. 🔍 **npm run lint:fix** - Проверяет качество кода и автоматически исправляет проблемы
-3. ❌ **Блокирует коммит** если тесты не прошли или линтер нашел ошибки
-4. ✅ **Разрешает коммит** если все проверки пройдены (предупреждения допустимы)
-
-**Ручное тестирование:**
-```bash
-# Запуск тестов вручную
-cd extensions/chrome
-npm test
-
-# Запуск линтера с автоисправлением
-npm run lint:fix
-
-# Тестирование pre-commit хука вручную
-cd ../..
-.husky/pre-commit
-```
-
-**Коммит через терминал (виден полный вывод):**
-```bash
-git add .
-git commit -m "ваше сообщение"
-
-# Вы увидите:
-# ==========================================
-# 🔍 PRE-COMMIT CHECKS
-# ==========================================
-# 🧪 Running tests...
-# ✅ Tests passed
-# 🔍 Running linter...
-# ✅ All checks passed!
-```
-
-**Коммит через WebStorm/IDE:**
-- Откройте встроенный Terminal (Alt+F12 / Option+F12)
-- Используйте команды `git commit` там для полного вывода
-- Или коммитьте через UI IDE (вывод в Version Control → Console)
-
-**Пропустить хуки (если срочно нужно):**
-```bash
-# Пропустить хуки для одного коммита
-git commit --no-verify -m "срочный фикс"
-```
+---
 
 ---
 
-## 🔒 Privacy & Security / Приватность и безопасность
+## 🔒 Privacy & Security
 
-### 🇬🇧 English
-- **Local Storage**: All data is stored locally first
-- **User Control**: User can configure backend URL, enable/disable tracking, and manage domain exceptions
-- **Minimal Permissions**: Extension requests only necessary permissions
-- **No Scripts**: Does not inject code into web pages
-- **Domain Only**: Tracks only domains, never full URLs or content
-- **Domain Exceptions**: Users can exclude specific domains from tracking and data transmission
-
-### 🇷🇺 Русский
-- **Локальное хранение**: Все данные сначала сохраняются локально
-- **Контроль пользователя**: Пользователь может настроить URL бэкенда, включить/отключить трекинг и управлять исключениями доменов
-- **Минимальные разрешения**: Расширение запрашивает только необходимые разрешения
-- **Без скриптов**: Не внедряет код на веб-страницы
-- **Только домены**: Отслеживает только домены, никогда полные URL или содержимое
-- **Исключения доменов**: Пользователи могут исключить определенные домены из трекинга и передачи данных
-
-## 📝 Permissions / Разрешения
-
-The extension uses the following permissions:
-- `tabs`: For tracking tab activity
-- `storage`: For local data storage
-- `activeTab`: For getting current tab information
-- `host_permissions`: For sending data to configured backend
+- **Secure Auth** — Token-based with automatic refresh
+- **Local-First** — All data stored locally before sending
+- **Anonymous Mode** — Use without account
+- **Domain Only** — Never tracks full URLs or content
+- **User Control** — Enable/disable tracking, manage exceptions
+- **Minimal Permissions** — Only necessary browser permissions
 
 ---
 
-## 🧪 Testing / Тестирование
+## 📝 Data Format
 
-### 🇬🇧 English
-
-#### Automated Testing
-```bash
-# Install dependencies
-cd extensions/chrome
-npm install
-
-# Run all tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run tests in watch mode
-npm run test:watch
+Events sent to backend:
+```json
+{
+  "data": [
+    {
+      "event": "active",
+      "domain": "example.com",
+      "timestamp": "2024-01-15T10:30:00.000Z"
+    }
+  ]
+}
 ```
 
-#### Code Quality Checks
-```bash
-# Run ESLint manually
-cd extensions/chrome
-npm run lint
+**Event Types:** `active`, `inactive`
 
-# Run ESLint with auto-fix
-npm run lint:fix
-
-# Test pre-commit hook manually
-.husky/pre-commit
-
-# Check code quality before commit
-git add .
-git commit -m "your message"  # Pre-commit hooks run automatically
-```
-
-#### Manual Testing
-1. Open `chrome://extensions/`
-2. Enable Developer mode
-3. Load the extension from `extensions/chrome/`
-4. Use the popup to monitor status
-5. Open `extensions/chrome/tests/test-runner.html` for interactive testing
-6. Check browser console for logs
-
-### 🇷🇺 Русский
-
-#### Автоматизированное тестирование
-```bash
-# Установка зависимостей
-cd extensions/chrome
-npm install
-
-# Запуск всех тестов
-npm test
-
-# Тесты с покрытием кода
-npm run test:coverage
-
-# Тесты в режиме наблюдения
-npm run test:watch
-```
-
-#### Проверки качества кода
-```bash
-# Запуск ESLint вручную
-cd extensions/chrome
-npm run lint
-
-# Запуск ESLint с автоисправлением
-npm run lint:fix
-
-# Тестирование pre-commit хука вручную
-.husky/pre-commit
-
-# Проверка качества кода перед коммитом
-git add .
-git commit -m "your message"  # Pre-commit хуки запускаются автоматически
-```
-
-#### Ручное тестирование
-1. Откройте `chrome://extensions/`
-2. Включите режим разработчика
-3. Загрузите расширение из `extensions/chrome/`
-4. Используйте popup для мониторинга статуса
-5. Откройте `extensions/chrome/tests/test-runner.html` для интерактивного тестирования
-6. Проверьте консоль браузера для просмотра логов
+**Batch Processing:** Every 30 seconds, offline queue, automatic retry with limits
 
 ---
 
-**Mindful Web Extensions** — restore control over your attention in the digital world! 🧘‍♀️
+**Mindful Web Extensions** — restore control over your attention! 🧘‍♀️
