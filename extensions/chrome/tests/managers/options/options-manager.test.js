@@ -466,4 +466,408 @@ describe('OptionsManager', () => {
             expect(result).toBe(diagnostics);
         });
     });
+
+    describe('Connection Status Methods', () => {
+        let optionsManager;
+        let mockConnectionStatusElement;
+        let mockStatusIndicator;
+        let mockLastCheckElement;
+        let mockTestConnectionButton;
+
+        beforeEach(() => {
+            // Setup DOM elements
+            mockConnectionStatusElement = document.createElement('span');
+            mockConnectionStatusElement.id = 'connectionStatus';
+            document.body.appendChild(mockConnectionStatusElement);
+
+            mockStatusIndicator = document.createElement('span');
+            mockStatusIndicator.id = 'statusIndicator';
+            document.body.appendChild(mockStatusIndicator);
+
+            mockLastCheckElement = document.createElement('div');
+            mockLastCheckElement.id = 'connectionLastCheck';
+            document.body.appendChild(mockLastCheckElement);
+
+            mockTestConnectionButton = document.createElement('button');
+            mockTestConnectionButton.id = 'testConnection';
+            document.body.appendChild(mockTestConnectionButton);
+
+            // Setup chrome.storage mock
+            global.chrome = {
+                storage: {
+                    local: {
+                        set: jest.fn((data, callback) => callback()),
+                        get: jest.fn((keys, callback) => callback({}))
+                    }
+                },
+                runtime: { lastError: null }
+            };
+
+            optionsManager = new OptionsManager({ enableLogging: false });
+            optionsManager.domManager.elements.connectionStatus = mockConnectionStatusElement;
+            optionsManager.domManager.elements.testConnection = mockTestConnectionButton;
+            optionsManager.serviceWorkerManager.checkConnection = jest.fn();
+            optionsManager.statusManager.showStatus = jest.fn();
+            optionsManager.localeManager.t = jest.fn((key) => {
+                const translations = {
+                    'options.connection.checking': 'Checking...',
+                    'options.connection.online': 'Online',
+                    'options.connection.offline': 'Offline',
+                    'options.connection.success': 'Connection successful',
+                    'options.connection.failed': 'Connection failed',
+                    'options.connection.error': 'Connection error',
+                    'options.connection.tooFrequent': 'Request too frequent',
+                    'options.connection.lastChecked': 'Last checked',
+                    'options.connection.cachedStatus': 'Cached status',
+                    'options.connection.checkError': 'Error checking status'
+                };
+                return translations[key] || key;
+            });
+
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+            document.body.innerHTML = '';
+            delete global.chrome;
+        });
+
+        describe('testConnection', () => {
+            test('должен успешно проверить подключение', async () => {
+                optionsManager.serviceWorkerManager.checkConnection.mockResolvedValue({
+                    success: true
+                });
+
+                const resultPromise = optionsManager.testConnection();
+                jest.advanceTimersByTime(500);
+                const result = await resultPromise;
+
+                expect(result).toBe(true);
+                expect(mockConnectionStatusElement.textContent).toBe('Connection successful');
+                expect(optionsManager.statusManager.showStatus).toHaveBeenCalledWith('Connection successful', 'success');
+                expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+                    { mindful_connection_status: true },
+                    expect.any(Function)
+                );
+            });
+
+            test('должен обработать неудачное подключение', async () => {
+                optionsManager.serviceWorkerManager.checkConnection.mockResolvedValue({
+                    success: false
+                });
+
+                const resultPromise = optionsManager.testConnection();
+                jest.advanceTimersByTime(500);
+                const result = await resultPromise;
+
+                expect(result).toBe(false);
+                expect(mockConnectionStatusElement.textContent).toBe('Connection failed');
+                expect(optionsManager.statusManager.showStatus).toHaveBeenCalledWith('Connection failed', 'error');
+            });
+
+            test('должен обработать слишком частые запросы', async () => {
+                optionsManager.serviceWorkerManager.checkConnection.mockResolvedValue({
+                    success: false,
+                    tooFrequent: true
+                });
+
+                const resultPromise = optionsManager.testConnection();
+                jest.advanceTimersByTime(500);
+                const result = await resultPromise;
+
+                expect(result).toBe(false);
+                expect(mockConnectionStatusElement.textContent).toBe('Request too frequent');
+                expect(optionsManager.statusManager.showStatus).toHaveBeenCalledWith('Request too frequent', 'warning');
+            });
+
+            test('должен обработать ошибку проверки', async () => {
+                optionsManager.serviceWorkerManager.checkConnection.mockRejectedValue(
+                    new Error('Network error')
+                );
+
+                const resultPromise = optionsManager.testConnection();
+                jest.advanceTimersByTime(500);
+                const result = await resultPromise;
+
+                expect(result).toBe(false);
+                expect(mockConnectionStatusElement.textContent).toBe('Connection error');
+                expect(optionsManager.statusManager.showStatus).toHaveBeenCalledWith('Connection error', 'error');
+            });
+
+            test('должен отключить кнопку во время проверки', async () => {
+                optionsManager.serviceWorkerManager.checkConnection.mockResolvedValue({
+                    success: true
+                });
+
+                const resultPromise = optionsManager.testConnection();
+                
+                expect(mockTestConnectionButton.disabled).toBe(true);
+                
+                jest.advanceTimersByTime(500);
+                await resultPromise;
+            });
+        });
+
+        describe('updateConnectionStatus', () => {
+            test('должен обновить статус для online', () => {
+                optionsManager.updateConnectionStatus(true);
+
+                expect(mockConnectionStatusElement.textContent).toBe('Online');
+                expect(mockStatusIndicator.classList.contains('status-online')).toBe(true);
+                expect(mockTestConnectionButton.disabled).toBe(false);
+            });
+
+            test('должен обновить статус для offline', () => {
+                optionsManager.updateConnectionStatus(false);
+
+                expect(mockConnectionStatusElement.textContent).toBe('Offline');
+                expect(mockStatusIndicator.classList.contains('status-offline')).toBe(true);
+                expect(mockTestConnectionButton.disabled).toBe(false);
+            });
+
+            test('должен удалить класс showing-message', () => {
+                mockTestConnectionButton.classList.add('showing-message');
+                
+                optionsManager.updateConnectionStatus(true);
+
+                expect(mockTestConnectionButton.classList.contains('showing-message')).toBe(false);
+            });
+
+            test('не должен падать если element отсутствует', () => {
+                optionsManager.domManager.elements.connectionStatus = null;
+
+                expect(() => {
+                    optionsManager.updateConnectionStatus(true);
+                }).not.toThrow();
+            });
+        });
+
+        describe('updateConnectionLastCheckLocale', () => {
+            test('должен обновить локализацию для cached статуса', () => {
+                optionsManager._lastCheckType = 'cached';
+                
+                optionsManager.updateConnectionLastCheckLocale();
+
+                expect(mockLastCheckElement.textContent).toBe('Cached status');
+            });
+
+            test('должен обновить локализацию для error статуса', () => {
+                optionsManager._lastCheckType = 'error';
+                
+                optionsManager.updateConnectionLastCheckLocale();
+
+                expect(mockLastCheckElement.textContent).toBe('Error checking status');
+            });
+
+            test('должен обновить локализацию для timestamp', () => {
+                const testDate = new Date('2024-01-01T12:30:00');
+                optionsManager._lastCheckType = 'timestamp';
+                optionsManager._lastCheckTimestamp = testDate;
+                
+                optionsManager.updateConnectionLastCheckLocale();
+
+                expect(mockLastCheckElement.textContent).toContain('Last checked');
+                expect(mockLastCheckElement.textContent).toContain(testDate.toLocaleTimeString());
+            });
+
+            test('не должен падать если element отсутствует', () => {
+                mockLastCheckElement.remove();
+                optionsManager._lastCheckType = 'cached';
+
+                expect(() => {
+                    optionsManager.updateConnectionLastCheckLocale();
+                }).not.toThrow();
+            });
+        });
+
+        describe('loadConnectionStatus', () => {
+            test('должен загрузить статус при успешном подключении', async () => {
+                optionsManager.serviceWorkerManager.checkConnection.mockResolvedValue({
+                    success: true
+                });
+
+                await optionsManager.loadConnectionStatus();
+
+                expect(mockConnectionStatusElement.textContent).toBe('Online');
+                expect(optionsManager._lastConnectionStatus).toBe(true);
+                expect(optionsManager._lastCheckType).toBe('timestamp');
+            });
+
+            test('должен загрузить статус при неудачном подключении', async () => {
+                optionsManager.serviceWorkerManager.checkConnection.mockResolvedValue({
+                    success: false
+                });
+
+                await optionsManager.loadConnectionStatus();
+
+                expect(mockConnectionStatusElement.textContent).toBe('Offline');
+                expect(optionsManager._lastConnectionStatus).toBe(false);
+            });
+
+            test('должен использовать кэшированный статус при tooFrequent', async () => {
+                global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+                    callback({ mindful_connection_status: true });
+                });
+                
+                optionsManager.serviceWorkerManager.checkConnection.mockResolvedValue({
+                    success: false,
+                    tooFrequent: true
+                });
+
+                await optionsManager.loadConnectionStatus();
+
+                expect(mockConnectionStatusElement.textContent).toBe('Online');
+                expect(optionsManager._lastConnectionStatus).toBe(true);
+                expect(optionsManager._lastCheckType).toBe('cached');
+                expect(mockLastCheckElement.textContent).toBe('Cached status');
+            });
+
+            test('должен обработать ошибку загрузки', async () => {
+                optionsManager.serviceWorkerManager.checkConnection.mockRejectedValue(
+                    new Error('Load error')
+                );
+
+                await optionsManager.loadConnectionStatus();
+
+                expect(mockConnectionStatusElement.textContent).toBe('Offline');
+                expect(optionsManager._lastConnectionStatus).toBe(false);
+                expect(optionsManager._lastCheckType).toBe('error');
+                expect(mockLastCheckElement.textContent).toBe('Error checking status');
+            });
+        });
+
+        describe('_saveConnectionStatusToStorage', () => {
+            test('должен сохранить статус в chrome.storage', async () => {
+                await optionsManager._saveConnectionStatusToStorage(true);
+
+                expect(global.chrome.storage.local.set).toHaveBeenCalledWith(
+                    { mindful_connection_status: true },
+                    expect.any(Function)
+                );
+                expect(optionsManager._lastConnectionStatus).toBe(true);
+            });
+
+            test('должен обработать ошибку chrome.runtime.lastError', async () => {
+                global.chrome.runtime.lastError = { message: 'Storage error' };
+
+                await optionsManager._saveConnectionStatusToStorage(true);
+
+                expect(optionsManager._logError).toHaveBeenCalled();
+                
+                global.chrome.runtime.lastError = null;
+            });
+
+            test('не должен падать если chrome.storage недоступен', async () => {
+                delete global.chrome.storage;
+
+                await expect(
+                    optionsManager._saveConnectionStatusToStorage(true)
+                ).resolves.not.toThrow();
+            });
+        });
+
+        describe('_loadConnectionStatusFromStorage', () => {
+            test('должен загрузить статус из chrome.storage', async () => {
+                global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+                    callback({ mindful_connection_status: true });
+                });
+
+                const result = await optionsManager._loadConnectionStatusFromStorage();
+
+                expect(result).toBe(true);
+                expect(global.chrome.storage.local.get).toHaveBeenCalledWith(
+                    ['mindful_connection_status'],
+                    expect.any(Function)
+                );
+            });
+
+            test('должен вернуть null если статус не найден', async () => {
+                global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+                    callback({});
+                });
+
+                const result = await optionsManager._loadConnectionStatusFromStorage();
+
+                expect(result).toBe(null);
+            });
+
+            test('должен обработать ошибку chrome.runtime.lastError', async () => {
+                global.chrome.runtime.lastError = { message: 'Storage error' };
+                global.chrome.storage.local.get.mockImplementation((keys, callback) => {
+                    callback({});
+                });
+
+                const result = await optionsManager._loadConnectionStatusFromStorage();
+
+                expect(optionsManager._logError).toHaveBeenCalled();
+                expect(result).toBe(null);
+                
+                global.chrome.runtime.lastError = null;
+            });
+
+            test('не должен падать если chrome.storage недоступен', async () => {
+                delete global.chrome.storage;
+
+                const result = await optionsManager._loadConnectionStatusFromStorage();
+
+                expect(result).toBe(null);
+            });
+        });
+
+        describe('_showConnectionStatusMessage', () => {
+            test('должен показать success сообщение', () => {
+                optionsManager._showConnectionStatusMessage('Connected', 'success');
+
+                expect(mockConnectionStatusElement.textContent).toBe('Connected');
+                expect(mockStatusIndicator.classList.contains('status-online')).toBe(true);
+                expect(mockTestConnectionButton.disabled).toBe(true);
+                expect(mockTestConnectionButton.classList.contains('showing-message')).toBe(true);
+                expect(optionsManager._lastCheckType).toBe('timestamp');
+            });
+
+            test('должен показать error сообщение', () => {
+                optionsManager._showConnectionStatusMessage('Failed', 'error');
+
+                expect(mockConnectionStatusElement.textContent).toBe('Failed');
+                expect(mockStatusIndicator.classList.contains('status-offline')).toBe(true);
+                expect(mockTestConnectionButton.disabled).toBe(true);
+            });
+
+            test('должен показать warning сообщение', () => {
+                optionsManager._showConnectionStatusMessage('Too frequent', 'warning');
+
+                expect(mockConnectionStatusElement.textContent).toBe('Too frequent');
+                expect(mockStatusIndicator.classList.contains('status-warning')).toBe(true);
+                expect(mockTestConnectionButton.disabled).toBe(true);
+            });
+
+            test('должен восстановить статус после таймаута', () => {
+                optionsManager._lastConnectionStatus = true;
+                optionsManager._showConnectionStatusMessage('Connected', 'success');
+
+                jest.advanceTimersByTime(2000);
+
+                expect(mockConnectionStatusElement.textContent).toBe('Online');
+                expect(mockTestConnectionButton.disabled).toBe(false);
+            });
+
+            test('должен очистить предыдущий таймер', () => {
+                optionsManager._showConnectionStatusMessage('Message 1', 'success');
+                const firstTimer = optionsManager._connectionMessageTimer;
+                
+                optionsManager._showConnectionStatusMessage('Message 2', 'success');
+                
+                expect(optionsManager._connectionMessageTimer).not.toBe(firstTimer);
+            });
+
+            test('не должен падать если element отсутствует', () => {
+                optionsManager.domManager.elements.connectionStatus = null;
+
+                expect(() => {
+                    optionsManager._showConnectionStatusMessage('Test', 'info');
+                }).not.toThrow();
+            });
+        });
+    });
 });
