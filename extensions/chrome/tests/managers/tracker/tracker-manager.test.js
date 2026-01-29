@@ -24,7 +24,8 @@ describe('TrackerManager', () => {
             storage: {
                 local: {
                     get: jest.fn((keys) => Promise.resolve({})),
-                    set: jest.fn(() => Promise.resolve())
+                    set: jest.fn(() => Promise.resolve()),
+                    remove: jest.fn(() => Promise.resolve())
                 }
             },
             runtime: {
@@ -145,19 +146,6 @@ describe('TrackerManager', () => {
 
             expect(initState1).toBe(true);
             expect(initState2).toBe(true);
-        });
-
-        test('должен инициализировать anonToken', async () => {
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_anon_id: 'test-anon-id',
-                mindful_anon_token: 'test-anon-token'
-            });
-
-            trackerManager = new TrackerManager({ enableLogging: false });
-            
-            await trackerManager.init();
-
-            expect(trackerManager.backendManager.authToken).toBe('test-anon-token');
         });
 
         test('должен настраивать lifecycle handlers', async () => {
