@@ -133,14 +133,19 @@ describe('BackendManager', () => {
             expect(result.error).toContain('Network error');
         });
 
-        test('должен требовать authToken', async () => {
+        test('должен отправлять события без authToken (cookie-only)', async () => {
             backendManager.authToken = null;
             const testEvents = [{ event: 'active', domain: 'test.com', timestamp: '2024-01-01' }];
 
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 204,
+                text: async () => ''
+            });
+
             const result = await backendManager.sendEvents(testEvents);
 
-            expect(result.success).toBe(false);
-            expect(result.error).toContain('Auth токен не установлен');
+            expect(result.success).toBe(true);
         });
     });
 
@@ -251,14 +256,13 @@ describe('BackendManager', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 status: 200,
-                json: async () => ({ anon_id: 'test-anon-id', anon_token: 'test-anon-token' })
+                json: async () => ({ anon_id: 'test-anon-id' })
             });
 
             const result = await backendManager.createAnonymousSession();
 
             expect(result.success).toBe(true);
             expect(result.anonId).toBe('test-anon-id');
-            expect(result.anonToken).toBe('test-anon-token');
             expect(fetchMock).toHaveBeenCalled();
         });
 

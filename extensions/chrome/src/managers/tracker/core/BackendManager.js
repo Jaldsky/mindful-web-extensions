@@ -154,16 +154,6 @@ class BackendManager extends BaseManager {
                     return { success: true, data: { message: t('logs.backend.noEventsToSend') } };
                 }
 
-                if (!this.authToken) {
-                    const t = this._getTranslateFn();
-                    const errorMessage = t('logs.backend.authTokenNotSet');
-                    this._logError({ key: 'logs.backend.eventsSendError' }, new Error(errorMessage));
-                    return { 
-                        success: false, 
-                        error: errorMessage 
-                    };
-                }
-
                 const payload = { [CONFIG.BACKEND.PAYLOAD_KEYS.DATA]: events };
                 
                 this._log({ key: 'logs.backend.sendingEvents', params: { eventsCount: events.length } }, { 
@@ -174,13 +164,17 @@ class BackendManager extends BaseManager {
                 });
 
                 const sendRequest = async () => {
+                    const headers = {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                    };
+                    if (this.authToken) {
+                        headers[CONFIG.BACKEND.HEADERS.AUTHORIZATION] = `Bearer ${this.authToken}`;
+                    }
                     return await fetch(this.backendUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
-                        [CONFIG.BACKEND.HEADERS.AUTHORIZATION]: `Bearer ${this.authToken}`
-                    },
-                    body: JSON.stringify(payload)
+                    headers,
+                    body: JSON.stringify(payload),
+                    credentials: 'include'
                 });
                 };
 
@@ -252,7 +246,7 @@ class BackendManager extends BaseManager {
      * Создает анонимную сессию через backend.
      *
      * @async
-     * @returns {Promise<{success: boolean, anonId?: string, anonToken?: string, error?: string}>}
+     * @returns {Promise<{success: boolean, anonId?: string, error?: string}>}
      */
     async createAnonymousSession() {
         return await this._executeWithTimingAsync('createAnonymousSession', async () => {
@@ -270,7 +264,8 @@ class BackendManager extends BaseManager {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
                         [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
-                    }
+                    },
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -283,14 +278,14 @@ class BackendManager extends BaseManager {
                 }
 
                 const data = await response.json();
-                if (!data || !data.anon_id || !data.anon_token) {
+                if (!data || !data.anon_id) {
                     const t = this._getTranslateFn();
                     const errorMessage = t('logs.backend.anonymousSessionInvalidResponse');
                     this._logError({ key: 'logs.backend.anonymousSessionError' }, new Error(errorMessage));
                     return { success: false, error: errorMessage };
                 }
 
-                return { success: true, anonId: data.anon_id, anonToken: data.anon_token };
+                return { success: true, anonId: data.anon_id };
             } catch (error) {
                 this._logError({ key: 'logs.backend.anonymousSessionError' }, error);
                 const t = this._getTranslateFn();
@@ -320,7 +315,8 @@ class BackendManager extends BaseManager {
                     headers: {
                         [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -357,19 +353,24 @@ class BackendManager extends BaseManager {
      * @param {string} refreshToken - Refresh токен
      * @returns {Promise<{success: boolean, accessToken?: string, refreshToken?: string, error?: string}>}
      */
-    async refreshAccessToken(refreshToken) {
+    async refreshAccessToken(refreshToken = null) {
         return await this._executeWithTimingAsync('refreshAccessToken', async () => {
             try {
                 const backendUrlObj = new URL(this.backendUrl);
                 backendUrlObj.pathname = CONFIG.BACKEND.AUTH_REFRESH_PATH;
                 const refreshUrl = backendUrlObj.toString();
 
+                const body = refreshToken
+                    ? JSON.stringify({ refresh_token: refreshToken })
+                    : undefined;
+
                 const response = await fetch(refreshUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
                         [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
                     },
-                    body: JSON.stringify({ refresh_token: refreshToken })
+                    body,
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -420,7 +421,8 @@ class BackendManager extends BaseManager {
                     headers: {
                         [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
                     },
-                    body: JSON.stringify({ username, email, password })
+                    body: JSON.stringify({ username, email, password }),
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -486,7 +488,8 @@ class BackendManager extends BaseManager {
                     headers: {
                         [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
                     },
-                    body: JSON.stringify({ email, code })
+                    body: JSON.stringify({ email, code }),
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -541,7 +544,8 @@ class BackendManager extends BaseManager {
                     headers: {
                         [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
                     },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ email }),
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -573,6 +577,97 @@ class BackendManager extends BaseManager {
             } catch (error) {
                 this._logError({ key: 'logs.backend.authResendCodeError' }, error);
                 return { success: false, error: error.message };
+            }
+        });
+    }
+
+    /**
+     * Логаут пользователя (очистка cookies).
+     *
+     * @async
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    async logout() {
+        return await this._executeWithTimingAsync('logout', async () => {
+            try {
+                const backendUrlObj = new URL(this.backendUrl);
+                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_LOGOUT_PATH;
+                const logoutUrl = backendUrlObj.toString();
+
+                const response = await fetch(logoutUrl, {
+                    method: CONFIG.BACKEND.METHODS.POST,
+                    headers: {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
+                        .replace('{status}', response.status)
+                        .replace('{message}', errorText || response.statusText);
+                    this._logError({ key: 'logs.backend.authLogoutError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                return { success: true };
+            } catch (error) {
+                this._logError({ key: 'logs.backend.authLogoutError' }, error);
+                return { success: false, error: error.message };
+            }
+        });
+    }
+
+    /**
+     * Проверяет текущую сессию через cookies.
+     *
+     * @async
+     * @returns {Promise<{success: boolean, status?: string, userId?: string, anonId?: string, error?: string}>}
+     */
+    async getSession() {
+        return await this._executeWithTimingAsync('getSession', async () => {
+            try {
+                const backendUrlObj = new URL(this.backendUrl);
+                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_SESSION_PATH;
+                const sessionUrl = backendUrlObj.toString();
+
+                const response = await fetch(sessionUrl, {
+                    method: CONFIG.BACKEND.METHODS.GET,
+                    headers: {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
+                        .replace('{status}', response.status)
+                        .replace('{message}', errorText || response.statusText);
+                    this._logError({ key: 'logs.backend.authSessionError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                const data = await response.json();
+                if (!data || !data.status) {
+                    const t = this._getTranslateFn();
+                    const errorMessage = t('logs.backend.authSessionInvalidResponse');
+                    this._logError({ key: 'logs.backend.authSessionError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                return {
+                    success: true,
+                    status: data.status,
+                    userId: data.user_id || null,
+                    anonId: data.anon_id || null
+                };
+            } catch (error) {
+                this._logError({ key: 'logs.backend.authSessionError' }, error);
+                const t = this._getTranslateFn();
+                const errorMessage = error.message || t('logs.backend.unknownError');
+                return { success: false, error: errorMessage };
             }
         });
     }
@@ -623,7 +718,8 @@ class BackendManager extends BaseManager {
                         method: CONFIG.BACKEND.METHODS.GET,
                         headers: {
                             [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
-                        }
+                        },
+                        credentials: 'include'
                     });
                 } catch (fetchError) {
                     const error = fetchError instanceof Error 
