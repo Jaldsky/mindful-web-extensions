@@ -6,8 +6,8 @@ const AuthHandlerManager = require('../../../../src/managers/tracker/handlers/Au
 
 // Helper function to flush all pending promises (optimized for speed)
 async function flushPromises() {
-    // Use minimal iterations for faster execution
-    for (let i = 0; i < 3; i++) {
+    // Run enough iterations to flush chained microtasks
+    for (let i = 0; i < 10; i++) {
         await Promise.resolve();
     }
 }
@@ -26,6 +26,10 @@ describe('AuthHandlerManager', () => {
             register: jest.fn(),
             verify: jest.fn(),
             resendCode: jest.fn(),
+            // cookie-only: AuthHandlerManager сначала пробует getSession()/logout()
+            getSession: jest.fn().mockResolvedValue({ success: false }),
+            logout: jest.fn().mockResolvedValue({ success: true }),
+            refreshAccessToken: jest.fn().mockResolvedValue({ success: false }),
             setAuthSession: jest.fn(),
             clearAuthSession: jest.fn(),
             setAuthToken: jest.fn(),
@@ -35,6 +39,7 @@ describe('AuthHandlerManager', () => {
         storageManager = {
             saveAuthSession: jest.fn(),
             clearAuthSession: jest.fn(),
+            clearAnonymousSession: jest.fn(),
             loadAuthSession: jest.fn(),
             loadAnonymousSession: jest.fn(),
             saveAnonymousSession: jest.fn()
@@ -275,9 +280,11 @@ describe('AuthHandlerManager', () => {
     describe('handleLogout', () => {
         test('выполняет выход и возвращает к анонимной сессии', async () => {
             storageManager.clearAuthSession.mockResolvedValue();
-            storageManager.loadAnonymousSession.mockResolvedValue({
-                anonToken: 'anon-token'
+            backendManager.createAnonymousSession.mockResolvedValue({
+                success: true,
+                anonId: 'anon-id'
             });
+            storageManager.saveAnonymousSession.mockResolvedValue();
 
             authHandlerManager.handleLogout(sendResponse);
 
@@ -285,17 +292,16 @@ describe('AuthHandlerManager', () => {
 
             expect(storageManager.clearAuthSession).toHaveBeenCalled();
             expect(backendManager.clearAuthSession).toHaveBeenCalled();
-            expect(backendManager.setAuthToken).toHaveBeenCalledWith('anon-token');
+            expect(backendManager.createAnonymousSession).toHaveBeenCalled();
+            expect(storageManager.saveAnonymousSession).toHaveBeenCalledWith('anon-id');
             expect(sendResponse).toHaveBeenCalledWith({ success: true });
         });
 
         test('создает новую анонимную сессию если старая отсутствует', async () => {
             storageManager.clearAuthSession.mockResolvedValue();
-            storageManager.loadAnonymousSession.mockResolvedValue({});
             backendManager.createAnonymousSession.mockResolvedValue({
                 success: true,
-                anonId: 'anon-id',
-                anonToken: 'new-anon-token'
+                anonId: 'anon-id'
             });
             storageManager.saveAnonymousSession.mockResolvedValue();
 
@@ -304,8 +310,7 @@ describe('AuthHandlerManager', () => {
             await flushPromises();
 
             expect(backendManager.createAnonymousSession).toHaveBeenCalled();
-            expect(storageManager.saveAnonymousSession).toHaveBeenCalledWith('anon-id', 'new-anon-token');
-            expect(backendManager.setAuthToken).toHaveBeenCalledWith('new-anon-token');
+            expect(storageManager.saveAnonymousSession).toHaveBeenCalledWith('anon-id');
             expect(sendResponse).toHaveBeenCalledWith({ success: true });
         });
 
@@ -628,8 +633,7 @@ describe('AuthHandlerManager', () => {
         test('возвращает anonId когда пользователь не авторизован', async () => {
             storageManager.loadAuthSession.mockResolvedValue(null);
             storageManager.loadAnonymousSession.mockResolvedValue({
-                anonId: 'anon-123',
-                anonToken: 'anon-token'
+                anonId: 'anon-123'
             });
 
             authHandlerManager.handleGetAuthStatus(sendResponse);

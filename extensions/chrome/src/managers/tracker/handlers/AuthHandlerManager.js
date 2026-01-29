@@ -117,18 +117,13 @@ class AuthHandlerManager extends BaseManager {
     handleLogout(sendResponse) {
         this.storageManager.clearAuthSession()
             .then(async () => {
+                await this.backendManager.logout().catch(error => {
+                    this._logError({ key: 'logs.authHandler.logoutError' }, error);
+                });
                 this.backendManager.clearAuthSession();
-                const { anonToken } = await this.storageManager.loadAnonymousSession();
-                if (anonToken) {
-                    this.backendManager.setAuthToken(anonToken);
-                    sendResponse({ success: true });
-                    return;
-                }
-
                 const anonResult = await this.backendManager.createAnonymousSession();
                 if (anonResult.success) {
-                    await this.storageManager.saveAnonymousSession(anonResult.anonId, anonResult.anonToken);
-                    this.backendManager.setAuthToken(anonResult.anonToken);
+                    await this.storageManager.saveAnonymousSession(anonResult.anonId);
                     sendResponse({ success: true });
                 } else {
                     sendResponse({ success: false, error: anonResult.error });
@@ -240,11 +235,72 @@ class AuthHandlerManager extends BaseManager {
      * @returns {void}
      */
     handleGetAuthStatus(sendResponse) {
-        Promise.all([
-            this.storageManager.loadAuthSession(),
-            this.storageManager.loadAnonymousSession()
-        ])
-            .then(([session, anonSession]) => {
+        (async () => {
+            try {
+                const sessionResult = await this.backendManager.getSession();
+                
+                if (sessionResult?.success) {
+                    if (sessionResult.status === 'authenticated') {
+                        const refreshResult = await this.backendManager.refreshAccessToken();
+                        if (refreshResult?.success && refreshResult.accessToken) {
+                            await this.storageManager.saveAuthSession(
+                                refreshResult.accessToken,
+                                refreshResult.refreshToken || null
+                            );
+                            this.backendManager.setAuthSession(
+                                refreshResult.accessToken,
+                                refreshResult.refreshToken || null
+                            );
+                        }
+                        const payload = refreshResult?.accessToken 
+                            ? this._decodeJWT(refreshResult.accessToken)
+                            : null;
+                        sendResponse({
+                            success: true,
+                            isAuthenticated: true,
+                            hasRefreshToken: Boolean(refreshResult?.refreshToken),
+                            username: payload ? (payload.username || payload.sub || payload.user_id || null) : null,
+                            anonId: null
+                        });
+                        return;
+                    } else if (sessionResult.status === 'anonymous') {
+                        await this.storageManager.clearAuthSession();
+                        await this.storageManager.clearAnonymousSession();
+                        this.backendManager.clearAuthSession();
+                        sendResponse({
+                            success: true,
+                            isAuthenticated: false,
+                            hasRefreshToken: false,
+                            username: null,
+                            anonId: sessionResult.anonId || null
+                        });
+                        return;
+                    }
+                }
+
+                let [session, anonSession] = await Promise.all([
+                    this.storageManager.loadAuthSession(),
+                    this.storageManager.loadAnonymousSession()
+                ]);
+
+                if (!session?.accessToken) {
+                    const refreshResult = await this.backendManager.refreshAccessToken();
+                    if (refreshResult?.success && refreshResult.accessToken) {
+                        await this.storageManager.saveAuthSession(
+                            refreshResult.accessToken,
+                            refreshResult.refreshToken || null
+                        );
+                        this.backendManager.setAuthSession(
+                            refreshResult.accessToken,
+                            refreshResult.refreshToken || null
+                        );
+                        session = {
+                            accessToken: refreshResult.accessToken,
+                            refreshToken: refreshResult.refreshToken || null
+                        };
+                    }
+                }
+
                 const isAuthenticated = Boolean(session?.accessToken);
                 let username = null;
                 let anonId = null;
@@ -265,11 +321,11 @@ class AuthHandlerManager extends BaseManager {
                     username: username,
                     anonId: anonId
                 });
-            })
-            .catch(error => {
+            } catch (error) {
                 this._logError({ key: 'logs.authHandler.statusError' }, error);
                 sendResponse({ success: false, error: error.message });
-            });
+            }
+        })();
     }
 }
 
