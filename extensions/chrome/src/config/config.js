@@ -35,7 +35,9 @@ const CONFIG = {
         const HEALTHCHECK_PATH = '/api/v1/healthcheck'; // Путь для healthcheck endpoint
         const AUTH_ANON_PATH = '/api/v1/auth/anonymous'; // Путь для создания анонимной сессии
         const AUTH_LOGIN_PATH = '/api/v1/auth/login'; // Путь для логина пользователя
+        const AUTH_LOGOUT_PATH = '/api/v1/auth/logout'; // Путь для выхода пользователя
         const AUTH_REFRESH_PATH = '/api/v1/auth/refresh'; // Путь для обновления токена
+        const AUTH_SESSION_PATH = '/api/v1/auth/session'; // Путь для проверки текущей сессии
         const AUTH_REGISTER_PATH = '/api/v1/auth/register'; // Путь для регистрации пользователя
         const AUTH_VERIFY_PATH = '/api/v1/auth/verify'; // Путь для подтверждения email
         const AUTH_RESEND_CODE_PATH = '/api/v1/auth/resend-code'; // Путь для повторной отправки кода
@@ -47,7 +49,9 @@ const CONFIG = {
             HEALTHCHECK_PATH,
             AUTH_ANON_PATH,
             AUTH_LOGIN_PATH,
+            AUTH_LOGOUT_PATH,
             AUTH_REFRESH_PATH,
+            AUTH_SESSION_PATH,
             AUTH_REGISTER_PATH,
             AUTH_VERIFY_PATH,
             AUTH_RESEND_CODE_PATH,
@@ -284,7 +288,6 @@ const CONFIG = {
         // Общие
         USER_ID: 'mindful_user_id',
         ANON_ID: 'mindful_anon_id',
-        ANON_TOKEN: 'mindful_anon_token',
         AUTH_ACCESS_TOKEN: 'mindful_auth_access_token',
         AUTH_REFRESH_TOKEN: 'mindful_auth_refresh_token',
         ONBOARDING_COMPLETED: 'mindful_onboarding_completed',
