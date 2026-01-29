@@ -83,8 +83,17 @@ class AppManager extends BaseManager {
             this.domManager.setTranslateFn((key) => this.localeManager.t(key));
             this.localeManager.localizeDOM();
 
+            let hasActiveSession = false;
+            try {
+                const authStatus = await this.serviceWorkerManager.sendMessage(
+                    CONFIG.MESSAGE_TYPES.GET_AUTH_STATUS
+                );
+                hasActiveSession = Boolean(authStatus?.isAuthenticated || authStatus?.anonId);
+            } catch (error) {
+                this._logError({ key: 'logs.app.authStatusCheckError' }, error);
+            }
+
             const pendingEmail = await this._loadPendingVerificationEmail();
-            const onboardingCompleted = await this._loadOnboardingCompleted();
 
             if (pendingEmail) {
                 this.pendingVerificationEmail = pendingEmail;
@@ -108,12 +117,19 @@ class AppManager extends BaseManager {
                         }
                     }
                 }, 100);
-            } else if (!onboardingCompleted) {
-                this._showOnboardingScreen('welcome');
-            } else {
+            } else if (hasActiveSession) {
                 this._showMain();
                 this.localeManager.localizeDOM();
                 await this.loadInitialStatus();
+            } else {
+                const onboardingCompleted = await this._loadOnboardingCompleted();
+                if (!onboardingCompleted) {
+                    this._showOnboardingScreen('welcome');
+                } else {
+                    this._showMain();
+                    this.localeManager.localizeDOM();
+                    await this.loadInitialStatus();
+                }
             }
 
             this.setupEventHandlers();
