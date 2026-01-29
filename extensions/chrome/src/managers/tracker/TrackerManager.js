@@ -102,13 +102,41 @@ class TrackerManager extends BaseManager {
                 const backendUrl = await this.storageManager.loadBackendUrl();
                 this.backendManager.setBackendUrl(backendUrl);
 
-                const { accessToken, refreshToken } = await this.storageManager.loadAuthSession();
-                if (accessToken) {
-                    this.backendManager.setAuthSession(accessToken, refreshToken);
+                const sessionResult = await this.backendManager.getSession();
+                
+                if (sessionResult?.success) {
+                    if (sessionResult.status === 'authenticated') {
+                        const refreshResult = await this.backendManager.refreshAccessToken();
+                        if (refreshResult?.success && refreshResult.accessToken) {
+                            await this.storageManager.saveAuthSession(
+                                refreshResult.accessToken,
+                                refreshResult.refreshToken || null
+                            );
+                            this.backendManager.setAuthSession(
+                                refreshResult.accessToken,
+                                refreshResult.refreshToken || null
+                            );
+                        }
+                    } else if (sessionResult.status === 'anonymous') {
+                        await this.storageManager.clearAuthSession();
+                        await this.storageManager.clearAnonymousSession();
+                        this.backendManager.clearAuthSession();
+                    }
                 } else {
-                    const { anonToken } = await this.storageManager.loadAnonymousSession();
-                    if (anonToken) {
-                        this.backendManager.setAuthToken(anonToken);
+                    let { accessToken, refreshToken } = await this.storageManager.loadAuthSession();
+                    if (!accessToken) {
+                        const refreshResult = await this.backendManager.refreshAccessToken();
+                        if (refreshResult?.success && refreshResult.accessToken) {
+                            accessToken = refreshResult.accessToken;
+                            refreshToken = refreshResult.refreshToken || null;
+                            await this.storageManager.saveAuthSession(accessToken, refreshToken);
+                        }
+                    }
+
+                    if (accessToken) {
+                        this.backendManager.setAuthSession(accessToken, refreshToken);
+                    } else {
+                        await this.storageManager.loadAnonymousSession();
                     }
                 }
 
