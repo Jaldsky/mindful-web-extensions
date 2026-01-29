@@ -240,23 +240,18 @@ describe('StorageManager (Tracker)', () => {
     describe('loadAnonymousSession', () => {
         test('должен загружать анонимную сессию из хранилища', async () => {
             const testAnonId = 'anon-id-123';
-            const testAnonToken = 'anon-token-456';
             memoryStorage.mindful_anon_id = testAnonId;
-            memoryStorage.mindful_anon_token = testAnonToken;
 
             const result = await storageManager.loadAnonymousSession();
 
             expect(result.anonId).toBe(testAnonId);
-            expect(result.anonToken).toBe(testAnonToken);
             expect(storageManager.anonId).toBe(testAnonId);
-            expect(storageManager.anonToken).toBe(testAnonToken);
         });
 
         test('должен возвращать null если сессия не найдена', async () => {
             const result = await storageManager.loadAnonymousSession();
 
             expect(result.anonId).toBeNull();
-            expect(result.anonToken).toBeNull();
         });
 
         test('должен обрабатывать ошибки и возвращать null', async () => {
@@ -265,7 +260,6 @@ describe('StorageManager (Tracker)', () => {
             const result = await storageManager.loadAnonymousSession();
 
             expect(result.anonId).toBeNull();
-            expect(result.anonToken).toBeNull();
         });
     });
 
@@ -304,21 +298,18 @@ describe('StorageManager (Tracker)', () => {
     describe('saveAnonymousSession', () => {
         test('должен сохранять анонимную сессию в хранилище', async () => {
             const testAnonId = 'anon-id-123';
-            const testAnonToken = 'anon-token-456';
 
-            const result = await storageManager.saveAnonymousSession(testAnonId, testAnonToken);
+            const result = await storageManager.saveAnonymousSession(testAnonId);
 
             expect(result).toBe(true);
             expect(storageManager.anonId).toBe(testAnonId);
-            expect(storageManager.anonToken).toBe(testAnonToken);
             expect(memoryStorage.mindful_anon_id).toBe(testAnonId);
-            expect(memoryStorage.mindful_anon_token).toBe(testAnonToken);
         });
 
         test('должен обрабатывать ошибки при сохранении', async () => {
             global.chrome.storage.local.set.mockRejectedValueOnce(new Error('Save error'));
 
-            const result = await storageManager.saveAnonymousSession('anon-id', 'anon-token');
+            const result = await storageManager.saveAnonymousSession('anon-id');
 
             expect(result).toBe(false);
         });
@@ -442,7 +433,7 @@ describe('StorageManager (Tracker)', () => {
         });
     });
 
-    describe('getAccessToken / getRefreshToken / getAnonId / getAnonToken', () => {
+    describe('getAccessToken / getRefreshToken / getAnonId', () => {
         test('getAccessToken должен возвращать текущий access токен', () => {
             storageManager.accessToken = 'access-token-123';
 
@@ -461,17 +452,10 @@ describe('StorageManager (Tracker)', () => {
             expect(storageManager.getAnonId()).toBe('anon-id-789');
         });
 
-        test('getAnonToken должен возвращать текущий anon токен', () => {
-            storageManager.anonToken = 'anon-token-012';
-
-            expect(storageManager.getAnonToken()).toBe('anon-token-012');
-        });
-
         test('должны возвращать null если значения не установлены', () => {
             expect(storageManager.getAccessToken()).toBeNull();
             expect(storageManager.getRefreshToken()).toBeNull();
             expect(storageManager.getAnonId()).toBeNull();
-            expect(storageManager.getAnonToken()).toBeNull();
         });
     });
 

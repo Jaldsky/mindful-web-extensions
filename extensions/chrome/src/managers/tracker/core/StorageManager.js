@@ -58,9 +58,6 @@ class StorageManager extends BaseManager {
 
         /** @type {string|null} */
         this.anonId = null;
-
-        /** @type {string|null} */
-        this.anonToken = null;
         
         /** @type {string} */
         this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
@@ -111,24 +108,21 @@ class StorageManager extends BaseManager {
      * Загружает анонимную сессию из хранилища.
      *
      * @async
-     * @returns {Promise<{anonId: string | null, anonToken: string | null}>}
+     * @returns {Promise<{anonId: string | null}>}
      */
     async loadAnonymousSession() {
         return await this._executeWithTimingAsync('loadAnonymousSession', async () => {
             try {
                 const result = await chrome.storage.local.get([
-                    StorageManager.STORAGE_KEYS.ANON_ID,
-                    StorageManager.STORAGE_KEYS.ANON_TOKEN
+                    StorageManager.STORAGE_KEYS.ANON_ID
                 ]);
                 this.anonId = result[StorageManager.STORAGE_KEYS.ANON_ID] || null;
-                this.anonToken = result[StorageManager.STORAGE_KEYS.ANON_TOKEN] || null;
                 this.updateState({ anonId: this.anonId });
-                return { anonId: this.anonId, anonToken: this.anonToken };
+                return { anonId: this.anonId };
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.anonSessionLoadError' }, error);
                 this.anonId = null;
-                this.anonToken = null;
-                return { anonId: null, anonToken: null };
+                return { anonId: null };
             }
         });
     }
@@ -164,23 +158,43 @@ class StorageManager extends BaseManager {
      *
      * @async
      * @param {string} anonId - Идентификатор анонимной сессии
-     * @param {string} anonToken - JWT токен анонимной сессии
      * @returns {Promise<boolean>} Успешность операции
      */
-    async saveAnonymousSession(anonId, anonToken) {
+    async saveAnonymousSession(anonId) {
         return await this._executeWithTimingAsync('saveAnonymousSession', async () => {
             try {
                 await chrome.storage.local.set({
-                    [StorageManager.STORAGE_KEYS.ANON_ID]: anonId,
-                    [StorageManager.STORAGE_KEYS.ANON_TOKEN]: anonToken
+                    [StorageManager.STORAGE_KEYS.ANON_ID]: anonId
                 });
                 this.anonId = anonId;
-                this.anonToken = anonToken;
                 this.updateState({ anonId: this.anonId });
                 this._log({ key: 'logs.trackerStorage.anonSessionSaved' });
                 return true;
             } catch (error) {
                 this._logError({ key: 'logs.trackerStorage.anonSessionSaveError' }, error);
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Очищает анонимную сессию.
+     *
+     * @async
+     * @returns {Promise<boolean>} Успешность операции
+     */
+    async clearAnonymousSession() {
+        return await this._executeWithTimingAsync('clearAnonymousSession', async () => {
+            try {
+                await chrome.storage.local.remove([
+                    StorageManager.STORAGE_KEYS.ANON_ID
+                ]);
+                this.anonId = null;
+                this.updateState({ anonId: this.anonId });
+                this._log({ key: 'logs.trackerStorage.anonSessionCleared' });
+                return true;
+            } catch (error) {
+                this._logError({ key: 'logs.trackerStorage.anonSessionClearError' }, error);
                 return false;
             }
         });
@@ -516,15 +530,6 @@ class StorageManager extends BaseManager {
     }
 
     /**
-     * Получает текущий anon_token.
-     *
-     * @returns {string|null} anon_token
-     */
-    getAnonToken() {
-        return this.anonToken;
-    }
-
-    /**
      * Получает текущий Backend URL.
      * 
      * @returns {string} Backend URL
@@ -557,7 +562,6 @@ class StorageManager extends BaseManager {
                 await chrome.storage.local.remove([
                     StorageManager.STORAGE_KEYS.USER_ID,
                     StorageManager.STORAGE_KEYS.ANON_ID,
-                    StorageManager.STORAGE_KEYS.ANON_TOKEN,
                     StorageManager.STORAGE_KEYS.AUTH_ACCESS_TOKEN,
                     StorageManager.STORAGE_KEYS.AUTH_REFRESH_TOKEN,
                     StorageManager.STORAGE_KEYS.BACKEND_URL,
@@ -568,7 +572,6 @@ class StorageManager extends BaseManager {
                 
                 this.userId = null;
                 this.anonId = null;
-                this.anonToken = null;
                 this.accessToken = null;
                 this.refreshToken = null;
                 this.backendUrl = StorageManager.DEFAULT_BACKEND_URL;
@@ -595,7 +598,6 @@ class StorageManager extends BaseManager {
     destroy() {
         this.userId = null;
         this.anonId = null;
-        this.anonToken = null;
         this.accessToken = null;
         this.refreshToken = null;
         this.backendUrl = null;
