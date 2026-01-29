@@ -37,6 +37,7 @@
 ### 1. Prerequisites
 - Chrome 88+ with Manifest V3
 - FastAPI backend running on `http://localhost:8000`
+- Web frontend running on `http://localhost:5173` (or your configured URL)
 
 ### 2. Build & Install
 ```bash
@@ -48,8 +49,9 @@ npm run build
 ### 3. First Launch
 1. Click extension icon
 2. Choose **"Try Without Login"** (anonymous) or **"Login"** (with account)
-3. Configure settings, manage domain exceptions
-4. Start tracking!
+3. Open the web frontend — you will be **automatically** in the same auth state (anonymous or logged in) thanks to shared cookies
+4. Configure settings, manage domain exceptions
+5. Start tracking!
 
 ---
 
@@ -57,6 +59,7 @@ npm run build
 
 ### Tech Stack
 - **Chrome Manifest V3**, Service Worker, Storage API
+- **Cookie-based SSO** with FastAPI backend and React frontend
 - **Modular Architecture**: Core, Handlers, Queue, Tracking modules
 - **Testing**: Jest (1861 tests, 95%+ coverage)
 - **Code Quality**: ESLint, Pre-commit hooks
@@ -91,7 +94,8 @@ git commit --no-verify -m "urgent fix"
 
 ## 🔒 Privacy & Security
 
-- **Secure Auth** — Token-based with automatic refresh
+- **Secure Auth** — HttpOnly cookie-based sessions; access/anonymous
+- **SSO** — Sign in once in the extension or on the web — you're automatically signed in on the other
 - **Local-First** — All data stored locally before sending
 - **Anonymous Mode** — Use without account
 - **Domain Only** — Never tracks full URLs or content
