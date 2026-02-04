@@ -9,7 +9,6 @@ describe('BackendManager', () => {
     let fetchMock;
 
     beforeEach(() => {
-        // Мокируем fetch
         fetchMock = jest.fn();
         global.fetch = fetchMock;
 
@@ -88,7 +87,8 @@ describe('BackendManager', () => {
                     method: 'POST',
                     headers: expect.objectContaining({
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer test-auth-token'
+                        'Authorization': 'Bearer test-auth-token',
+                        'Accept-Language': expect.stringMatching(/^(en|ru)$/)
                     }),
                     body: JSON.stringify({ data: testEvents })
                 })
@@ -308,6 +308,8 @@ describe('BackendManager', () => {
             expect(result.accessToken).toBe('access-token');
             expect(result.refreshToken).toBe('refresh-token');
             expect(fetchMock).toHaveBeenCalled();
+            const fetchCall = fetchMock.mock.calls[0];
+            expect(fetchCall[1].headers['Accept-Language']).toMatch(/^(en|ru)$/);
         });
 
         test('должен обрабатывать ошибки логина', async () => {
@@ -517,6 +519,34 @@ describe('BackendManager', () => {
 
         test('должен иметь CONSTANTS', () => {
             expect(backendManager.CONSTANTS).toBeDefined();
+        });
+    });
+
+    describe('Accept-Language header', () => {
+        test('_getAcceptLanguageAsync должен возвращать локаль (en или ru)', async () => {
+            const locale = await backendManager._getAcceptLanguageAsync();
+            expect(['en', 'ru']).toContain(locale);
+        });
+
+        test('_getAcceptLanguageAsync должен брать ru из chrome.storage при наличии', async () => {
+            const chromeGet = jest.fn((keys, cb) => cb({ mindful_locale: 'ru' }));
+            global.chrome = { storage: { local: { get: chromeGet } } };
+            const manager = new BackendManager({ backendUrl: 'http://test.com/api', enableLogging: false });
+            const locale = await manager._getAcceptLanguageAsync();
+            manager.destroy();
+            expect(locale).toBe('ru');
+            delete global.chrome;
+        });
+
+        test('createAnonymousSession должен отправлять Accept-Language в заголовках', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ anon_id: 'anon-123' })
+            });
+            await backendManager.createAnonymousSession();
+            expect(fetchMock).toHaveBeenCalled();
+            expect(fetchMock.mock.calls[0][1].headers['Accept-Language']).toMatch(/^(en|ru)$/);
         });
     });
 });

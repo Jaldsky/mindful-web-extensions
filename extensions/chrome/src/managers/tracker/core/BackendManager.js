@@ -81,6 +81,44 @@ class BackendManager extends BaseManager {
     }
 
     /**
+     * Возвращает текущую локаль для заголовка Accept-Language (асинхронно).
+     * Читает из chrome.storage.local (как фронт из localStorage), чтобы в service worker
+     * использовалась локаль, выбранная в настройках расширения. Формат как на фронте: "ru" | "en".
+     *
+     * @returns {Promise<string>} 'en' | 'ru'
+     */
+    async _getAcceptLanguageAsync() {
+        const supported = CONFIG.LOCALE?.AVAILABLE || ['en', 'ru'];
+
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                const result = await new Promise((resolve) => {
+                    chrome.storage.local.get([CONFIG.LOCALE.STORAGE_KEY], (items) => {
+                        resolve(items[CONFIG.LOCALE.STORAGE_KEY] || null);
+                    });
+                });
+                if (result && supported.includes(result)) return result;
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        try {
+            if (typeof localStorage !== 'undefined') {
+                const cached = localStorage.getItem(CONFIG.LOCALE.CACHE_KEY) || localStorage.getItem(CONFIG.LOCALE.STORAGE_KEY);
+                if (cached && supported.includes(cached)) return cached;
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        const detected = BaseManager.detectBrowserLocale();
+        if (detected && supported.includes(detected)) return detected;
+
+        return BaseManager.DEFAULT_LOCALE || 'en';
+    }
+
+    /**
      * Устанавливает URL backend API.
      * Обновляет внутреннее состояние и логирует изменение.
      * 
@@ -163,9 +201,11 @@ class BackendManager extends BaseManager {
                     payload: payload
                 });
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const sendRequest = async () => {
                     const headers = {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     };
                     if (this.authToken) {
                         headers[CONFIG.BACKEND.HEADERS.AUTHORIZATION] = `Bearer ${this.authToken}`;
@@ -260,10 +300,12 @@ class BackendManager extends BaseManager {
                     url: anonUrl
                 });
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const response = await fetch(anonUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     },
                     credentials: 'include'
                 });
@@ -310,10 +352,12 @@ class BackendManager extends BaseManager {
                 backendUrlObj.pathname = CONFIG.BACKEND.AUTH_LOGIN_PATH;
                 const loginUrl = backendUrlObj.toString();
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const response = await fetch(loginUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     },
                     body: JSON.stringify({ username, password }),
                     credentials: 'include'
@@ -364,10 +408,12 @@ class BackendManager extends BaseManager {
                     ? JSON.stringify({ refresh_token: refreshToken })
                     : undefined;
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const response = await fetch(refreshUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     },
                     body,
                     credentials: 'include'
@@ -416,10 +462,12 @@ class BackendManager extends BaseManager {
                 backendUrlObj.pathname = CONFIG.BACKEND.AUTH_REGISTER_PATH;
                 const registerUrl = backendUrlObj.toString();
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const response = await fetch(registerUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     },
                     body: JSON.stringify({ username, email, password }),
                     credentials: 'include'
@@ -483,10 +531,12 @@ class BackendManager extends BaseManager {
                 backendUrlObj.pathname = CONFIG.BACKEND.AUTH_VERIFY_PATH;
                 const verifyUrl = backendUrlObj.toString();
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const response = await fetch(verifyUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     },
                     body: JSON.stringify({ email, code }),
                     credentials: 'include'
@@ -539,10 +589,12 @@ class BackendManager extends BaseManager {
                 backendUrlObj.pathname = CONFIG.BACKEND.AUTH_RESEND_CODE_PATH;
                 const resendUrl = backendUrlObj.toString();
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const response = await fetch(resendUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     },
                     body: JSON.stringify({ email }),
                     credentials: 'include'
@@ -594,10 +646,12 @@ class BackendManager extends BaseManager {
                 backendUrlObj.pathname = CONFIG.BACKEND.AUTH_LOGOUT_PATH;
                 const logoutUrl = backendUrlObj.toString();
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const response = await fetch(logoutUrl, {
                     method: CONFIG.BACKEND.METHODS.POST,
                     headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     },
                     credentials: 'include'
                 });
@@ -632,10 +686,12 @@ class BackendManager extends BaseManager {
                 backendUrlObj.pathname = CONFIG.BACKEND.AUTH_SESSION_PATH;
                 const sessionUrl = backendUrlObj.toString();
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 const response = await fetch(sessionUrl, {
                     method: CONFIG.BACKEND.METHODS.GET,
                     headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                     },
                     credentials: 'include'
                 });
@@ -712,12 +768,14 @@ class BackendManager extends BaseManager {
                     url: healthcheckUrl
                 });
 
+                const acceptLanguage = await this._getAcceptLanguageAsync();
                 let response;
                 try {
                     response = await fetch(healthcheckUrl, {
                         method: CONFIG.BACKEND.METHODS.GET,
                         headers: {
-                            [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON
+                            [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                            [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
                         },
                         credentials: 'include'
                     });

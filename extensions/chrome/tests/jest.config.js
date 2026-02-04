@@ -14,7 +14,7 @@ module.exports = {
 
     moduleFileExtensions: ['js', 'json'],
 
-    collectCoverage: true,
+    collectCoverage: false,
     coverageDirectory: 'coverage',
     coverageReporters: ['text', 'lcov', 'html'],
     collectCoverageFrom: [
@@ -23,7 +23,8 @@ module.exports = {
         '!**/tests/**'
     ],
 
-    testTimeout: 10000,
+    testTimeout: 8000,
+    maxWorkers: '50%',
 
     globals: {
         chrome: true
