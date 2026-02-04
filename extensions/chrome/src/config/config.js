@@ -67,7 +67,8 @@ const CONFIG = {
             // HTTP заголовки
             HEADERS: {
                 CONTENT_TYPE: 'Content-Type',
-                AUTHORIZATION: 'Authorization'
+                AUTHORIZATION: 'Authorization',
+                ACCEPT_LANGUAGE: 'Accept-Language'
             },
             // Значения заголовков
             HEADER_VALUES: {

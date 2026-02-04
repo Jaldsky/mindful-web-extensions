@@ -23,14 +23,15 @@ describe('EventQueueManager', () => {
         if (!global.chrome.storage) {
             global.chrome.storage = {
                 local: {
-                    get: jest.fn(),
-                    set: jest.fn()
+                    get: jest.fn((keys, cb) => {
+                        if (typeof cb === 'function') cb({});
+                    }),
+                    set: jest.fn((items, cb) => {
+                        if (typeof cb === 'function') cb();
+                    })
                 }
             };
         }
-
-        global.chrome.storage.local.get.mockResolvedValue({});
-        global.chrome.storage.local.set.mockResolvedValue();
 
         // Создаем зависимости
         backendManager = new BackendManager({
@@ -266,6 +267,7 @@ describe('EventQueueManager', () => {
 
                 storageManager.saveEventQueue.mockResolvedValue(true);
                 backendManager.sendEvents.mockResolvedValue({ success: false, error: 'Test error' });
+                jest.spyOn(backendManager, 'checkHealth').mockResolvedValue({ success: false });
 
                 eventQueueManager.addEvent('active', 'test.com');
 

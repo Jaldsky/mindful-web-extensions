@@ -19,12 +19,27 @@ describe('TrackerManager', () => {
     let trackerManager;
 
     beforeEach(() => {
-        // Настраиваем chrome API (всегда переопределяем для чистоты тестов)
+        // Мок fetch — init() вызывает backendManager.getSession(), который делает fetch
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ status: 'anonymous', anon_id: 'test-anon' })
+        });
+
+        // chrome.storage.local.get: поддержка и callback, и Promise (BackendManager._getAcceptLanguageAsync использует callback)
+        const storageGet = jest.fn((keys, cb) => {
+            const data = {};
+            if (typeof cb === 'function') cb(data);
+            return Promise.resolve(data);
+        });
         global.chrome = {
             storage: {
                 local: {
-                    get: jest.fn((keys) => Promise.resolve({})),
-                    set: jest.fn(() => Promise.resolve()),
+                    get: storageGet,
+                    set: jest.fn((items, cb) => {
+                        if (typeof cb === 'function') cb();
+                        return Promise.resolve();
+                    }),
                     remove: jest.fn(() => Promise.resolve())
                 }
             },
@@ -63,6 +78,7 @@ describe('TrackerManager', () => {
                 // Игнорируем ошибки при destroy
             }
         }
+        delete global.fetch;
         jest.clearAllMocks();
         jest.clearAllTimers();
     });
@@ -160,8 +176,10 @@ describe('TrackerManager', () => {
 
         test('должен инициализировать backend URL из storage', async () => {
             const testUrl = 'https://test-backend.com/api';
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_backend_url: testUrl
+            const data = { mindful_backend_url: testUrl };
+            global.chrome.storage.local.get.mockImplementation((keys, cb) => {
+                if (typeof cb === 'function') cb(data);
+                return Promise.resolve(data);
             });
 
             trackerManager = new TrackerManager({ enableLogging: false });
@@ -173,8 +191,10 @@ describe('TrackerManager', () => {
 
         test('должен загружать domain exceptions', async () => {
             const domainExceptions = ['example.com', 'test.com'];
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_domain_exceptions: domainExceptions
+            const data = { mindful_domain_exceptions: domainExceptions };
+            global.chrome.storage.local.get.mockImplementation((keys, cb) => {
+                if (typeof cb === 'function') cb(data);
+                return Promise.resolve(data);
             });
 
             trackerManager = new TrackerManager({ enableLogging: false });
@@ -381,8 +401,10 @@ describe('TrackerManager', () => {
 
     describe('Покрытие веток (Branch Coverage)', () => {
         test('init должен обрабатывать случай когда trackingEnabled = false', async () => {
-            global.chrome.storage.local.get.mockResolvedValue({
-                mindful_tracking_enabled: false
+            const data = { mindful_tracking_enabled: false };
+            global.chrome.storage.local.get.mockImplementation((keys, cb) => {
+                if (typeof cb === 'function') cb(data);
+                return Promise.resolve(data);
             });
 
             trackerManager = new TrackerManager({ enableLogging: false });
