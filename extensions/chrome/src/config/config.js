@@ -30,7 +30,7 @@ const CONFIG = {
      * Настройки Backend API
      */
     BACKEND: (() => {
-        const BASE_URL = 'http://localhost:8000'; // Базовый URL backend сервера
+        const BASE_URL = process.env.MW_BACKEND_URL || 'http://localhost:8000'; // Базовый URL backend сервера
         const EVENTS_ENDPOINT = '/api/v1/events/save'; // Эндпоинт для отправки событий
         const HEALTHCHECK_PATH = '/api/v1/healthcheck'; // Путь для healthcheck endpoint
         const AUTH_ANON_PATH = '/api/v1/auth/anonymous'; // Путь для создания анонимной сессии

@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = (env, argv) => {
@@ -30,6 +31,9 @@ module.exports = (env, argv) => {
           { from: 'public/icons', to: 'icons' },
           { from: 'public/styles', to: 'styles' }
         ]
+      }),
+      new webpack.DefinePlugin({
+        'process.env.MW_BACKEND_URL': JSON.stringify(process.env.MW_BACKEND_URL || 'http://localhost:8000')
       })
     ],
     optimization: {
