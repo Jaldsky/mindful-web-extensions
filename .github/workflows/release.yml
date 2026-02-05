@@ -25,7 +25,7 @@ jobs:
           node -e "
             const fs = require('fs');
             const tag = process.env.GITHUB_REF_NAME || '';
-            const version = tag.replace(/^v\\./, '');
+            const version = tag.replace(/^v\\.?/, '');
             const manifestPath = 'extensions/chrome/manifest.json';
             const pkgPath = 'extensions/chrome/package.json';
             const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
