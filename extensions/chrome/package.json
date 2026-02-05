@@ -14,7 +14,7 @@
   "license": "MIT",
   "scripts": {
     "build": "webpack --mode development",
-    "build:prod": "webpack --mode production",
+    "build:prod": "MW_BACKEND_URL=https://mindfulweb.app webpack --mode production && rm -rf chrome_extension && mv dist chrome_extension",
     "watch": "webpack --mode development --watch",
     "test": "jest --config=tests/jest.config.js",
     "test:watch": "jest --config=tests/jest.config.js --watch",
