@@ -8,6 +8,8 @@ jobs:
   build-and-upload:
     name: Build and upload Chrome extension
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: 📥 Checkout code
