@@ -159,6 +159,25 @@ describe('EventQueueManager', () => {
             // НЕ должно отправиться автоматически - только по таймеру
             expect(backendManager.sendEvents).not.toHaveBeenCalled();
         });
+
+        test('должен вызывать processQueue при достижении batchSize', async () => {
+            eventQueueManager.destroy();
+            eventQueueManager = new EventQueueManager(
+                {
+                    backendManager,
+                    statisticsManager,
+                    storageManager,
+                    trackingController
+                },
+                { enableLogging: false, batchSize: 1 }
+            );
+            const processSpy = jest.spyOn(eventQueueManager, 'processQueue').mockResolvedValue();
+
+            eventQueueManager.addEvent('active', 'batch.com');
+            await Promise.resolve();
+
+            expect(processSpy).toHaveBeenCalled();
+        });
     });
 
     describe('startBatchProcessor / stopBatchProcessor', () => {
@@ -248,6 +267,26 @@ describe('EventQueueManager', () => {
 
             // События должны остаться в очереди
             expect(eventQueueManager.queue.length).toBe(2);
+        });
+
+        test('должен очищать предыдущий retryTimeout и выполнять callback повтора', async () => {
+            jest.useFakeTimers();
+            eventQueueManager.queue = [{ event: 'active', domain: 'retry.com', timestamp: new Date().toISOString() }];
+            backendManager.sendEvents.mockResolvedValue({ success: false, error: 'retry error' });
+            storageManager.saveEventQueue.mockResolvedValue(true);
+            eventQueueManager.failureManager.registerSendFailure = jest.fn().mockResolvedValue(false);
+            eventQueueManager.failureManager.getConsecutiveFailures = jest.fn(() => 1);
+            eventQueueManager.failureManager.isThresholdReached = jest.fn(() => false);
+            const previousTimeoutId = setTimeout(() => {}, 9999);
+            eventQueueManager.retryTimeoutId = previousTimeoutId;
+            const processSpy = jest.spyOn(eventQueueManager, 'processQueue').mockResolvedValue();
+
+            await eventQueueManager.processQueue();
+            jest.runOnlyPendingTimers();
+
+            expect(eventQueueManager.retryTimeoutId).toBeDefined();
+            expect(processSpy).toHaveBeenCalled();
+            jest.useRealTimers();
         });
 
         test('должен отключать трекер после 5 неудачных попыток отправки', async () => {
@@ -519,6 +558,17 @@ describe('EventQueueManager', () => {
             expect(backendManager.sendEvents).toHaveBeenCalled();
         });
 
+        test('очищает существующий healthcheckIntervalId при успешном healthcheck', async () => {
+            backendManager.checkHealth = jest.fn().mockResolvedValue({ success: true });
+            eventQueueManager.healthcheckIntervalId = setInterval(() => {}, 1000);
+            const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+
+            await eventQueueManager._checkHealthAndResumeIfAvailable();
+
+            expect(clearIntervalSpy).toHaveBeenCalled();
+            expect(eventQueueManager.healthcheckIntervalId).toBeNull();
+        });
+
         test('запускает периодический healthcheck при неуспехе', async () => {
             backendManager.checkHealth = jest.fn().mockResolvedValue({ success: false });
             
@@ -527,6 +577,8 @@ describe('EventQueueManager', () => {
             await Promise.resolve();
             
             expect(eventQueueManager.healthcheckIntervalId).toBeDefined();
+            jest.advanceTimersByTime(20000);
+            expect(backendManager.checkHealth).toHaveBeenCalled();
             jest.useRealTimers();
         });
 
@@ -538,6 +590,8 @@ describe('EventQueueManager', () => {
             await Promise.resolve();
             
             expect(eventQueueManager.healthcheckIntervalId).toBeDefined();
+            jest.advanceTimersByTime(20000);
+            expect(backendManager.checkHealth).toHaveBeenCalled();
             jest.useRealTimers();
         });
     });

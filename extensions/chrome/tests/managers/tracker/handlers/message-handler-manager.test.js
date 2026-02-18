@@ -179,6 +179,22 @@ describe('MessageHandlerManager', () => {
             );
         });
 
+        test('должен обрабатывать getDetailedStats сообщение', () => {
+            messageHandlerManager._handleMessage(
+                { type: 'getDetailedStats' },
+                {},
+                sendResponse
+            );
+
+            expect(sendResponse).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    activeEvents: expect.any(Number),
+                    inactiveEvents: expect.any(Number),
+                    eventsTracked: expect.any(Number)
+                })
+            );
+        });
+
         test('должен обрабатывать checkConnection через healthcheck', () => {
             jest.spyOn(backendManager, 'checkHealth').mockResolvedValue({ success: true });
 
@@ -308,6 +324,33 @@ describe('MessageHandlerManager', () => {
             expect(backendManager.backendUrl).toBe(testUrl);
         });
 
+        test('должен роутить generateRandomDomains к debugHandler', () => {
+            const debugSpy = jest.spyOn(messageHandlerManager.debugHandler, 'handleGenerateRandomDomains');
+
+            messageHandlerManager._handleMessage(
+                { type: 'generateRandomDomains', data: { count: 3 } },
+                {},
+                sendResponse
+            );
+
+            expect(debugSpy).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'generateRandomDomains' }),
+                sendResponse
+            );
+        });
+
+        test('должен роутить clearSession к authHandler.handleClearSession', () => {
+            const clearSpy = jest.spyOn(messageHandlerManager.authHandler, 'handleClearSession');
+
+            messageHandlerManager._handleMessage(
+                { type: 'clearSession' },
+                {},
+                sendResponse
+            );
+
+            expect(clearSpy).toHaveBeenCalledWith(sendResponse);
+        });
+
         test('должен обрабатывать неизвестные типы сообщений', () => {
             messageHandlerManager._handleMessage(
                 { type: 'unknownType' },
@@ -341,6 +384,28 @@ describe('MessageHandlerManager', () => {
                     error: 'Test error'
                 })
             );
+        });
+
+        test('должен возвращать block-ответ когда _shouldBlockMessage=true', () => {
+            jest.spyOn(messageHandlerManager, '_shouldBlockMessage').mockReturnValue({
+                shouldBlock: true,
+                reason: 'blocked by test'
+            });
+            jest.spyOn(statisticsManager, 'isTrackingEnabled').mockReturnValue(false);
+            eventQueueManager.state.isOnline = false;
+
+            messageHandlerManager._handleMessage(
+                { type: 'getStatus' },
+                {},
+                sendResponse
+            );
+
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: false,
+                error: 'blocked by test',
+                isTracking: false,
+                isOnline: false
+            });
         });
     });
 
