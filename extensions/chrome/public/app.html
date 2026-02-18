@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="app-popup" style="width: 360px; min-width: 360px; height: 380px; min-height: 380px;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,163 +9,161 @@
     <link rel="stylesheet" href="styles/common.css">
     <link rel="stylesheet" href="styles/app.css">
 </head>
-<body>
+<body class="app-loading" style="width: 360px; min-width: 360px; height: 380px; min-height: 380px; margin: 0; padding: 0;">
+    <!-- Фиксирует размер попапа с первого кадра — убирает «маленький квадратик» при открытии -->
+    <div aria-hidden="true" style="position: absolute; inset: 0; width: 360px; height: 380px; min-height: 380px; pointer-events: none; visibility: hidden;"></div>
+    <!-- Global toggles — visible on both welcome and main windows -->
+    <div class="app-global-toggles" aria-label="Theme and language">
+        <button type="button" id="appThemeToggle" class="app-toggle-btn" title="Toggle theme" aria-label="Toggle theme"><span id="appThemeIcon">☀️</span></button>
+        <button type="button" id="appLocaleToggle" class="app-toggle-btn" title="Switch language" aria-label="Switch language"><span id="appLocaleIcon">🇺🇸</span></button>
+    </div>
     <div class="app-onboarding-overlay" id="appOnboardingOverlay" style="display: none;">
         <div class="app-onboarding-modal">
-            <div id="appWelcomeScreen">
-                <h2 data-i18n="app.onboarding.title">Welcome to Mindful Web</h2>
-                <p data-i18n="app.onboarding.description" class="app-onboarding-description">Track your web browsing habits and understand how you spend your time online. Monitor your attention, analyze your activity, and make more conscious decisions about your digital life.</p>
-                <p data-i18n="app.onboarding.subtitle">You can sign in, register, or try the service anonymously.</p>
-                <div class="button-group">
-                    <button type="button" id="appTryAnonBtn" class="app-action-btn primary-btn" data-i18n="app.onboarding.tryButton">Try anonymous</button>
-                    <button type="button" id="appSignInBtn" class="app-action-btn secondary-btn" data-i18n="app.onboarding.signInButton">Sign in</button>
+            <div class="app-onboarding-toggles app-onboarding-toggles--hidden" aria-hidden="true"></div>
+            <div id="appWelcomeScreen" class="app-welcome-screen">
+                <div class="app-welcome-header">
+                    <h2 class="app-welcome-title" data-i18n="app.onboarding.title">🧘 Mindful Web</h2>
+                    <p class="app-welcome-subtitle" data-i18n="app.onboarding.subtitle">Track your time online and analyze your digital habits</p>
                 </div>
+                <ul class="app-welcome-features" aria-hidden="true">
+                    <li class="app-welcome-feature">
+                        <span class="app-welcome-feature-icon" aria-hidden="true">◆</span>
+                        <span class="app-welcome-feature-text" data-i18n="app.onboarding.feature1">Track your time on websites</span>
+                    </li>
+                    <li class="app-welcome-feature">
+                        <span class="app-welcome-feature-icon" aria-hidden="true">◆</span>
+                        <span class="app-welcome-feature-text" data-i18n="app.onboarding.feature2">View visit statistics</span>
+                    </li>
+                    <li class="app-welcome-feature">
+                        <span class="app-welcome-feature-icon" aria-hidden="true">◆</span>
+                        <span class="app-welcome-feature-text" data-i18n="app.onboarding.feature3">Analyze charts and graphs</span>
+                    </li>
+                </ul>
+                <div class="app-welcome-actions button-group">
+                    <button type="button" id="appSignInBtn" class="app-action-btn secondary-btn" data-i18n="app.onboarding.signInButton">Sign In or Register</button>
+                    <button type="button" id="appTryAnonBtn" class="app-action-btn primary-btn" data-i18n="app.onboarding.tryButton">Continue as Guest</button>
+                </div>
+                <p class="app-welcome-footer">
+                    <span data-i18n="app.onboarding.footerPrefix">By continuing, you agree to the</span>
+                    <a href="#" class="app-legal-terms" data-i18n="app.onboarding.footerTerms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    <span data-i18n="app.onboarding.footerAnd"> and </span>
+                    <a href="#" class="app-legal-privacy" data-i18n="app.onboarding.footerPrivacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                </p>
             </div>
 
             <div id="appLoginScreen" style="display: none;">
                 <form id="appLoginForm" class="auth-form">
-                    <h2 data-i18n="app.auth.title">Sign in</h2>
+                    <h2 class="auth-form-title" data-i18n="app.auth.title">Sign In Now</h2>
                     <div class="auth-form-group">
-                        <label for="appLoginUsername" data-i18n="app.auth.usernameLabel">Email or username:</label>
-                        <input 
-                            type="text" 
-                            id="appLoginUsername" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.auth.usernamePlaceholder" 
-                            placeholder="email@example.com" 
-                            autocomplete="username"
-                            required
-                        >
+                        <label for="appLoginUsername" class="auth-label"><span data-i18n="app.auth.usernameLabel">Username</span> <span class="auth-required">*</span></label>
+                        <input type="text" id="appLoginUsername" class="app-input" data-i18n-attr="placeholder" data-i18n="app.auth.usernamePlaceholder" placeholder="Enter username" autocomplete="username" required>
+                        <span class="auth-field-error" id="appLoginUsernameError" aria-live="polite"></span>
                     </div>
                     <div class="auth-form-group">
-                        <label for="appLoginPassword" data-i18n="app.auth.passwordLabel">Password:</label>
-                        <input 
-                            type="password" 
-                            id="appLoginPassword" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.auth.passwordPlaceholder" 
-                            placeholder="••••••••" 
-                            autocomplete="current-password"
-                            required
-                        >
+                        <label for="appLoginPassword" class="auth-label"><span data-i18n="app.auth.passwordLabel">Password</span> <span class="auth-required">*</span></label>
+                        <input type="password" id="appLoginPassword" class="app-input" data-i18n-attr="placeholder" data-i18n="app.auth.passwordPlaceholder" placeholder="Enter password" autocomplete="current-password" required>
+                        <span class="auth-field-error" id="appLoginPasswordError" aria-live="polite"></span>
                     </div>
                     <div class="button-group auth-buttons">
-                        <button type="submit" id="appLoginSubmit" class="app-action-btn primary-btn" data-i18n="app.auth.loginButton">Sign in</button>
-                        <button type="button" id="appLoginBack" class="app-action-btn secondary-btn" data-i18n="app.auth.backButton">Back</button>
+                        <button type="submit" id="appLoginSubmit" class="btn-base btn-secondary btn-signin" data-i18n="app.auth.loginButton">Sign In</button>
+                        <button type="button" id="appLoginBack" class="btn-base btn-secondary" data-i18n="app.auth.backButton">Back</button>
                     </div>
                     <div class="app-register-link">
-                        <a href="#" id="appRegisterLink" data-i18n="app.auth.registerLink">Don't have an account? Register</a>
+                        <span class="app-register-link-text" data-i18n="app.auth.noAccount">Don't have an account?</span>
+                        <a href="#" id="appRegisterLink" data-i18n="app.auth.registerLink">Sign up</a>
                     </div>
+                    <p class="auth-legal-footer">
+                        <span data-i18n="app.onboarding.footerPrefix">By continuing, you agree to the</span>
+                        <a href="#" class="app-legal-terms" data-i18n="app.onboarding.footerTerms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                        <span data-i18n="app.onboarding.footerAnd"> and </span>
+                        <a href="#" class="app-legal-privacy" data-i18n="app.onboarding.footerPrivacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    </p>
                 </form>
             </div>
 
             <div id="appRegisterScreen" style="display: none;">
                 <form id="appRegisterForm" class="auth-form">
-                    <h2 data-i18n="app.register.title">Register</h2>
+                    <h2 class="auth-form-title" data-i18n="app.register.title">Sign Up</h2>
                     <div class="auth-form-group">
-                        <label for="appRegisterUsername" data-i18n="app.register.usernameLabel">Username:</label>
-                        <input 
-                            type="text" 
-                            id="appRegisterUsername" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.register.usernamePlaceholder" 
-                            placeholder="username" 
-                            autocomplete="username"
-                            pattern="[a-zA-Z0-9_]+"
-                            required
-                        >
-                        <span class="error-message" id="appRegisterUsernameError"></span>
+                        <label for="appRegisterUsername" class="auth-label"><span data-i18n="app.register.usernameLabel">Username</span> <span class="auth-required">*</span></label>
+                        <input type="text" id="appRegisterUsername" class="app-input" data-i18n-attr="placeholder" data-i18n="app.register.usernamePlaceholder" placeholder="Enter username" autocomplete="username" pattern="[a-zA-Z0-9_]+" required>
+                        <span class="auth-field-error" id="appRegisterUsernameError" aria-live="polite"></span>
                     </div>
                     <div class="auth-form-group">
-                        <label for="appRegisterEmail" data-i18n="app.register.emailLabel">Email:</label>
-                        <input 
-                            type="email" 
-                            id="appRegisterEmail" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.register.emailPlaceholder" 
-                            placeholder="email@example.com" 
-                            autocomplete="email"
-                            required
-                        >
+                        <label for="appRegisterEmail" class="auth-label"><span data-i18n="app.register.emailLabel">Email</span> <span class="auth-required">*</span></label>
+                        <input type="email" id="appRegisterEmail" class="app-input" data-i18n-attr="placeholder" data-i18n="app.register.emailPlaceholder" placeholder="Enter email" autocomplete="email" required>
+                        <span class="auth-field-error" id="appRegisterEmailError" aria-live="polite"></span>
                     </div>
                     <div class="auth-form-group">
-                        <label for="appRegisterPassword" data-i18n="app.register.passwordLabel">Password:</label>
-                        <input 
-                            type="password" 
-                            id="appRegisterPassword" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.register.passwordPlaceholder" 
-                            placeholder="••••••••" 
-                            autocomplete="new-password"
-                            required
-                        >
+                        <label for="appRegisterPassword" class="auth-label"><span data-i18n="app.register.passwordLabel">Password</span> <span class="auth-required">*</span></label>
+                        <input type="password" id="appRegisterPassword" class="app-input" data-i18n-attr="placeholder" data-i18n="app.register.passwordPlaceholder" placeholder="Enter password" autocomplete="new-password" required>
+                        <span class="auth-field-error" id="appRegisterPasswordError" aria-live="polite"></span>
                     </div>
                     <div class="auth-form-group">
-                        <label for="appRegisterConfirmPassword" data-i18n="app.register.confirmPasswordLabel">Confirm Password:</label>
-                        <input 
-                            type="password" 
-                            id="appRegisterConfirmPassword" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.register.confirmPasswordPlaceholder" 
-                            placeholder="••••••••" 
-                            autocomplete="new-password"
-                            required
-                        >
-                        <span class="error-message" id="appRegisterConfirmPasswordError"></span>
+                        <label for="appRegisterConfirmPassword" class="auth-label"><span data-i18n="app.register.confirmPasswordLabel">Confirm password</span> <span class="auth-required">*</span></label>
+                        <input type="password" id="appRegisterConfirmPassword" class="app-input" data-i18n-attr="placeholder" data-i18n="app.register.confirmPasswordPlaceholder" placeholder="Confirm password" autocomplete="new-password" required>
+                        <span class="auth-field-error" id="appRegisterConfirmPasswordError" aria-live="polite"></span>
                     </div>
                     <div class="button-group auth-buttons">
-                        <button type="submit" id="appRegisterSubmit" class="app-action-btn primary-btn" data-i18n="app.register.submitButton">Register</button>
-                        <button type="button" id="appRegisterCancel" class="app-action-btn secondary-btn" data-i18n="app.register.cancelButton">Back</button>
+                        <button type="submit" id="appRegisterSubmit" class="btn-base btn-secondary" data-i18n="app.register.submitButton">Create Account</button>
+                        <button type="button" id="appRegisterCancel" class="btn-base btn-secondary" data-i18n="app.register.cancelButton">Back</button>
                     </div>
                     <div class="app-register-link">
-                        <a href="#" id="appRegisterVerifyLink" data-i18n="app.register.alreadyHaveCode">Already received the verification code?</a>
+                        <span class="app-register-link-text" data-i18n="app.register.alreadyHaveCode">Already received the code?</span>
+                        <a href="#" id="appRegisterVerifyLink" data-i18n="app.register.verifyLink">Verify Email</a>
                     </div>
+                    <p class="auth-legal-footer">
+                        <span data-i18n="app.onboarding.footerPrefix">By continuing, you agree to the</span>
+                        <a href="#" class="app-legal-terms" data-i18n="app.onboarding.footerTerms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                        <span data-i18n="app.onboarding.footerAnd"> and </span>
+                        <a href="#" class="app-legal-privacy" data-i18n="app.onboarding.footerPrivacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    </p>
                 </form>
             </div>
 
             <div id="appVerifyScreen" style="display: none;">
                 <form id="appVerifyForm" class="auth-form">
-                    <h2 data-i18n="app.verify.title">Verify Email</h2>
-                    <p id="appVerifyDescription" data-i18n="app.verify.description" class="app-verify-description">We sent a verification code to your email. Please enter it below.</p>
+                    <h2 class="auth-form-title" data-i18n="app.verify.title">Verify Email</h2>
                     <div class="auth-form-group">
-                        <label for="appVerifyEmail" data-i18n="app.verify.emailLabel">Email:</label>
-                        <input 
-                            type="email" 
-                            id="appVerifyEmail" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.verify.emailPlaceholder" 
-                            placeholder="email@example.com" 
-                            autocomplete="email"
-                            required
-                        >
+                        <label for="appVerifyEmail" class="auth-label"><span data-i18n="app.verify.emailLabel">Email</span> <span class="auth-required">*</span></label>
+                        <input type="email" id="appVerifyEmail" class="app-input" data-i18n-attr="placeholder" data-i18n="app.verify.emailPlaceholder" placeholder="Enter email" autocomplete="email" required>
+                        <span class="auth-field-error" id="appVerifyEmailError" aria-live="polite"></span>
                     </div>
-                    <div class="auth-form-group">
-                        <label for="appVerifyCode" data-i18n="app.verify.codeLabel">Verification Code:</label>
-                        <input 
-                            type="text" 
-                            id="appVerifyCode" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.verify.codePlaceholder" 
-                            placeholder="123456" 
-                            maxlength="6"
-                            pattern="[0-9]{6}"
-                            required
-                        >
+                    <div class="auth-form-group auth-code-group">
+                        <label class="auth-label"><span data-i18n="app.verify.codeLabel">Verification code</span> <span class="auth-required">*</span></label>
+                        <div class="auth-code-input" id="appVerifyCodeContainer" role="group" aria-label="Verification code digits">
+                            <input type="text" inputmode="numeric" maxlength="1" class="auth-code-digit" data-index="0" aria-label="Digit 1">
+                            <input type="text" inputmode="numeric" maxlength="1" class="auth-code-digit" data-index="1" aria-label="Digit 2">
+                            <input type="text" inputmode="numeric" maxlength="1" class="auth-code-digit" data-index="2" aria-label="Digit 3">
+                            <input type="text" inputmode="numeric" maxlength="1" class="auth-code-digit" data-index="3" aria-label="Digit 4">
+                            <input type="text" inputmode="numeric" maxlength="1" class="auth-code-digit" data-index="4" aria-label="Digit 5">
+                            <input type="text" inputmode="numeric" maxlength="1" class="auth-code-digit" data-index="5" aria-label="Digit 6">
+                        </div>
+                        <input type="hidden" id="appVerifyCode" value="">
+                        <span class="auth-field-error" id="appVerifyCodeError" aria-live="polite"></span>
                     </div>
                     <div class="button-group auth-buttons">
-                        <button type="submit" id="appVerifySubmit" class="app-action-btn primary-btn" data-i18n="app.verify.submitButton">Verify</button>
-                        <button type="button" id="appVerifyBack" class="app-action-btn secondary-btn" data-i18n="app.verify.backButton">Back</button>
+                        <button type="submit" id="appVerifySubmit" class="btn-base btn-secondary btn-verify" data-i18n="app.verify.submitButton">Verify</button>
+                        <button type="button" id="appVerifyBack" class="btn-base btn-secondary" data-i18n="app.verify.backButton">Back</button>
                     </div>
                     <div class="app-register-link">
-                        <a href="#" id="appResendCodeLink" data-i18n="app.verify.resendCodeLink">Didn't receive the code? Resend</a>
+                        <span class="app-register-link-text" data-i18n="app.verify.needCode">Didn't receive the code?</span>
+                        <a href="#" id="appResendCodeLink" data-i18n="app.verify.resendCodeLink">Send Code Again</a>
+                    </div>
+                </form>
+            </div>
+
+            <div id="appResendScreen" style="display: none;">
+                <form id="appResendForm" class="auth-form">
+                    <h2 class="auth-form-title" data-i18n="app.resend.title">Resend Code</h2>
+                    <div class="auth-form-group">
+                        <label for="appResendEmail" class="auth-label"><span data-i18n="app.resend.emailLabel">Email</span> <span class="auth-required">*</span></label>
+                        <input type="email" id="appResendEmail" class="app-input" data-i18n-attr="placeholder" data-i18n="app.resend.emailPlaceholder" placeholder="Enter email" autocomplete="email" required>
+                        <span class="auth-field-error" id="appResendEmailError" aria-live="polite"></span>
+                    </div>
+                    <div class="button-group auth-buttons">
+                        <button type="submit" id="appResendSubmit" class="btn-base btn-secondary btn-verify" data-i18n="app.resend.submitButton">Send Code Again</button>
+                        <button type="button" id="appResendBack" class="btn-base btn-secondary" data-i18n="app.resend.backButton">Back</button>
                     </div>
                 </form>
             </div>
@@ -173,162 +171,127 @@
     </div>
 
     <div class="app-container" id="appMain" style="display: none;">
-        <div class="app-header">
-            <div class="logo">🧘 Mindful Web</div>
-            <div class="subtitle" data-i18n="app.subtitle">Track your attention</div>
-        </div>
+        <!-- Same structure as onboarding: overlay bg + modal card -->
+        <div class="app-main-modal">
+            <div class="app-section-card auth-card">
+                <div class="app-header app-main-header">
+                    <h2 class="auth-form-title app-main-title">🧘 Mindful Web</h2>
+                    <div class="subtitle" data-i18n="app.subtitle">Track your attention</div>
+                </div>
 
-        <div class="app-section-card user-status-card">
-            <div class="status">
-                <div class="status-item">
-                    <span class="status-label" data-i18n="app.user.statusLabel">Пользовательский статус:</span>
-                    <div class="user-status-wrapper">
-                        <span class="status-value" id="userStatus" data-i18n="app.status.loading">Loading...</span>
-                        <span class="user-status-tooltip" id="userStatusTooltip"></span>
+                <div class="app-main-layout">
+                    <div class="app-main-section">
+                        <div class="status">
+                            <div class="status-item">
+                                <span class="status-label" data-i18n="app.user.statusLabel">Пользовательский статус:</span>
+                                <div class="user-status-wrapper">
+                                    <span class="status-value" id="userStatus" data-i18n="app.status.loading">Loading...</span>
+                                    <span class="user-status-tooltip" id="userStatusTooltip"></span>
+                                </div>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label" data-i18n="app.status.tracking">Tracking:</span>
+                                <span class="status-value" id="trackingStatus" data-i18n="app.status.active">Active</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="app-main-section">
+                        <div class="stats">
+                            <div class="stats-header">
+                                <span class="stats-title" data-i18n="app.stats.title">Today's Activity</span>
+                            </div>
+                            <div class="stats-content">
+                                <div class="stats-item">
+                                    <span data-i18n="app.stats.domainsVisited">Domains visited:</span>
+                                    <span id="domainsCount">0</span>
+                                </div>
+                                <div class="stats-item">
+                                    <span data-i18n="app.stats.eventsTracked">Events tracked:</span>
+                                    <span id="eventsCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions button-group">
+                        <button class="app-action-btn login-btn" id="openLogin" data-i18n="app.buttons.login">Sign in</button>
+                        <button class="app-action-btn toggle-btn toggle-btn--disable" id="toggleTracking" data-i18n="app.buttons.disableTracking">Disable Tracking</button>
+                        <button class="app-action-btn settings-btn" id="openSettings" data-i18n="app.buttons.settings">Settings</button>
                     </div>
                 </div>
-                <div class="status-item">
-                    <span class="status-label" data-i18n="app.status.tracking">Tracking:</span>
-                    <span class="status-value" id="trackingStatus" data-i18n="app.status.active">Active</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="app-section-card stats-card">
-            <div class="stats">
-                <div class="stats-header">
-                    <span class="stats-title" data-i18n="app.stats.title">Today's Activity</span>
-                </div>
-                <div class="stats-content">
-                    <div class="stats-item">
-                        <span data-i18n="app.stats.domainsVisited">Domains visited:</span>
-                        <span id="domainsCount">0</span>
-                    </div>
-                    <div class="stats-item">
-                        <span data-i18n="app.stats.eventsTracked">Events tracked:</span>
-                        <span id="eventsCount">0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="app-section-card actions-card">
-            <div class="actions">
-                <button class="app-action-btn login-btn" id="openLogin" data-i18n="app.buttons.login">Sign in</button>
-                <button class="app-action-btn toggle-btn toggle-btn--disable" id="toggleTracking" data-i18n="app.buttons.disableTracking">Disable Tracking</button>
-                <button class="app-action-btn settings-btn" id="openSettings" data-i18n="app.buttons.settings">Settings</button>
             </div>
         </div>
     </div>
 
-    <!-- Login/Register Form Container (reuses forms from onboarding) -->
-    <div class="app-container" id="appLoginContainer" style="display: none;">
-        <div class="app-header">
-            <div class="logo" id="appAuthHeaderLogo">🔐 Sign in</div>
-            <div class="subtitle" id="appAuthHeaderSubtitle" data-i18n="app.auth.subtitle">Enter your credentials</div>
-        </div>
-
+    <!-- Login/Register Form Container — same layout as frontend Auth page -->
+    <div class="app-container app-auth-container" id="appLoginContainer" style="display: none;">
         <div class="app-section-card auth-card">
-            <!-- Login Form -->
             <form id="appMainLoginForm" class="auth-form">
+                <h2 class="auth-form-title" data-i18n="app.auth.title">Sign In Now</h2>
                 <div class="auth-form-group">
-                    <label for="appMainLoginUsername" data-i18n="app.auth.usernameLabel">Email or username:</label>
-                    <input 
-                        type="text" 
-                        id="appMainLoginUsername" 
-                        class="app-input"
-                        data-i18n-attr="placeholder" 
-                        data-i18n="app.auth.usernamePlaceholder" 
-                        placeholder="email@example.com" 
-                        autocomplete="username"
-                        required
-                    >
+                    <label for="appMainLoginUsername" class="auth-label"><span data-i18n="app.auth.usernameLabel">Username</span> <span class="auth-required">*</span></label>
+                    <input type="text" id="appMainLoginUsername" class="app-input" data-i18n-attr="placeholder" data-i18n="app.auth.usernamePlaceholder" placeholder="Enter username" autocomplete="username" required>
+                    <span class="auth-field-error" id="appMainLoginUsernameError" aria-live="polite"></span>
                 </div>
                 <div class="auth-form-group">
-                    <label for="appMainLoginPassword" data-i18n="app.auth.passwordLabel">Password:</label>
-                    <input 
-                        type="password" 
-                        id="appMainLoginPassword" 
-                        class="app-input"
-                        data-i18n-attr="placeholder" 
-                        data-i18n="app.auth.passwordPlaceholder" 
-                        placeholder="••••••••" 
-                        autocomplete="current-password"
-                        required
-                    >
+                    <label for="appMainLoginPassword" class="auth-label"><span data-i18n="app.auth.passwordLabel">Password</span> <span class="auth-required">*</span></label>
+                    <input type="password" id="appMainLoginPassword" class="app-input" data-i18n-attr="placeholder" data-i18n="app.auth.passwordPlaceholder" placeholder="Enter password" autocomplete="current-password" required>
+                    <span class="auth-field-error" id="appMainLoginPasswordError" aria-live="polite"></span>
                 </div>
                 <div class="button-group auth-buttons">
-                    <button type="submit" id="appMainLoginSubmit" class="app-action-btn primary-btn" data-i18n="app.auth.loginButton">Sign in</button>
-                    <button type="button" id="appMainLoginBack" class="app-action-btn secondary-btn" data-i18n="app.auth.backButton">Back</button>
+                    <button type="submit" id="appMainLoginSubmit" class="btn-base btn-secondary btn-signin" data-i18n="app.auth.loginButton">Sign In</button>
+                    <button type="button" id="appMainLoginBack" class="btn-base btn-secondary" data-i18n="app.auth.backButton">Back</button>
                 </div>
                 <div class="app-register-link">
-                    <a href="#" id="appMainRegisterLink" data-i18n="app.auth.registerLink">Don't have an account? Register</a>
+                    <span class="app-register-link-text" data-i18n="app.auth.noAccount">Don't have an account?</span>
+                    <a href="#" id="appMainRegisterLink" data-i18n="app.auth.registerLink">Sign up</a>
                 </div>
+                <p class="auth-legal-footer">
+                    <span data-i18n="app.onboarding.footerPrefix">By continuing, you agree to the</span>
+                    <a href="#" class="app-legal-terms" data-i18n="app.onboarding.footerTerms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    <span data-i18n="app.onboarding.footerAnd"> and </span>
+                    <a href="#" class="app-legal-privacy" data-i18n="app.onboarding.footerPrivacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                </p>
             </form>
 
-            <!-- Register Form -->
             <form id="appMainRegisterForm" class="auth-form" style="display: none;">
-                    <div class="auth-form-group">
-                        <label for="appMainRegisterUsername" data-i18n="app.register.usernameLabel">Username:</label>
-                        <input 
-                            type="text" 
-                            id="appMainRegisterUsername" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.register.usernamePlaceholder" 
-                            placeholder="username" 
-                            autocomplete="username"
-                            pattern="[a-zA-Z0-9_]+"
-                            required
-                        >
-                        <span class="error-message" id="appMainRegisterUsernameError"></span>
-                    </div>
-                    <div class="auth-form-group">
-                        <label for="appMainRegisterEmail" data-i18n="app.register.emailLabel">Email:</label>
-                        <input 
-                            type="email" 
-                            id="appMainRegisterEmail" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.register.emailPlaceholder" 
-                            placeholder="email@example.com" 
-                            autocomplete="email"
-                            required
-                        >
-                    </div>
-                    <div class="auth-form-group">
-                        <label for="appMainRegisterPassword" data-i18n="app.register.passwordLabel">Password:</label>
-                        <input 
-                            type="password" 
-                            id="appMainRegisterPassword" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.register.passwordPlaceholder" 
-                            placeholder="••••••••" 
-                            autocomplete="new-password"
-                            required
-                        >
-                    </div>
-                    <div class="auth-form-group">
-                        <label for="appMainRegisterConfirmPassword" data-i18n="app.register.confirmPasswordLabel">Confirm Password:</label>
-                        <input 
-                            type="password" 
-                            id="appMainRegisterConfirmPassword" 
-                            class="app-input"
-                            data-i18n-attr="placeholder" 
-                            data-i18n="app.register.confirmPasswordPlaceholder" 
-                            placeholder="••••••••" 
-                            autocomplete="new-password"
-                            required
-                        >
-                        <span class="error-message" id="appMainRegisterConfirmPasswordError"></span>
-                    </div>
-                    <div class="button-group auth-buttons">
-                        <button type="submit" id="appMainRegisterSubmit" class="app-action-btn primary-btn" data-i18n="app.register.submitButton">Register</button>
-                        <button type="button" id="appMainRegisterBack" class="app-action-btn secondary-btn" data-i18n="app.register.cancelButton">Back to Login</button>
-                    </div>
-                </form>
-            </div>
+                <h2 class="auth-form-title" data-i18n="app.register.title">Sign Up</h2>
+                <div class="auth-form-group">
+                    <label for="appMainRegisterUsername" class="auth-label"><span data-i18n="app.register.usernameLabel">Username</span> <span class="auth-required">*</span></label>
+                    <input type="text" id="appMainRegisterUsername" class="app-input" data-i18n-attr="placeholder" data-i18n="app.register.usernamePlaceholder" placeholder="Enter username" autocomplete="username" pattern="[a-zA-Z0-9_]+" required>
+                    <span class="auth-field-error" id="appMainRegisterUsernameError" aria-live="polite"></span>
+                </div>
+                <div class="auth-form-group">
+                    <label for="appMainRegisterEmail" class="auth-label"><span data-i18n="app.register.emailLabel">Email</span> <span class="auth-required">*</span></label>
+                    <input type="email" id="appMainRegisterEmail" class="app-input" data-i18n-attr="placeholder" data-i18n="app.register.emailPlaceholder" placeholder="Enter email" autocomplete="email" required>
+                    <span class="auth-field-error" id="appMainRegisterEmailError" aria-live="polite"></span>
+                </div>
+                <div class="auth-form-group">
+                    <label for="appMainRegisterPassword" class="auth-label"><span data-i18n="app.register.passwordLabel">Password</span> <span class="auth-required">*</span></label>
+                    <input type="password" id="appMainRegisterPassword" class="app-input" data-i18n-attr="placeholder" data-i18n="app.register.passwordPlaceholder" placeholder="Enter password" autocomplete="new-password" required>
+                    <span class="auth-field-error" id="appMainRegisterPasswordError" aria-live="polite"></span>
+                </div>
+                <div class="auth-form-group">
+                    <label for="appMainRegisterConfirmPassword" class="auth-label"><span data-i18n="app.register.confirmPasswordLabel">Confirm password</span> <span class="auth-required">*</span></label>
+                    <input type="password" id="appMainRegisterConfirmPassword" class="app-input" data-i18n-attr="placeholder" data-i18n="app.register.confirmPasswordPlaceholder" placeholder="Confirm password" autocomplete="new-password" required>
+                    <span class="auth-field-error" id="appMainRegisterConfirmPasswordError" aria-live="polite"></span>
+                </div>
+                <div class="button-group auth-buttons">
+                    <button type="submit" id="appMainRegisterSubmit" class="btn-base btn-secondary" data-i18n="app.register.submitButton">Create Account</button>
+                    <button type="button" id="appMainRegisterBack" class="btn-base btn-secondary" data-i18n="app.register.cancelButton">Back</button>
+                </div>
+                <div class="app-register-link">
+                    <span class="app-register-link-text" data-i18n="app.register.alreadyHaveCode">Already received the code?</span>
+                    <a href="#" id="appMainRegisterVerifyLink" data-i18n="app.register.verifyLink">Verify Email</a>
+                </div>
+                <p class="auth-legal-footer">
+                    <span data-i18n="app.onboarding.footerPrefix">By continuing, you agree to the</span>
+                    <a href="#" class="app-legal-terms" data-i18n="app.onboarding.footerTerms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    <span data-i18n="app.onboarding.footerAnd"> and </span>
+                    <a href="#" class="app-legal-privacy" data-i18n="app.onboarding.footerPrivacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                </p>
+            </form>
         </div>
     </div>
     
