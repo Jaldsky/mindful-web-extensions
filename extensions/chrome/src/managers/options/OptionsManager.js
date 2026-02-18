@@ -15,6 +15,7 @@ const DeveloperToolsManager = require('./diagnostics/DeveloperToolsManager.js');
 const LogsManager = require('./core/LogsManager.js');
 const DiagnosticsDataManager = require('./diagnostics/DiagnosticsDataManager.js');
 const LifecycleManager = require('./core/LifecycleManager.js');
+const ConnectionStatusManager = require('./status/ConnectionStatusManager.js');
 
 /**
  * Главный менеджер для страницы настроек расширения.
@@ -118,6 +119,7 @@ class OptionsManager extends BaseManager {
         this.logsManager = new LogsManager(this);
         this.diagnosticsDataManager = new DiagnosticsDataManager(this);
         this.lifecycleManager = new LifecycleManager(this);
+        this.connectionStatusManager = new ConnectionStatusManager(this);
 
         this.init();
     }
@@ -169,6 +171,68 @@ class OptionsManager extends BaseManager {
      */
     async resetToDefault() {
         return this.uiManager.resetToDefault();
+    }
+
+    /**
+     * Очищает все данные расширения из chrome.storage.local и кешей localStorage
+     * (ID, онбординг, тема, локаль, настройки и т.д.). После переустановки плагина
+     * данные обычно очищаются сами; эта кнопка нужна, если нужен «как первый запуск»
+     * без переустановки.
+     *
+     * @async
+     * @returns {Promise<boolean>} true при успехе
+     */
+    async clearAllExtensionData() {
+        try {
+            if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+                this._logError({ key: 'logs.trackerStorage.clearAllError' }, new Error('chrome.storage.local unavailable'));
+                return false;
+            }
+
+            const sessionKeys = [
+                CONFIG.STORAGE_KEYS.ANON_ID,
+                CONFIG.STORAGE_KEYS.USER_ID,
+                CONFIG.STORAGE_KEYS.AUTH_ACCESS_TOKEN,
+                CONFIG.STORAGE_KEYS.AUTH_REFRESH_TOKEN,
+                CONFIG.STORAGE_KEYS.ONBOARDING_COMPLETED
+            ];
+            await chrome.storage.local.remove(sessionKeys);
+
+            if (typeof chrome.runtime !== 'undefined' && chrome.runtime.sendMessage) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => reject(new Error('CLEAR_SESSION timeout')), 5000);
+                        chrome.runtime.sendMessage({ type: CONFIG.MESSAGE_TYPES.CLEAR_SESSION }, (response) => {
+                            clearTimeout(timeout);
+                            if (chrome.runtime.lastError) {
+                                reject(chrome.runtime.lastError);
+                            } else {
+                                resolve(response);
+                            }
+                        });
+                    });
+                } catch (msgErr) {
+                    this._logError({ key: 'logs.trackerStorage.clearAllError' }, msgErr);
+                }
+            }
+
+            await chrome.storage.local.clear();
+
+            if (typeof localStorage !== 'undefined') {
+                [CONFIG.THEME.CACHE_KEY, CONFIG.LOCALE.CACHE_KEY, CONFIG.LOCALE.STORAGE_KEY].forEach((key) => {
+                    try {
+                        localStorage.removeItem(key);
+                    } catch (e) {
+                        this._logError({ key: 'logs.trackerStorage.clearAllError' }, e);
+                    }
+                });
+            }
+            this._log({ key: 'logs.trackerStorage.allDataCleared' });
+            return true;
+        } catch (error) {
+            this._logError({ key: 'logs.trackerStorage.clearAllError' }, error);
+            return false;
+        }
     }
 
     /**
@@ -505,59 +569,7 @@ class OptionsManager extends BaseManager {
      * @returns {Promise<boolean>} true если подключение успешно
      */
     async testConnection() {
-        const button = this.domManager.elements.testConnection;
-        const statusElement = this.domManager.elements.connectionStatus;
-        const indicator = document.getElementById('statusIndicator');
-        
-        try {
-            if (button) {
-                button.disabled = true;
-            }
-
-            if (statusElement) {
-                statusElement.textContent = this.localeManager.t('options.connection.checking') || 'Checking...';
-            }
-            
-            if (indicator) {
-                indicator.className = 'status-dot status-checking';
-            }
-
-            const minDelay = new Promise(resolve => setTimeout(resolve, 500));
-            const connectionCheck = this.serviceWorkerManager.checkConnection();
-            
-            const [connectionResult] = await Promise.all([connectionCheck, minDelay]);
-            const isOnline = connectionResult.success;
-
-            let message;
-            let messageType;
-            if (isOnline) {
-                await this._saveConnectionStatusToStorage(isOnline);
-                this._lastConnectionStatus = isOnline;
-                message = this.localeManager.t('options.connection.success') || 'Connection successful';
-                messageType = 'success';
-            } else if (connectionResult.tooFrequent) {
-                message = this.localeManager.t('options.connection.tooFrequent') || 'Request too frequent';
-                messageType = 'warning';
-            } else {
-                await this._saveConnectionStatusToStorage(isOnline);
-                this._lastConnectionStatus = isOnline;
-                message = this.localeManager.t('options.connection.failed') || 'Connection failed';
-                messageType = 'error';
-            }
-            
-            this._showConnectionStatusMessage(message, messageType);
-            this.statusManager.showStatus(message, messageType);
-
-            return isOnline;
-        } catch (error) {
-            this._logError({ key: 'logs.options.testConnection.error' }, error);
-            await this._saveConnectionStatusToStorage(false);
-            this._lastConnectionStatus = false;
-            const errorMessage = this.localeManager.t('options.connection.error') || 'Connection error';
-            this._showConnectionStatusMessage(errorMessage, 'error');
-            this.statusManager.showStatus(errorMessage, 'error');
-            return false;
-        }
+        return this.connectionStatusManager.testConnection();
     }
 
     /**
@@ -567,33 +579,7 @@ class OptionsManager extends BaseManager {
      * @returns {void}
      */
     updateConnectionStatus(isOnline) {
-        const element = this.domManager.elements.connectionStatus;
-        const indicator = document.getElementById('statusIndicator');
-        const button = this.domManager.elements.testConnection;
-        
-        if (!element) {
-            return;
-        }
-
-        try {
-            const statusText = isOnline 
-                ? (this.localeManager.t('options.connection.online') || 'Online')
-                : (this.localeManager.t('options.connection.offline') || 'Offline');
-            
-            element.textContent = statusText;
-
-            if (indicator) {
-                indicator.className = 'status-dot';
-                indicator.classList.add(isOnline ? 'status-online' : 'status-offline');
-            }
-
-            if (button) {
-                button.disabled = false;
-                button.classList.remove('showing-message');
-            }
-        } catch (error) {
-            this._logError({ key: 'logs.options.updateConnectionStatus.error' }, error);
-        }
+        return this.connectionStatusManager.updateConnectionStatus(isOnline);
     }
 
     /**
@@ -605,53 +591,7 @@ class OptionsManager extends BaseManager {
      * @returns {void}
      */
     _showConnectionStatusMessage(message, type = 'info') {
-        const element = this.domManager.elements.connectionStatus;
-        const indicator = document.getElementById('statusIndicator');
-        const lastCheck = document.getElementById('connectionLastCheck');
-        const button = this.domManager.elements.testConnection;
-        
-        if (!element) {
-            return;
-        }
-
-        const statusClass = type === 'success'
-            ? 'status-online'
-            : type === 'error'
-                ? 'status-offline'
-                : type === 'warning'
-                    ? 'status-warning'
-                    : 'status-checking';
-
-        element.textContent = message;
-        
-        if (indicator) {
-            indicator.className = 'status-dot';
-            indicator.classList.add(statusClass);
-        }
-
-        if (button) {
-            button.disabled = true;
-            button.classList.add('showing-message');
-        }
-
-        if (lastCheck && type === 'success') {
-            this._lastCheckType = 'timestamp';
-            const now = new Date();
-            this._lastCheckTimestamp = now;
-            const timeString = now.toLocaleTimeString();
-            const lastCheckedLabel = this.localeManager.t('options.connection.lastChecked') || 'Last checked';
-            lastCheck.textContent = `${lastCheckedLabel}: ${timeString}`;
-        }
-
-        if (this._connectionMessageTimer) {
-            clearTimeout(this._connectionMessageTimer);
-        }
-        
-        this._connectionMessageTimer = setTimeout(() => {
-            this._connectionMessageTimer = null;
-            const lastStatus = this._lastConnectionStatus !== undefined ? this._lastConnectionStatus : false;
-            this.updateConnectionStatus(lastStatus);
-        }, 2000);
+        return this.connectionStatusManager._showConnectionStatusMessage(message, type);
     }
 
     /**
@@ -662,22 +602,7 @@ class OptionsManager extends BaseManager {
      * @returns {Promise<void>}
      */
     async _saveConnectionStatusToStorage(isOnline) {
-        try {
-            this._lastConnectionStatus = isOnline;
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                await new Promise((resolve, reject) => {
-                    chrome.storage.local.set({ mindful_connection_status: isOnline }, () => {
-                        if (chrome.runtime.lastError) {
-                            reject(new Error(chrome.runtime.lastError.message));
-                        } else {
-                            resolve();
-                        }
-                    });
-                });
-            }
-        } catch (error) {
-            this._logError({ key: 'logs.options.saveConnectionStatusError' }, error);
-        }
+        return this.connectionStatusManager._saveConnectionStatusToStorage(isOnline);
     }
 
     /**
@@ -687,22 +612,7 @@ class OptionsManager extends BaseManager {
      * @returns {Promise<boolean|null>} Статус подключения или null, если не найден
      */
     async _loadConnectionStatusFromStorage() {
-        try {
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                return await new Promise((resolve, reject) => {
-                    chrome.storage.local.get(['mindful_connection_status'], (result) => {
-                        if (chrome.runtime.lastError) {
-                            reject(new Error(chrome.runtime.lastError.message));
-                        } else {
-                            resolve(result.mindful_connection_status !== undefined ? result.mindful_connection_status : null);
-                        }
-                    });
-                });
-            }
-        } catch (error) {
-            this._logError({ key: 'logs.options.loadConnectionStatusError' }, error);
-        }
-        return null;
+        return this.connectionStatusManager._loadConnectionStatusFromStorage();
     }
 
     /**
@@ -711,22 +621,7 @@ class OptionsManager extends BaseManager {
      * @returns {void}
      */
     updateConnectionLastCheckLocale() {
-        const lastCheck = document.getElementById('connectionLastCheck');
-        if (!lastCheck) {
-            return;
-        }
-
-        if (this._lastCheckType === 'cached') {
-            const cachedLabel = this.localeManager.t('options.connection.cachedStatus') || 'Cached status';
-            lastCheck.textContent = cachedLabel;
-        } else if (this._lastCheckType === 'error') {
-            const errorLabel = this.localeManager.t('options.connection.checkError') || 'Error checking status';
-            lastCheck.textContent = errorLabel;
-        } else if (this._lastCheckType === 'timestamp' && this._lastCheckTimestamp) {
-            const timeString = this._lastCheckTimestamp.toLocaleTimeString();
-            const lastCheckedLabel = this.localeManager.t('options.connection.lastChecked') || 'Last checked';
-            lastCheck.textContent = `${lastCheckedLabel}: ${timeString}`;
-        }
+        return this.connectionStatusManager.updateConnectionLastCheckLocale();
     }
 
     /**
@@ -736,62 +631,7 @@ class OptionsManager extends BaseManager {
      * @returns {Promise<void>}
      */
     async loadConnectionStatus() {
-        const indicator = document.getElementById('statusIndicator');
-        const statusElement = this.domManager.elements.connectionStatus;
-        const lastCheck = document.getElementById('connectionLastCheck');
-
-        if (indicator) {
-            indicator.className = 'status-dot status-checking';
-        }
-        
-        if (statusElement) {
-            statusElement.textContent = this.localeManager.t('options.connection.checking') || 'Checking...';
-        }
-        
-        try {
-            const connectionResult = await this.serviceWorkerManager.checkConnection();
-
-            if (connectionResult.tooFrequent) {
-                const lastStatus = await this._loadConnectionStatusFromStorage();
-                if (lastStatus !== null) {
-                    this.updateConnectionStatus(lastStatus);
-                    this._lastConnectionStatus = lastStatus;
-                } else {
-                    this.updateConnectionStatus(false);
-                    this._lastConnectionStatus = false;
-                }
-
-                if (lastCheck) {
-                    this._lastCheckType = 'cached';
-                    const cachedLabel = this.localeManager.t('options.connection.cachedStatus') || 'Cached status';
-                    lastCheck.textContent = cachedLabel;
-                }
-            } else {
-                const isOnline = connectionResult.success;
-                this.updateConnectionStatus(isOnline);
-                this._lastConnectionStatus = isOnline;
-                await this._saveConnectionStatusToStorage(isOnline);
-
-                if (lastCheck && isOnline) {
-                    this._lastCheckType = 'timestamp';
-                    const now = new Date();
-                    this._lastCheckTimestamp = now;
-                    const timeString = now.toLocaleTimeString();
-                    const lastCheckedLabel = this.localeManager.t('options.connection.lastChecked') || 'Last checked';
-                    lastCheck.textContent = `${lastCheckedLabel}: ${timeString}`;
-                }
-            }
-        } catch (error) {
-            this._logError({ key: 'logs.options.loadConnectionStatusError' }, error);
-            this.updateConnectionStatus(false);
-            this._lastConnectionStatus = false;
-            
-            if (lastCheck) {
-                this._lastCheckType = 'error';
-                const errorLabel = this.localeManager.t('options.connection.checkError') || 'Error checking status';
-                lastCheck.textContent = errorLabel;
-            }
-        }
+        return this.connectionStatusManager.loadConnectionStatus();
     }
 
     /**
@@ -800,10 +640,7 @@ class OptionsManager extends BaseManager {
      * @returns {void}
      */
     destroy() {
-        if (this._connectionMessageTimer) {
-            clearTimeout(this._connectionMessageTimer);
-            this._connectionMessageTimer = null;
-        }
+        this.connectionStatusManager.clearTimer();
         const destroyed = this.lifecycleManager.destroy();
         if (!destroyed) {
             return;

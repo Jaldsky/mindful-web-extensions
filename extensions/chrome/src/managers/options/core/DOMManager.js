@@ -114,6 +114,7 @@ class DOMManager extends BaseManager {
             backendUrl: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.BACKEND_URL),
             saveBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.SAVE_BTN),
             resetBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.RESET_BTN),
+            clearAllDataBtn: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.CLEAR_ALL_DATA_BTN),
             status: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.STATUS),
             runDiagnostics: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.RUN_DIAGNOSTICS),
             toggleDeveloperTools: getElement(CONFIG.OPTIONS_DOM.ELEMENT_IDS.TOGGLE_DEVELOPER_TOOLS),

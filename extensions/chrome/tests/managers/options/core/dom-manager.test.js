@@ -17,6 +17,7 @@ describe('DOMManager', () => {
                 <input type="url" id="backendUrl" />
                 <button type="submit" id="saveBtn">Save</button>
                 <button type="button" id="resetBtn">Reset</button>
+                <button type="button" id="clearAllDataBtn">Clear all data</button>
                 <input type="text" id="domainExceptionInput" />
                 <button type="button" id="addDomainExceptionBtn">Add</button>
                 <ul id="domainExceptionsList"></ul>
@@ -61,6 +62,20 @@ describe('DOMManager', () => {
         });
 
         test('должен создаваться с пользовательскими настройками', () => {
+            document.body.innerHTML = `
+                <form id="settingsForm"><input type="url" id="backendUrl" /></form>
+                <button type="submit" id="saveBtn">Save</button>
+                <button type="button" id="resetBtn">Reset</button>
+                <button type="button" id="clearAllDataBtn">Clear</button>
+                <input type="text" id="domainExceptionInput" />
+                <button type="button" id="addDomainExceptionBtn">Add</button>
+                <ul id="domainExceptionsList"></ul>
+                <div id="status"></div>
+                <button type="button" id="runDiagnostics">Run</button>
+                <button type="button" id="toggleDeveloperTools">⚙️</button>
+                <span id="connectionStatus"></span>
+                <button type="button" id="testConnection">Test</button>
+            `;
             const customManager = new DOMManager({ 
                 enableLogging: false,
                 strictMode: true 
@@ -282,13 +297,13 @@ describe('DOMManager', () => {
         test('должен корректно считать доступные элементы', () => {
             const stats = domManager.getElementsStatistics();
 
-            expect(stats.total).toBe(15); // 10 основных + 2 connection + 3 onboarding (опциональные)
-            expect(stats.available).toBe(12); // 10 основных + 2 connection (onboarding элементы не обязательны)
+            expect(stats.total).toBe(16); // 11 основных + 2 connection + 3 onboarding (опциональные)
+            expect(stats.available).toBe(13); // 11 основных + 2 connection (onboarding элементы не обязательны)
             // Основные элементы не должны быть в missing
             const optionalElements = ['onboardingOverlay', 'onboardingTryBtn', 'onboardingLoginBtn'];
             const missingNonOptional = stats.missing.filter(el => !optionalElements.includes(el));
             expect(missingNonOptional).toEqual([]);
-            expect(stats.inDOM).toBe(12); // 10 основных + 2 connection
+            expect(stats.inDOM).toBe(13); // 11 основных + 2 connection
             // onboarding элементы опциональны и могут отсутствовать (попадают в missing или notInDOM)
             // Проверяем, что они где-то учтены как отсутствующие
             const allMissing = [...stats.missing, ...stats.notInDOM];
@@ -303,8 +318,8 @@ describe('DOMManager', () => {
 
             const stats = domManager.getElementsStatistics();
 
-            expect(stats.total).toBe(15); // 10 основных + 2 connection + 3 onboarding (опциональные)
-            expect(stats.available).toBe(11); // saveBtn отсутствует, но connection элементы есть
+            expect(stats.total).toBe(16); // 11 основных + 2 connection + 3 onboarding (опциональные)
+            expect(stats.available).toBe(12); // saveBtn отсутствует, но connection элементы есть
             // saveBtn должен быть в missing, onboarding элементы опциональны
             expect(stats.missing).toContain('saveBtn');
             // onboarding элементы опциональны и могут быть null
@@ -314,7 +329,7 @@ describe('DOMManager', () => {
                     // Это нормально, они опциональны
                 }
             });
-            expect(stats.inDOM).toBe(11); // 9 основных (без saveBtn) + 2 connection
+            expect(stats.inDOM).toBe(12); // 10 основных (без saveBtn) + 2 connection
         });
     });
 
@@ -396,7 +411,7 @@ describe('DOMManager', () => {
             const stats = domManager.getElementsStatistics();
 
             expect(Object.keys(metrics).length).toBeGreaterThan(0);
-            expect(stats.total).toBe(15); // 10 основных + 2 connection + 3 onboarding (опциональные)
+            expect(stats.total).toBe(16); // 11 основных + 2 connection + 3 onboarding (опциональные)
         });
     });
 
