@@ -845,64 +845,82 @@ const EN = {
         subtitle: 'Track your attention',
 
         onboarding: {
-            title: 'Welcome to Mindful Web',
-            description: 'Track your web browsing habits and understand how you spend your time online. Monitor your attention, analyze your activity, and make more conscious decisions about your digital life.',
-            subtitle: 'You can sign in, register, or try the service anonymously.',
-            tryButton: 'Try anonymous',
-            signInButton: 'Sign in'
+            title: '🧘 Mindful Web',
+            subtitle: 'Track your time online and analyze your digital habits',
+            feature1: 'Track your time on websites',
+            feature2: 'View visit statistics',
+            feature3: 'Analyze charts and graphs',
+            signInButton: 'Sign In or Register',
+            tryButton: 'Continue as Guest',
+            footerPrefix: 'By continuing, you agree to the',
+            footerTerms: 'Terms of Service',
+            footerAnd: ' and ',
+            footerPrivacy: 'Privacy Policy'
         },
 
         auth: {
-            title: 'Sign in',
+            title: 'Sign In Now',
             subtitle: 'Enter your credentials',
-            usernameLabel: 'Email or username:',
-            usernamePlaceholder: 'email@example.com',
-            passwordLabel: 'Password:',
-            passwordPlaceholder: '••••••••',
-            loginButton: 'Sign in',
+            usernameLabel: 'Username',
+            usernamePlaceholder: 'Enter username',
+            passwordLabel: 'Password',
+            passwordPlaceholder: 'Enter password',
+            loginButton: 'Sign In',
             backButton: 'Back',
-            registerLink: 'Don\'t have an account? Register',
+            noAccount: 'Don\'t have an account?',
+            registerLink: 'Sign up',
             loginSuccess: 'Signed in successfully',
             loginError: 'Sign in failed'
         },
 
         register: {
-            title: 'Register',
+            title: 'Sign Up',
             subtitle: 'Create a new account',
-            usernameLabel: 'Username:',
-            usernamePlaceholder: 'username',
-            emailLabel: 'Email:',
-            emailPlaceholder: 'email@example.com',
-            passwordLabel: 'Password:',
-            passwordPlaceholder: '••••••••',
-            confirmPasswordLabel: 'Confirm Password:',
-            confirmPasswordPlaceholder: '••••••••',
-            submitButton: 'Register',
+            usernameLabel: 'Username',
+            usernamePlaceholder: 'Enter username',
+            emailLabel: 'Email',
+            emailPlaceholder: 'Enter email',
+            passwordLabel: 'Password',
+            passwordPlaceholder: 'Enter password',
+            confirmPasswordLabel: 'Confirm password',
+            confirmPasswordPlaceholder: 'Confirm password',
+            submitButton: 'Create Account',
             cancelButton: 'Back',
             success: 'Registration successful. Please verify your email.',
             error: 'Registration failed',
             passwordMismatch: 'Passwords do not match',
             usernameInvalid: 'Username can only contain English letters, numbers, and underscores',
-            alreadyHaveCode: 'Already received the verification code?'
+            alreadyHaveCode: 'Already received the code?',
+            verifyLink: 'Verify Email'
         },
 
         verify: {
             title: 'Verify Email',
             description: 'We sent a verification code to {email}. Please enter it below.',
             descriptionManual: 'Enter your email and the verification code you received.',
-            emailLabel: 'Email:',
-            emailPlaceholder: 'email@example.com',
-            codeLabel: 'Verification Code:',
+            emailLabel: 'Email',
+            emailPlaceholder: 'Enter email',
+            codeLabel: 'Verification code',
             codePlaceholder: '123456',
             submitButton: 'Verify',
             backButton: 'Back',
-            resendCodeLink: "Didn't receive the code? Resend",
+            needCode: "Didn't receive the code?",
+            resendCodeLink: 'Send Code Again',
+            emailRequired: 'Email is required to resend the code',
             success: 'Email verified successfully',
             error: 'Verification failed',
             resendSuccess: 'Verification code sent',
             resendError: 'Failed to resend code',
             status: 'Status',
             detail: 'Detail'
+        },
+
+        resend: {
+            title: 'Resend Code',
+            emailLabel: 'Email',
+            emailPlaceholder: 'Enter email',
+            submitButton: 'Send Code Again',
+            backButton: 'Back'
         },
         
         // Status section
@@ -1045,10 +1063,17 @@ const EN = {
         },
 
         onboarding: {
-            title: 'Welcome to Mindful Web',
-            subtitle: 'You can sign in or try the service anonymously.',
-            tryButton: 'Try anonymous',
-            loginButton: 'Sign in'
+            title: '🧘 Mindful Web',
+            subtitle: 'Track your time online and analyze your digital habits',
+            feature1: 'Track your time on websites',
+            feature2: 'View visit statistics',
+            feature3: 'Analyze charts and graphs',
+            signInButton: 'Sign In or Register',
+            tryButton: 'Continue as Guest',
+            footerPrefix: 'By continuing, you agree to the',
+            footerTerms: 'Terms of Service',
+            footerAnd: ' and ',
+            footerPrivacy: 'Privacy Policy'
         },
         
         // Theme
@@ -1065,6 +1090,7 @@ const EN = {
             saving: 'Saving...',
             reset: 'Reset to Default',
             resetting: 'Resetting...',
+            clearAllData: 'Clear all data',
             runDiagnostics: 'Diagnostics',
             analyzing: 'Analyzing...',
             clearDiagnostics: 'Clear',
@@ -1163,7 +1189,9 @@ const EN = {
             logsClearedShort: 'Cleared',
             logsClearErrorShort: 'Clear error',
             logsCopiedShort: 'Copied',
-            logsCopyErrorShort: 'Copy error'
+            logsCopyErrorShort: 'Copy error',
+            clearAllDataSuccess: 'All data cleared. Close the popup (if open), then open it again — you will see the welcome screen.',
+            clearAllDataError: 'Failed to clear data'
         }
         
     },
