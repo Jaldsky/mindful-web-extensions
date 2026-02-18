@@ -73,6 +73,30 @@ class EventHandlersManager {
             manager._log({ key: 'logs.ui.eventHandlers.resetBtnNotFound' });
         }
 
+        if (manager.domManager.elements.clearAllDataBtn) {
+            const clearAllDataHandler = async () => {
+                const success = await manager.clearAllExtensionData();
+                if (success) {
+                    manager.statusManager.showSuccess(
+                        manager.localeManager.t('options.notifications.clearAllDataSuccess')
+                    );
+                    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.getCurrent) {
+                        chrome.tabs.getCurrent((tab) => {
+                            if (tab && tab.id) {
+                                chrome.tabs.remove(tab.id);
+                            }
+                        });
+                    }
+                } else {
+                    manager.statusManager.showError(
+                        manager.localeManager.t('options.notifications.clearAllDataError')
+                    );
+                }
+            };
+            manager.domManager.elements.clearAllDataBtn.addEventListener('click', clearAllDataHandler);
+            manager.eventHandlers.set('clearAllDataBtn', clearAllDataHandler);
+        }
+
         if (manager.domManager.elements.saveBtn) {
             manager.originalButtonTexts.set('saveBtn', manager.domManager.elements.saveBtn.textContent);
         } else {

@@ -287,6 +287,28 @@ class StatusManager extends BaseManager {
     }
 
     /**
+     * Показывает статус успеха.
+     *
+     * @param {string} message - Текст сообщения
+     * @param {number} [duration] - Длительность отображения в мс
+     * @returns {Promise<boolean>} Promise, который разрешается в true если сообщение отображено
+     */
+    async showSuccess(message, duration) {
+        return await this.showStatus(message, StatusManager.STATUS_TYPES.SUCCESS, duration);
+    }
+
+    /**
+     * Показывает информационное сообщение.
+     *
+     * @param {string} message - Текст сообщения
+     * @param {number} [duration] - Длительность отображения в мс
+     * @returns {Promise<boolean>} Promise, который разрешается в true если сообщение отображено
+     */
+    async showInfo(message, duration) {
+        return await this.showStatus(message, StatusManager.STATUS_TYPES.INFO, duration);
+    }
+
+    /**
      * Показывает статус ошибки.
      * 
      * @param {string} message - Текст сообщения
