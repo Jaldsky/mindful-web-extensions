@@ -1,5 +1,6 @@
 const BaseManager = require('../../../base/BaseManager.js');
 const CONFIG = require('../../../config/config.js');
+const BackendAuthManager = require('./BackendAuthManager.js');
 
 /**
  * @typedef {Object} SendEventsResult
@@ -73,6 +74,8 @@ class BackendManager extends BaseManager {
             backendUrl: this.backendUrl,
             authTokenSet: Boolean(this.authToken)
         });
+
+        this.backendAuthManager = new BackendAuthManager(this);
         
         this._log({ key: 'logs.backend.created' }, { 
             backendUrl: this.backendUrl,
@@ -140,12 +143,7 @@ class BackendManager extends BaseManager {
      * @throws {TypeError} Если token не является строкой
      */
     setAuthToken(token) {
-        if (typeof token !== 'string') {
-            throw new TypeError('Auth token must be a string');
-        }
-        this.authToken = token;
-        this.updateState({ authTokenSet: true });
-        this._log({ key: 'logs.backend.authTokenUpdated' });
+        return this.backendAuthManager.setAuthToken(token);
     }
 
     /**
@@ -156,9 +154,7 @@ class BackendManager extends BaseManager {
      * @returns {void}
      */
     setAuthSession(accessToken, refreshToken = null) {
-        this.setAuthToken(accessToken);
-        this.refreshToken = refreshToken || null;
-        this._log({ key: 'logs.backend.authSessionUpdated' }, { hasRefresh: Boolean(this.refreshToken) });
+        return this.backendAuthManager.setAuthSession(accessToken, refreshToken);
     }
 
     /**
@@ -167,10 +163,7 @@ class BackendManager extends BaseManager {
      * @returns {void}
      */
     clearAuthSession() {
-        this.authToken = null;
-        this.refreshToken = null;
-        this.updateState({ authTokenSet: false });
-        this._log({ key: 'logs.backend.authSessionCleared' });
+        return this.backendAuthManager.clearAuthSession();
     }
 
     /**
@@ -338,6 +331,16 @@ class BackendManager extends BaseManager {
     }
 
     /**
+     * Извлекает текст ошибки из JSON ответа API (detail/message/error, в т.ч. массив как в FastAPI).
+     * @private
+     * @param {Object} obj - Объект ответа об ошибке
+     * @returns {string}
+     */
+    _extractErrorDetail(obj) {
+        return this.backendAuthManager._extractErrorDetail(obj);
+    }
+
+    /**
      * Логин пользователя.
      *
      * @async
@@ -346,48 +349,7 @@ class BackendManager extends BaseManager {
      * @returns {Promise<{success: boolean, accessToken?: string, refreshToken?: string, error?: string}>}
      */
     async login(username, password) {
-        return await this._executeWithTimingAsync('login', async () => {
-            try {
-                const backendUrlObj = new URL(this.backendUrl);
-                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_LOGIN_PATH;
-                const loginUrl = backendUrlObj.toString();
-
-                const acceptLanguage = await this._getAcceptLanguageAsync();
-                const response = await fetch(loginUrl, {
-                    method: CONFIG.BACKEND.METHODS.POST,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
-                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
-                    },
-                    body: JSON.stringify({ username, password }),
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
-                        .replace('{status}', response.status)
-                        .replace('{message}', errorText || response.statusText);
-                    this._logError({ key: 'logs.backend.authLoginError' }, new Error(errorMessage));
-                    return { success: false, error: errorMessage };
-                }
-
-                const data = await response.json();
-                if (!data || !data.access_token || !data.refresh_token) {
-                    const t = this._getTranslateFn();
-                    const errorMessage = t('logs.backend.authLoginInvalidResponse');
-                    this._logError({ key: 'logs.backend.authLoginError' }, new Error(errorMessage));
-                    return { success: false, error: errorMessage };
-                }
-
-                return { success: true, accessToken: data.access_token, refreshToken: data.refresh_token };
-            } catch (error) {
-                this._logError({ key: 'logs.backend.authLoginError' }, error);
-                const t = this._getTranslateFn();
-                const errorMessage = error.message || t('logs.backend.unknownError');
-                return { success: false, error: errorMessage };
-            }
-        });
+        return await this.backendAuthManager.login(username, password);
     }
 
     /**
@@ -398,52 +360,7 @@ class BackendManager extends BaseManager {
      * @returns {Promise<{success: boolean, accessToken?: string, refreshToken?: string, error?: string}>}
      */
     async refreshAccessToken(refreshToken = null) {
-        return await this._executeWithTimingAsync('refreshAccessToken', async () => {
-            try {
-                const backendUrlObj = new URL(this.backendUrl);
-                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_REFRESH_PATH;
-                const refreshUrl = backendUrlObj.toString();
-
-                const body = refreshToken
-                    ? JSON.stringify({ refresh_token: refreshToken })
-                    : undefined;
-
-                const acceptLanguage = await this._getAcceptLanguageAsync();
-                const response = await fetch(refreshUrl, {
-                    method: CONFIG.BACKEND.METHODS.POST,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
-                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
-                    },
-                    body,
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
-                        .replace('{status}', response.status)
-                        .replace('{message}', errorText || response.statusText);
-                    this._logError({ key: 'logs.backend.authRefreshError' }, new Error(errorMessage));
-                    return { success: false, error: errorMessage };
-                }
-
-                const data = await response.json();
-                if (!data || !data.access_token) {
-                    const t = this._getTranslateFn();
-                    const errorMessage = t('logs.backend.authRefreshInvalidResponse');
-                    this._logError({ key: 'logs.backend.authRefreshError' }, new Error(errorMessage));
-                    return { success: false, error: errorMessage };
-                }
-
-                return { success: true, accessToken: data.access_token, refreshToken: data.refresh_token };
-            } catch (error) {
-                this._logError({ key: 'logs.backend.authRefreshError' }, error);
-                const t = this._getTranslateFn();
-                const errorMessage = error.message || t('logs.backend.unknownError');
-                return { success: false, error: errorMessage };
-            }
-        });
+        return await this.backendAuthManager.refreshAccessToken(refreshToken);
     }
 
     /**
@@ -456,64 +373,7 @@ class BackendManager extends BaseManager {
      * @returns {Promise<{success: boolean, userId?: string, error?: string}>}
      */
     async register(username, email, password) {
-        return await this._executeWithTimingAsync('register', async () => {
-            try {
-                const backendUrlObj = new URL(this.backendUrl);
-                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_REGISTER_PATH;
-                const registerUrl = backendUrlObj.toString();
-
-                const acceptLanguage = await this._getAcceptLanguageAsync();
-                const response = await fetch(registerUrl, {
-                    method: CONFIG.BACKEND.METHODS.POST,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
-                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
-                    },
-                    body: JSON.stringify({ username, email, password }),
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    let errorMessage = '';
-                    let errorDetail = '';
-                    
-                    try {
-                        const errorText = await response.text();
-                        try {
-                            const errorJson = JSON.parse(errorText);
-                            errorDetail = errorJson.detail || errorJson.message || errorJson.error || '';
-                            errorMessage = errorDetail || errorText;
-                        } catch {
-                            errorMessage = errorText || response.statusText;
-                        }
-                    } catch {
-                        errorMessage = response.statusText || 'Unknown error';
-                    }
-
-                    const formattedError = errorDetail 
-                        ? `[${response.status}] ${errorDetail}`
-                        : `[${response.status}] ${errorMessage}`;
-                    
-                    this._logError({ key: 'logs.backend.authRegisterError' }, new Error(formattedError));
-                    return { success: false, error: formattedError, status: response.status };
-                }
-
-                const data = await response.json();
-                if (!data || !data.user_id) {
-                    const t = this._getTranslateFn();
-                    const errorMessage = t('logs.backend.authRegisterInvalidResponse');
-                    this._logError({ key: 'logs.backend.authRegisterError' }, new Error(errorMessage));
-                    return { success: false, error: errorMessage };
-                }
-
-                return { success: true, userId: data.user_id };
-            } catch (error) {
-                this._logError({ key: 'logs.backend.authRegisterError' }, error);
-                const t = this._getTranslateFn();
-                const errorMessage = error.message || t('logs.backend.unknownError');
-                return { success: false, error: errorMessage };
-            }
-        });
+        return await this.backendAuthManager.register(username, email, password);
     }
 
     /**
@@ -525,54 +385,7 @@ class BackendManager extends BaseManager {
      * @returns {Promise<{success: boolean, error?: string}>}
      */
     async verify(email, code) {
-        return await this._executeWithTimingAsync('verify', async () => {
-            try {
-                const backendUrlObj = new URL(this.backendUrl);
-                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_VERIFY_PATH;
-                const verifyUrl = backendUrlObj.toString();
-
-                const acceptLanguage = await this._getAcceptLanguageAsync();
-                const response = await fetch(verifyUrl, {
-                    method: CONFIG.BACKEND.METHODS.POST,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
-                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
-                    },
-                    body: JSON.stringify({ email, code }),
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    let errorMessage = '';
-                    let errorDetail = '';
-                    
-                    try {
-                        const errorText = await response.text();
-                        try {
-                            const errorJson = JSON.parse(errorText);
-                            errorDetail = errorJson.detail || errorJson.message || errorJson.error || '';
-                            errorMessage = errorDetail || errorText;
-                        } catch {
-                            errorMessage = errorText || response.statusText;
-                        }
-                    } catch {
-                        errorMessage = response.statusText || 'Unknown error';
-                    }
-                    
-                    const formattedError = errorDetail 
-                        ? `[${response.status}] ${errorDetail}`
-                        : `[${response.status}] ${errorMessage}`;
-                    
-                    this._logError({ key: 'logs.backend.authVerifyError' }, new Error(formattedError));
-                    return { success: false, error: formattedError, status: response.status };
-                }
-
-                return { success: true };
-            } catch (error) {
-                this._logError({ key: 'logs.backend.authVerifyError' }, error);
-                return { success: false, error: error.message };
-            }
-        });
+        return await this.backendAuthManager.verify(email, code);
     }
 
     /**
@@ -583,54 +396,7 @@ class BackendManager extends BaseManager {
      * @returns {Promise<{success: boolean, error?: string}>}
      */
     async resendCode(email) {
-        return await this._executeWithTimingAsync('resendCode', async () => {
-            try {
-                const backendUrlObj = new URL(this.backendUrl);
-                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_RESEND_CODE_PATH;
-                const resendUrl = backendUrlObj.toString();
-
-                const acceptLanguage = await this._getAcceptLanguageAsync();
-                const response = await fetch(resendUrl, {
-                    method: CONFIG.BACKEND.METHODS.POST,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
-                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
-                    },
-                    body: JSON.stringify({ email }),
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    let errorMessage = '';
-                    let errorDetail = '';
-                    
-                    try {
-                        const errorText = await response.text();
-                        try {
-                            const errorJson = JSON.parse(errorText);
-                            errorDetail = errorJson.detail || errorJson.message || errorJson.error || '';
-                            errorMessage = errorDetail || errorText;
-                        } catch {
-                            errorMessage = errorText || response.statusText;
-                        }
-                    } catch {
-                        errorMessage = response.statusText || 'Unknown error';
-                    }
-                    
-                    const formattedError = errorDetail 
-                        ? `[${response.status}] ${errorDetail}`
-                        : `[${response.status}] ${errorMessage}`;
-                    
-                    this._logError({ key: 'logs.backend.authResendCodeError' }, new Error(formattedError));
-                    return { success: false, error: formattedError, status: response.status };
-                }
-
-                return { success: true };
-            } catch (error) {
-                this._logError({ key: 'logs.backend.authResendCodeError' }, error);
-                return { success: false, error: error.message };
-            }
-        });
+        return await this.backendAuthManager.resendCode(email);
     }
 
     /**
@@ -640,37 +406,7 @@ class BackendManager extends BaseManager {
      * @returns {Promise<{success: boolean, error?: string}>}
      */
     async logout() {
-        return await this._executeWithTimingAsync('logout', async () => {
-            try {
-                const backendUrlObj = new URL(this.backendUrl);
-                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_LOGOUT_PATH;
-                const logoutUrl = backendUrlObj.toString();
-
-                const acceptLanguage = await this._getAcceptLanguageAsync();
-                const response = await fetch(logoutUrl, {
-                    method: CONFIG.BACKEND.METHODS.POST,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
-                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
-                    },
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
-                        .replace('{status}', response.status)
-                        .replace('{message}', errorText || response.statusText);
-                    this._logError({ key: 'logs.backend.authLogoutError' }, new Error(errorMessage));
-                    return { success: false, error: errorMessage };
-                }
-
-                return { success: true };
-            } catch (error) {
-                this._logError({ key: 'logs.backend.authLogoutError' }, error);
-                return { success: false, error: error.message };
-            }
-        });
+        return await this.backendAuthManager.logout();
     }
 
     /**
@@ -680,52 +416,7 @@ class BackendManager extends BaseManager {
      * @returns {Promise<{success: boolean, status?: string, userId?: string, anonId?: string, error?: string}>}
      */
     async getSession() {
-        return await this._executeWithTimingAsync('getSession', async () => {
-            try {
-                const backendUrlObj = new URL(this.backendUrl);
-                backendUrlObj.pathname = CONFIG.BACKEND.AUTH_SESSION_PATH;
-                const sessionUrl = backendUrlObj.toString();
-
-                const acceptLanguage = await this._getAcceptLanguageAsync();
-                const response = await fetch(sessionUrl, {
-                    method: CONFIG.BACKEND.METHODS.GET,
-                    headers: {
-                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
-                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
-                    },
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    const errorMessage = CONFIG.BACKEND.ERROR_MESSAGE_TEMPLATE
-                        .replace('{status}', response.status)
-                        .replace('{message}', errorText || response.statusText);
-                    this._logError({ key: 'logs.backend.authSessionError' }, new Error(errorMessage));
-                    return { success: false, error: errorMessage };
-                }
-
-                const data = await response.json();
-                if (!data || !data.status) {
-                    const t = this._getTranslateFn();
-                    const errorMessage = t('logs.backend.authSessionInvalidResponse');
-                    this._logError({ key: 'logs.backend.authSessionError' }, new Error(errorMessage));
-                    return { success: false, error: errorMessage };
-                }
-
-                return {
-                    success: true,
-                    status: data.status,
-                    userId: data.user_id || null,
-                    anonId: data.anon_id || null
-                };
-            } catch (error) {
-                this._logError({ key: 'logs.backend.authSessionError' }, error);
-                const t = this._getTranslateFn();
-                const errorMessage = error.message || t('logs.backend.unknownError');
-                return { success: false, error: errorMessage };
-            }
-        });
+        return await this.backendAuthManager.getSession();
     }
 
     /**

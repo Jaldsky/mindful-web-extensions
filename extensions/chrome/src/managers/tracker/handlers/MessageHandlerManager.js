@@ -272,6 +272,10 @@ class MessageHandlerManager extends BaseManager {
                     this.authHandler.handleResendCode(request, sendResponse);
                     break;
 
+                case MessageHandlerManager.MESSAGE_TYPES.CLEAR_SESSION:
+                    this.authHandler.handleClearSession(sendResponse);
+                    break;
+
                 default: {
                     this._log({ key: 'logs.messageHandler.unknownMessageType', params: { messageType } });
                     const t = this._getTranslateFn();

@@ -3,6 +3,8 @@
  */
 
 const BackendManager = require('../../../../src/managers/tracker/core/BackendManager.js');
+const BaseManager = require('../../../../src/base/BaseManager.js');
+const CONFIG = require('../../../../src/config/config.js');
 
 describe('BackendManager', () => {
     let backendManager;
@@ -147,6 +149,56 @@ describe('BackendManager', () => {
 
             expect(result.success).toBe(true);
         });
+
+        test('должен обновлять токен и повторять запрос при 401', async () => {
+            backendManager.refreshToken = 'refresh-token';
+            fetchMock
+                .mockResolvedValueOnce({
+                    ok: false,
+                    status: 401,
+                    statusText: 'Unauthorized',
+                    text: async () => 'Expired'
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ success: true, retried: true })
+                });
+
+            jest.spyOn(backendManager, 'refreshAccessToken').mockResolvedValue({
+                success: true,
+                accessToken: 'new-access',
+                refreshToken: 'new-refresh'
+            });
+
+            const result = await backendManager.sendEvents([{ event: 'active' }]);
+
+            expect(result.success).toBe(true);
+            expect(backendManager.refreshAccessToken).toHaveBeenCalledWith('refresh-token');
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+            expect(backendManager.authToken).toBe('new-access');
+            expect(backendManager.refreshToken).toBe('new-refresh');
+        });
+
+        test('не повторяет запрос если refresh неуспешен', async () => {
+            backendManager.refreshToken = 'refresh-token';
+            fetchMock.mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                statusText: 'Unauthorized',
+                text: async () => 'Expired'
+            });
+
+            jest.spyOn(backendManager, 'refreshAccessToken').mockResolvedValue({
+                success: false,
+                error: 'refresh failed'
+            });
+
+            const result = await backendManager.sendEvents([{ event: 'active' }]);
+
+            expect(result.success).toBe(false);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('checkHealth', () => {
@@ -201,6 +253,23 @@ describe('BackendManager', () => {
 
             // Healthcheck должен работать без userId
             expect(result.success).toBe(true);
+        });
+
+        test('должен возвращать tooFrequent при частых вызовах', async () => {
+            backendManager.lastHealthCheckTime = Date.now();
+            const result = await backendManager.checkHealth();
+            expect(result.tooFrequent).toBe(true);
+            expect(result.success).toBe(false);
+        });
+
+        test('должен отрабатывать внешний catch с форматом ошибки', async () => {
+            jest.spyOn(global, 'URL').mockImplementationOnce(() => {
+                throw new Error('Bad URL');
+            });
+
+            const result = await backendManager.checkHealth(true);
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Error: Bad URL');
         });
     });
 
@@ -323,7 +392,7 @@ describe('BackendManager', () => {
             const result = await backendManager.login('username', 'wrong-password');
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('HTTP 401');
+            expect(result.error).toBeDefined();
         });
 
         test('должен обрабатывать невалидный ответ', async () => {
@@ -547,6 +616,30 @@ describe('BackendManager', () => {
             await backendManager.createAnonymousSession();
             expect(fetchMock).toHaveBeenCalled();
             expect(fetchMock.mock.calls[0][1].headers['Accept-Language']).toMatch(/^(en|ru)$/);
+        });
+
+        test('_getAcceptLanguageAsync должен возвращать DEFAULT_LOCALE при отсутствии данных', async () => {
+            const chromeGet = jest.fn((keys, cb) => cb({ mindful_locale: 'de' }));
+            global.chrome = { storage: { local: { get: chromeGet } } };
+            const originalDetect = BaseManager.detectBrowserLocale;
+            BaseManager.detectBrowserLocale = jest.fn(() => 'de');
+            if (typeof localStorage !== 'undefined') {
+                localStorage.removeItem('mindful_locale');
+                localStorage.removeItem('mindful_locale_cache');
+                localStorage.removeItem('mindfulweb_locale');
+                localStorage.removeItem('mindfulweb_locale_cache');
+                localStorage.removeItem(CONFIG.LOCALE.STORAGE_KEY);
+                localStorage.removeItem(CONFIG.LOCALE.CACHE_KEY);
+            }
+
+            const manager = new BackendManager({ backendUrl: 'http://test.com/api', enableLogging: false });
+            const locale = await manager._getAcceptLanguageAsync();
+            manager.destroy();
+
+            expect(locale).toBe(BaseManager.DEFAULT_LOCALE || 'en');
+
+            BaseManager.detectBrowserLocale = originalDetect;
+            delete global.chrome;
         });
     });
 });

@@ -327,6 +327,31 @@ class AuthHandlerManager extends BaseManager {
             }
         })();
     }
+
+    /**
+     * Сбрасывает сессию в памяти и на бэкенде (после очистки storage со стороны options).
+     * Вызывается после «Очистить все данные», чтобы при следующем открытии попапа показывалось приветственное окно:
+     * без logout сервер по куки возвращал бы ту же сессию, и попап снова показывал «авторизованную» сессию.
+     *
+     * @param {Function} sendResponse - Функция для отправки ответа
+     * @returns {void}
+     */
+    handleClearSession(sendResponse) {
+        (async () => {
+            try {
+                await this.storageManager.clearAnonymousSession();
+                await this.storageManager.clearAuthSession();
+                this.backendManager.clearAuthSession();
+                await this.backendManager.logout().catch((err) => {
+                    this._logError({ key: 'logs.authHandler.logoutError' }, err);
+                });
+                sendResponse({ success: true });
+            } catch (error) {
+                this._logError({ key: 'logs.authHandler.statusError' }, error);
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+    }
 }
 
 if (typeof module !== 'undefined' && module.exports) {

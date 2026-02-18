@@ -697,5 +697,119 @@ describe('AuthHandlerManager', () => {
                 error: 'Load failed'
             });
         });
+
+        test('использует cookie-сессию authenticated и refreshAccessToken', async () => {
+            const payload = { username: 'cookie-user' };
+            const token = `header.${btoa(JSON.stringify(payload))}.signature`;
+            backendManager.getSession.mockResolvedValue({ success: true, status: 'authenticated' });
+            backendManager.refreshAccessToken.mockResolvedValue({
+                success: true,
+                accessToken: token,
+                refreshToken: 'cookie-refresh'
+            });
+            storageManager.saveAuthSession.mockResolvedValue(true);
+
+            authHandlerManager.handleGetAuthStatus(sendResponse);
+            await flushPromises();
+
+            expect(storageManager.saveAuthSession).toHaveBeenCalledWith(token, 'cookie-refresh');
+            expect(backendManager.setAuthSession).toHaveBeenCalledWith(token, 'cookie-refresh');
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: true,
+                isAuthenticated: true,
+                hasRefreshToken: true,
+                username: 'cookie-user',
+                anonId: null
+            });
+        });
+
+        test('обрабатывает cookie-сессию anonymous и очищает auth', async () => {
+            backendManager.getSession.mockResolvedValue({
+                success: true,
+                status: 'anonymous',
+                anonId: 'anon-cookie'
+            });
+
+            authHandlerManager.handleGetAuthStatus(sendResponse);
+            await flushPromises();
+
+            expect(storageManager.clearAuthSession).toHaveBeenCalled();
+            expect(storageManager.clearAnonymousSession).toHaveBeenCalled();
+            expect(backendManager.clearAuthSession).toHaveBeenCalled();
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: true,
+                isAuthenticated: false,
+                hasRefreshToken: false,
+                username: null,
+                anonId: 'anon-cookie'
+            });
+        });
+
+        test('fallback: обновляет accessToken через refresh если в storage его нет', async () => {
+            const payload = { sub: 'refreshed-user' };
+            const token = `header.${btoa(JSON.stringify(payload))}.signature`;
+            backendManager.getSession.mockResolvedValue({ success: false });
+            storageManager.loadAuthSession.mockResolvedValue({ accessToken: null, refreshToken: null });
+            storageManager.loadAnonymousSession.mockResolvedValue(null);
+            backendManager.refreshAccessToken.mockResolvedValue({
+                success: true,
+                accessToken: token,
+                refreshToken: 'new-refresh'
+            });
+            storageManager.saveAuthSession.mockResolvedValue(true);
+
+            authHandlerManager.handleGetAuthStatus(sendResponse);
+            await flushPromises();
+
+            expect(storageManager.saveAuthSession).toHaveBeenCalledWith(token, 'new-refresh');
+            expect(backendManager.setAuthSession).toHaveBeenCalledWith(token, 'new-refresh');
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: true,
+                isAuthenticated: true,
+                hasRefreshToken: true,
+                username: 'refreshed-user',
+                anonId: null
+            });
+        });
+    });
+
+    describe('handleClearSession', () => {
+        test('успешно очищает storage и отправляет success', async () => {
+            storageManager.clearAnonymousSession.mockResolvedValue();
+            storageManager.clearAuthSession.mockResolvedValue();
+            backendManager.logout.mockResolvedValue({ success: true });
+
+            authHandlerManager.handleClearSession(sendResponse);
+            await flushPromises();
+
+            expect(storageManager.clearAnonymousSession).toHaveBeenCalled();
+            expect(storageManager.clearAuthSession).toHaveBeenCalled();
+            expect(backendManager.clearAuthSession).toHaveBeenCalled();
+            expect(backendManager.logout).toHaveBeenCalled();
+            expect(sendResponse).toHaveBeenCalledWith({ success: true });
+        });
+
+        test('возвращает success даже если backend logout завершился с ошибкой', async () => {
+            storageManager.clearAnonymousSession.mockResolvedValue();
+            storageManager.clearAuthSession.mockResolvedValue();
+            backendManager.logout.mockRejectedValue(new Error('logout cookie failed'));
+
+            authHandlerManager.handleClearSession(sendResponse);
+            await flushPromises();
+
+            expect(sendResponse).toHaveBeenCalledWith({ success: true });
+        });
+
+        test('возвращает ошибку если очистка storage упала', async () => {
+            storageManager.clearAnonymousSession.mockRejectedValue(new Error('clear failed'));
+
+            authHandlerManager.handleClearSession(sendResponse);
+            await flushPromises();
+
+            expect(sendResponse).toHaveBeenCalledWith({
+                success: false,
+                error: 'clear failed'
+            });
+        });
     });
 });

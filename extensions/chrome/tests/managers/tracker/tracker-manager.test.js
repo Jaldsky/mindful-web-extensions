@@ -204,6 +204,56 @@ describe('TrackerManager', () => {
 
             expect(setDomainExceptionsSpy).toHaveBeenCalledWith(domainExceptions);
         });
+
+        test('должен обновлять auth сессию при cookie authenticated', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+
+            jest.spyOn(trackerManager.backendManager, 'getSession').mockResolvedValue({
+                success: true,
+                status: 'authenticated'
+            });
+            jest.spyOn(trackerManager.backendManager, 'refreshAccessToken').mockResolvedValue({
+                success: true,
+                accessToken: 'new-access',
+                refreshToken: 'new-refresh'
+            });
+            const saveAuthSpy = jest.spyOn(trackerManager.storageManager, 'saveAuthSession');
+            const setAuthSpy = jest.spyOn(trackerManager.backendManager, 'setAuthSession');
+
+            await trackerManager.init();
+
+            expect(saveAuthSpy).toHaveBeenCalledWith('new-access', 'new-refresh');
+            expect(setAuthSpy).toHaveBeenCalledWith('new-access', 'new-refresh');
+        });
+
+        test('должен восстанавливать auth через refresh при отсутствии токена в storage', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+
+            jest.spyOn(trackerManager.backendManager, 'getSession').mockResolvedValue({ success: false });
+            jest.spyOn(trackerManager.storageManager, 'loadAuthSession').mockResolvedValue({
+                accessToken: null,
+                refreshToken: null
+            });
+            jest.spyOn(trackerManager.backendManager, 'refreshAccessToken').mockResolvedValue({
+                success: true,
+                accessToken: 'refreshed-access',
+                refreshToken: null
+            });
+            const saveAuthSpy = jest.spyOn(trackerManager.storageManager, 'saveAuthSession');
+            const setAuthSpy = jest.spyOn(trackerManager.backendManager, 'setAuthSession');
+
+            await trackerManager.init();
+
+            expect(saveAuthSpy).toHaveBeenCalledWith('refreshed-access', null);
+            expect(setAuthSpy).toHaveBeenCalledWith('refreshed-access', null);
+        });
+
+        test('должен бросать ошибку если init завершается исключением', async () => {
+            trackerManager = new TrackerManager({ enableLogging: false });
+            jest.spyOn(trackerManager.storageManager, 'loadBackendUrl').mockRejectedValue(new Error('backend url fail'));
+
+            await expect(trackerManager.init()).rejects.toThrow('backend url fail');
+        });
     });
 
     describe('getStatistics', () => {
@@ -604,6 +654,29 @@ describe('TrackerManager', () => {
             expect(setIntervalSpy).toHaveBeenCalled();
             
             setIntervalSpy.mockRestore();
+        });
+
+        test('должен применять смену online статуса в interval callback', async () => {
+            let intervalCallback = null;
+            jest.spyOn(global, 'setInterval').mockImplementation((cb) => {
+                intervalCallback = cb;
+                return 1;
+            });
+
+            Object.defineProperty(global.navigator, 'onLine', {
+                writable: true,
+                value: true
+            });
+            trackerManager = new TrackerManager({ enableLogging: false });
+            await trackerManager.init();
+
+            const setOnlineSpy = jest.spyOn(trackerManager.eventQueueManager, 'setOnlineStatus');
+            trackerManager.eventQueueManager.state.isOnline = true;
+            global.navigator.onLine = false;
+
+            intervalCallback();
+
+            expect(setOnlineSpy).toHaveBeenCalledWith(false);
         });
     });
 
