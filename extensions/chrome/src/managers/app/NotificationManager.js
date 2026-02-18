@@ -71,7 +71,8 @@ class NotificationManager extends BaseManager {
      * @returns {HTMLElement} Созданный элемент уведомления
      */
     showNotification(message, type = NotificationManager.NOTIFICATION_TYPES.INFO, options = {}) {
-        if (!message || typeof message !== 'string') {
+        const text = this._normalizeMessage(message);
+        if (!text) {
             this._log({ key: 'logs.notification.warnMessageRequired' });
             return null;
         }
@@ -91,7 +92,7 @@ class NotificationManager extends BaseManager {
                 this.removeNotification(oldestNotification);
             }
 
-            const notification = this._createNotificationElement(message, type, options);
+            const notification = this._createNotificationElement(text, type, options);
             this._positionNotification(notification);
             this._addNotificationToDOM(notification);
             this._animateIn(notification);
@@ -100,7 +101,7 @@ class NotificationManager extends BaseManager {
             this.notificationStats.set('total', this.notificationStats.get('total') + 1);
             this.notificationStats.set(type, (this.notificationStats.get(type) || 0) + 1);
 
-            this._log({ key: 'logs.notification.notificationCreated', params: { type } }, { message, options });
+            this._log({ key: 'logs.notification.notificationCreated', params: { type } }, { message: text, options });
 
             return notification;
         } catch (error) {
@@ -110,8 +111,59 @@ class NotificationManager extends BaseManager {
     }
 
     /**
+     * Приводит сообщение к строке (если передан объект — извлекает текст).
+     *
+     * @private
+     * @param {*} message - Сообщение (строка или объект с полем message/detail/error)
+     * @returns {string} Строка для отображения
+     */
+    _normalizeMessage(message) {
+        if (message == null) return '';
+        if (typeof message === 'string') {
+            const trimmed = message.trim();
+            if (trimmed.startsWith('{')) {
+                try {
+                    const obj = JSON.parse(message);
+                    return this._extractErrorText(obj) || message;
+                } catch {
+                    return message;
+                }
+            }
+            return message;
+        }
+        if (typeof message === 'object') {
+            const s = this._extractErrorText(message);
+            if (s) return s;
+        }
+        return String(message);
+    }
+
+    /**
+     * Извлекает текст ошибки из объекта (detail/message/error/msg, в т.ч. массив как в FastAPI).
+     * @private
+     */
+    _extractErrorText(obj) {
+        if (obj == null) return '';
+        // Формат бэкенда: { code, message, details } и FastAPI: { detail } / { detail: [{ msg }] }
+        const raw = obj.message ?? obj.detail ?? obj.error ?? obj.msg;
+        if (typeof raw === 'string') return raw;
+        if (Array.isArray(raw) && raw.length > 0) {
+            const first = raw[0];
+            if (typeof first === 'string') return first;
+            if (first && typeof first === 'object') return first.msg ?? first.message ?? first.detail ?? String(first);
+        }
+        if (raw != null) return String(raw);
+        const details = obj.details;
+        if (Array.isArray(details) && details.length > 0) {
+            const first = details[0];
+            if (first && typeof first === 'object' && typeof first.message === 'string') return first.message;
+        }
+        return '';
+    }
+
+    /**
      * Создает элемент уведомления.
-     * 
+     *
      * @private
      * @param {string} message - Текст уведомления
      * @param {string} type - Тип уведомления
@@ -121,14 +173,33 @@ class NotificationManager extends BaseManager {
     _createNotificationElement(message, type, options) {
         const notification = document.createElement('div');
         const classes = ['notification', `notification-${type}`];
-        
-        if (options.closable !== false) {
-            classes.push('closable');
-            notification.addEventListener('click', () => this.removeNotification(notification));
+
+        if (options.layout === 'authToast') {
+            classes.push('auth-error-toast');
+            notification.setAttribute('data-layout', 'authToast');
+            const span = document.createElement('span');
+            span.className = 'auth-error-message';
+            span.textContent = message;
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'auth-error-close';
+            closeBtn.setAttribute('aria-label', 'Close');
+            closeBtn.textContent = '×';
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeNotification(notification);
+            });
+            notification.appendChild(span);
+            notification.appendChild(closeBtn);
+        } else {
+            if (options.closable !== false) {
+                classes.push('closable');
+                notification.addEventListener('click', () => this.removeNotification(notification));
+            }
+            notification.textContent = message;
         }
-        
+
         notification.className = classes.join(' ');
-        notification.textContent = message;
         notification.setAttribute('data-type', type);
         notification.setAttribute('data-timestamp', Date.now().toString());
 
@@ -143,7 +214,8 @@ class NotificationManager extends BaseManager {
      * @returns {void}
      */
     _positionNotification(notification) {
-        const positionClass = `position-${this.position || 'top-right'}`;
+        const isAuthToast = notification.classList.contains('auth-error-toast');
+        const positionClass = isAuthToast ? 'position-top-center' : `position-${this.position || 'top-right'}`;
         notification.classList.add(positionClass);
     }
 

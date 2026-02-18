@@ -8,6 +8,7 @@ jest.mock('../../../src/managers/app/NotificationManager.js');
 jest.mock('../../../src/managers/app/ServiceWorkerManager.js');
 jest.mock('../../../src/managers/app/DiagnosticsManager.js');
 jest.mock('../../../src/managers/locale/LocaleManager.js');
+jest.mock('../../../src/managers/theme/ThemeManager.js');
 
 const BaseManager = require('../../../src/base/BaseManager.js');
 const DOMManager = require('../../../src/managers/app/DOMManager.js');
@@ -15,6 +16,7 @@ const NotificationManager = require('../../../src/managers/app/NotificationManag
 const ServiceWorkerManager = require('../../../src/managers/app/ServiceWorkerManager.js');
 const DiagnosticsManager = require('../../../src/managers/app/DiagnosticsManager.js');
 const LocaleManager = require('../../../src/managers/locale/LocaleManager.js');
+const ThemeManager = require('../../../src/managers/theme/ThemeManager.js');
 
 global.window.BaseManager = BaseManager;
 global.window.DOMManager = DOMManager;
@@ -188,6 +190,13 @@ describe('AppManager', () => {
         ServiceWorkerManager.mockImplementation(() => mockServiceWorkerManager);
         DiagnosticsManager.mockImplementation(() => mockDiagnosticsManager);
         LocaleManager.mockImplementation(() => mockLocaleManager);
+        ThemeManager.mockImplementation(() => ({
+            loadAndApplyTheme: jest.fn().mockResolvedValue('light'),
+            getCurrentTheme: jest.fn().mockReturnValue('light'),
+            applyTheme: jest.fn().mockReturnValue(true),
+            saveTheme: jest.fn().mockResolvedValue(true),
+            destroy: jest.fn()
+        }));
 
         global.chrome.runtime.openOptionsPage = jest.fn();
         
@@ -945,10 +954,18 @@ describe('AppManager', () => {
         describe('_handleLogin', () => {
             test('should show error if username or password is missing', async () => {
                 await appManager._handleLogin('', 'password');
-                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Login error', 'error');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Login error',
+                    'error',
+                    expect.objectContaining({ layout: 'authToast', duration: 5000 })
+                );
                 
                 await appManager._handleLogin('username', '');
-                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Login error', 'error');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Login error',
+                    'error',
+                    expect.objectContaining({ layout: 'authToast', duration: 5000 })
+                );
             });
 
             test('should call service worker with correct message type', async () => {
@@ -986,7 +1003,8 @@ describe('AppManager', () => {
                 
                 expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
                     'Invalid credentials',
-                    'error'
+                    'error',
+                    expect.objectContaining({ layout: 'authToast', duration: 5000 })
                 );
             });
         });
@@ -994,13 +1012,25 @@ describe('AppManager', () => {
         describe('_handleRegister', () => {
             test('should show error if required fields are missing', async () => {
                 await appManager._handleRegister('', 'email@test.com', 'password');
-                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Registration error', 'error');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Registration error',
+                    'error',
+                    expect.objectContaining({ layout: 'authToast', duration: 5000 })
+                );
                 
                 await appManager._handleRegister('username', '', 'password');
-                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Registration error', 'error');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Registration error',
+                    'error',
+                    expect.objectContaining({ layout: 'authToast', duration: 5000 })
+                );
                 
                 await appManager._handleRegister('username', 'email@test.com', '');
-                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Registration error', 'error');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Registration error',
+                    'error',
+                    expect.objectContaining({ layout: 'authToast', duration: 5000 })
+                );
             });
 
             test('should save pending verification email on successful registration', async () => {
@@ -1042,10 +1072,18 @@ describe('AppManager', () => {
         describe('_handleVerify', () => {
             test('should show error if email or code is missing', async () => {
                 await appManager._handleVerify('', '123456');
-                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Verification error', 'error');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Verification error',
+                    'error',
+                    expect.objectContaining({ layout: 'authToast', duration: 5000 })
+                );
                 
                 await appManager._handleVerify('email@test.com', '');
-                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith('Verification error', 'error');
+                expect(mockNotificationManager.showNotification).toHaveBeenCalledWith(
+                    'Verification error',
+                    'error',
+                    expect.objectContaining({ layout: 'authToast', duration: 5000 })
+                );
             });
 
             test('should clear pending verification email on success', async () => {
@@ -1339,6 +1377,102 @@ describe('AppManager', () => {
                 const result = await appManager._loadOnboardingCompleted();
                 
                 expect(result).toBe(false);
+            });
+        });
+
+        describe('_setLegalLinksUrls', () => {
+            test('should set href on .app-legal-terms and .app-legal-privacy links', () => {
+                const termsLink = document.createElement('a');
+                termsLink.className = 'app-legal-terms';
+                document.body.appendChild(termsLink);
+                const privacyLink = document.createElement('a');
+                privacyLink.className = 'app-legal-privacy';
+                document.body.appendChild(privacyLink);
+
+                appManager._setLegalLinksUrls();
+
+                expect(termsLink.href).toBeTruthy();
+                expect(termsLink.href).toContain('terms');
+                expect(privacyLink.href).toBeTruthy();
+                expect(privacyLink.href).toContain('privacy');
+
+                termsLink.remove();
+                privacyLink.remove();
+            });
+
+            test('should not throw when document or CONFIG.APP is missing', () => {
+                expect(() => appManager._setLegalLinksUrls()).not.toThrow();
+            });
+        });
+
+        describe('_updateThemeLocaleToggleIcons', () => {
+            test('should update theme icon to moon in dark theme', () => {
+                const themeIcon = document.createElement('span');
+                themeIcon.id = 'appThemeIcon';
+                document.body.appendChild(themeIcon);
+                appManager.themeManager.getCurrentTheme = jest.fn().mockReturnValue('dark');
+
+                appManager._updateThemeLocaleToggleIcons();
+
+                expect(themeIcon.textContent).toBe('🌙');
+                expect(themeIcon.classList.contains('app-theme-icon-moon')).toBe(true);
+                themeIcon.remove();
+            });
+
+            test('should update theme icon to sun in light theme', () => {
+                const themeIcon = document.createElement('span');
+                themeIcon.id = 'appThemeIcon';
+                document.body.appendChild(themeIcon);
+                appManager.themeManager.getCurrentTheme = jest.fn().mockReturnValue('light');
+
+                appManager._updateThemeLocaleToggleIcons();
+
+                expect(themeIcon.textContent).toBe('☀️');
+                themeIcon.remove();
+            });
+
+            test('should update locale icon for ru and en', () => {
+                const localeIcon = document.createElement('span');
+                localeIcon.id = 'appLocaleIcon';
+                document.body.appendChild(localeIcon);
+
+                appManager.localeManager.getCurrentLocale = jest.fn().mockReturnValue('ru');
+                appManager._updateThemeLocaleToggleIcons();
+                expect(localeIcon.textContent).toBe('🇷🇺');
+
+                appManager.localeManager.getCurrentLocale = jest.fn().mockReturnValue('en');
+                appManager._updateThemeLocaleToggleIcons();
+                expect(localeIcon.textContent).toBe('🇺🇸');
+
+                localeIcon.remove();
+            });
+
+            test('should not throw when icon elements are missing', () => {
+                expect(() => appManager._updateThemeLocaleToggleIcons()).not.toThrow();
+            });
+        });
+
+        describe('destroy', () => {
+            test('should call _removeEventHandlers and _destroyManagers', async () => {
+                appManager.isInitialized = true;
+                const removeSpy = jest.spyOn(appManager, '_removeEventHandlers');
+                const destroyManagersSpy = jest.spyOn(appManager, '_destroyManagers');
+
+                appManager.destroy();
+
+                expect(removeSpy).toHaveBeenCalled();
+                expect(destroyManagersSpy).toHaveBeenCalled();
+                expect(appManager.isInitialized).toBe(false);
+            });
+
+            test('should clear recheck debounce timer on destroy', async () => {
+                appManager.isInitialized = true;
+                appManager._recheckDebounceTimer = setTimeout(() => {}, 9999);
+                const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+
+                appManager.destroy();
+
+                expect(clearTimeoutSpy).toHaveBeenCalled();
             });
         });
     });

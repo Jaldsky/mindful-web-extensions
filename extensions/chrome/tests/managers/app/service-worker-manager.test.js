@@ -406,6 +406,48 @@ describe('ServiceWorkerManager', () => {
         });
     });
 
+    describe('generateRandomDomains', () => {
+        test('should send generateRandomDomains message and return success with generated count', async () => {
+            mockChromeRuntime.sendMessage.mockResolvedValue({ success: true, generated: 50 });
+
+            const result = await serviceWorkerManager.generateRandomDomains(50);
+
+            expect(mockChromeRuntime.sendMessage).toHaveBeenCalledWith({
+                type: 'generateRandomDomains',
+                data: { count: 50 }
+            });
+            expect(result).toEqual({ success: true, generated: 50 });
+        });
+
+        test('should use default count 100 when not provided', async () => {
+            mockChromeRuntime.sendMessage.mockResolvedValue({ success: true, generated: 100 });
+
+            const result = await serviceWorkerManager.generateRandomDomains();
+
+            expect(mockChromeRuntime.sendMessage).toHaveBeenCalledWith({
+                type: 'generateRandomDomains',
+                data: { count: 100 }
+            });
+            expect(result).toEqual({ success: true, generated: 100 });
+        });
+
+        test('should return success false and generated 0 on error', async () => {
+            mockChromeRuntime.sendMessage.mockRejectedValue(new Error('Failed'));
+
+            const result = await serviceWorkerManager.generateRandomDomains(10);
+
+            expect(result).toEqual({ success: false, generated: 0 });
+        });
+
+        test('should normalize invalid response', async () => {
+            mockChromeRuntime.sendMessage.mockResolvedValue(null);
+
+            const result = await serviceWorkerManager.generateRandomDomains(5);
+
+            expect(result).toEqual({ success: false, generated: 0 });
+        });
+    });
+
     describe('destroy', () => {
         test('should remove message listener', () => {
             const listener = serviceWorkerManager.messageListener;

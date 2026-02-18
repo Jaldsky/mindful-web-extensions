@@ -1,5 +1,6 @@
 const BaseManager = require('../../base/BaseManager.js');
 const CONFIG = require('../../config/config.js');
+const AuthDisplayManager = require('./ui/AuthDisplayManager.js');
 
 /**
  * @typedef {Object} DOMElements
@@ -81,6 +82,8 @@ class DOMManager extends BaseManager {
             const errorMessage = error instanceof Error ? error.message : t('logs.dom.initializationError');
             throw new Error(errorMessage);
         }
+
+        this.authDisplayManager = new AuthDisplayManager(this);
     }
 
     /**
@@ -156,10 +159,17 @@ class DOMManager extends BaseManager {
             verifyDescription: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_DESCRIPTION),
             verifyEmail: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_EMAIL),
             verifyCode: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_CODE),
+            verifyCodeContainer: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_CODE_CONTAINER),
             registerVerifyLink: getElement(DOMManager.ELEMENT_IDS.APP_REGISTER_VERIFY_LINK),
             verifySubmit: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_SUBMIT),
             verifyBack: getElement(DOMManager.ELEMENT_IDS.APP_VERIFY_BACK),
             resendCodeLink: getElement(DOMManager.ELEMENT_IDS.APP_RESEND_CODE_LINK),
+            resendScreen: getElement(DOMManager.ELEMENT_IDS.APP_RESEND_SCREEN),
+            resendForm: getElement(DOMManager.ELEMENT_IDS.APP_RESEND_FORM),
+            resendEmail: getElement(DOMManager.ELEMENT_IDS.APP_RESEND_EMAIL),
+            resendEmailError: getElement(DOMManager.ELEMENT_IDS.APP_RESEND_EMAIL_ERROR),
+            resendSubmit: getElement(DOMManager.ELEMENT_IDS.APP_RESEND_SUBMIT),
+            resendBack: getElement(DOMManager.ELEMENT_IDS.APP_RESEND_BACK),
             tryAnonBtn: getElement(DOMManager.ELEMENT_IDS.APP_TRY_ANON_BTN),
             signInBtn: getElement(DOMManager.ELEMENT_IDS.APP_SIGN_IN_BTN),
             loginForm: getElement(DOMManager.ELEMENT_IDS.APP_LOGIN_FORM),
@@ -184,6 +194,7 @@ class DOMManager extends BaseManager {
             mainLoginSubmit: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_LOGIN_SUBMIT),
             mainLoginBack: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_LOGIN_BACK),
             mainRegisterLink: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_LINK),
+            mainRegisterVerifyLink: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_VERIFY_LINK),
             mainRegisterForm: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_FORM),
             mainRegisterUsername: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_USERNAME),
             mainRegisterUsernameError: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_USERNAME_ERROR),
@@ -195,7 +206,9 @@ class DOMManager extends BaseManager {
             mainRegisterBack: getElement(DOMManager.ELEMENT_IDS.APP_MAIN_REGISTER_BACK),
             authHeaderLogo: getElement(DOMManager.ELEMENT_IDS.APP_AUTH_HEADER_LOGO),
             authHeaderSubtitle: getElement(DOMManager.ELEMENT_IDS.APP_AUTH_HEADER_SUBTITLE),
-            openLogin: getElement(DOMManager.ELEMENT_IDS.OPEN_LOGIN)
+            openLogin: getElement(DOMManager.ELEMENT_IDS.OPEN_LOGIN),
+            themeToggle: getElement(DOMManager.ELEMENT_IDS.APP_THEME_TOGGLE),
+            localeToggle: getElement(DOMManager.ELEMENT_IDS.APP_LOCALE_TOGGLE)
         };
     }
 
@@ -562,39 +575,7 @@ class DOMManager extends BaseManager {
      * @returns {boolean} true если операция успешна
      */
     showLoginForm() {
-        const mainElement = this.elements.appMain;
-        const loginElement = this.elements.loginContainer;
-        
-        if (mainElement && loginElement) {
-            // Remove any existing animation classes
-            mainElement.classList.remove('fade-in', 'fade-out');
-            loginElement.classList.remove('fade-in', 'fade-out');
-            
-            // Fade out main, then fade in login
-            mainElement.classList.add('fade-out');
-            setTimeout(() => {
-                mainElement.style.display = 'none';
-                mainElement.classList.remove('fade-out');
-                loginElement.style.display = 'flex';
-                // Start from top for forward navigation
-                loginElement.style.transform = 'translateY(-20px)';
-                loginElement.style.opacity = '0';
-                // Force reflow for animation
-                // eslint-disable-next-line no-unused-expressions
-                loginElement.offsetWidth;
-                loginElement.style.transform = '';
-                loginElement.style.opacity = '';
-                loginElement.classList.add('fade-in');
-            }, 250);
-        } else {
-            if (mainElement) {
-                mainElement.style.display = 'none';
-            }
-            if (loginElement) {
-                loginElement.style.display = 'flex';
-            }
-        }
-        return true;
+        return this.authDisplayManager.showLoginForm();
     }
 
     /**
@@ -603,39 +584,7 @@ class DOMManager extends BaseManager {
      * @returns {boolean} true если операция успешна
      */
     hideLoginForm() {
-        const mainElement = this.elements.appMain;
-        const loginElement = this.elements.loginContainer;
-        
-        if (mainElement && loginElement) {
-            // Remove any existing animation classes
-            mainElement.classList.remove('fade-in', 'fade-out', 'fade-out-down');
-            loginElement.classList.remove('fade-in', 'fade-out', 'fade-out-down');
-            
-            // Fade out login down, then fade in main from bottom
-            loginElement.classList.add('fade-out-down');
-            setTimeout(() => {
-                loginElement.style.display = 'none';
-                loginElement.classList.remove('fade-out-down');
-                mainElement.style.display = 'flex';
-                // Start from bottom
-                mainElement.style.transform = 'translateY(20px)';
-                mainElement.style.opacity = '0';
-                // Force reflow for animation
-                // eslint-disable-next-line no-unused-expressions
-                mainElement.offsetWidth;
-                mainElement.style.transform = '';
-                mainElement.style.opacity = '';
-                mainElement.classList.add('fade-in');
-            }, 250);
-        } else {
-            if (mainElement) {
-                mainElement.style.display = 'flex';
-            }
-            if (loginElement) {
-                loginElement.style.display = 'none';
-            }
-        }
-        return true;
+        return this.authDisplayManager.hideLoginForm();
     }
 
     /**
@@ -644,13 +593,7 @@ class DOMManager extends BaseManager {
      * @returns {boolean} true если операция успешна
      */
     showLoginButton() {
-        return this._safeUpdateElement(
-            this.elements.openLogin,
-            (element) => {
-                element.style.display = '';
-            },
-            'openLogin'
-        );
+        return this.authDisplayManager.showLoginButton();
     }
 
     /**
@@ -659,13 +602,7 @@ class DOMManager extends BaseManager {
      * @returns {boolean} true если операция успешна
      */
     hideLoginButton() {
-        return this._safeUpdateElement(
-            this.elements.openLogin,
-            (element) => {
-                element.style.display = 'none';
-            },
-            'openLogin'
-        );
+        return this.authDisplayManager.hideLoginButton();
     }
 
     /**
@@ -674,43 +611,7 @@ class DOMManager extends BaseManager {
      * @returns {boolean} true если операция успешна
      */
     showLoginFormInContainer() {
-        const loginForm = this.elements.mainLoginForm;
-        const registerForm = this.elements.mainRegisterForm;
-        const headerLogo = this.elements.authHeaderLogo;
-        const headerSubtitle = this.elements.authHeaderSubtitle;
-        
-        if (loginForm && registerForm) {
-            // Remove any existing animation classes
-            loginForm.classList.remove('fade-in', 'fade-out', 'fade-out-down');
-            registerForm.classList.remove('fade-in', 'fade-out', 'fade-out-down');
-            
-            // Fade out register down (back button), then fade in login from bottom
-            registerForm.classList.add('fade-out-down');
-            setTimeout(() => {
-                registerForm.style.display = 'none';
-                registerForm.classList.remove('fade-out-down');
-                loginForm.style.display = '';
-                // Start from bottom
-                loginForm.style.transform = 'translateY(20px)';
-                loginForm.style.opacity = '0';
-                // Force reflow for animation
-                // eslint-disable-next-line no-unused-expressions
-                loginForm.offsetWidth;
-                loginForm.style.transform = '';
-                loginForm.style.opacity = '';
-                loginForm.classList.add('fade-in');
-            }, 250);
-        } else {
-            if (loginForm) loginForm.style.display = '';
-            if (registerForm) registerForm.style.display = 'none';
-        }
-        
-        if (headerLogo) headerLogo.textContent = '🔐 Sign in';
-        if (headerSubtitle) {
-            const t = this._getTranslateFn();
-            headerSubtitle.textContent = t('app.auth.subtitle');
-        }
-        return true;
+        return this.authDisplayManager.showLoginFormInContainer();
     }
 
     /**
@@ -719,43 +620,7 @@ class DOMManager extends BaseManager {
      * @returns {boolean} true если операция успешна
      */
     showRegisterFormInContainer() {
-        const loginForm = this.elements.mainLoginForm;
-        const registerForm = this.elements.mainRegisterForm;
-        const headerLogo = this.elements.authHeaderLogo;
-        const headerSubtitle = this.elements.authHeaderSubtitle;
-        
-        if (loginForm && registerForm) {
-            // Remove any existing animation classes
-            loginForm.classList.remove('fade-in', 'fade-out');
-            registerForm.classList.remove('fade-in', 'fade-out');
-            
-            // Fade out login, then fade in register
-            loginForm.classList.add('fade-out');
-            setTimeout(() => {
-                loginForm.style.display = 'none';
-                loginForm.classList.remove('fade-out');
-                registerForm.style.display = '';
-                // Start from top for forward navigation
-                registerForm.style.transform = 'translateY(-20px)';
-                registerForm.style.opacity = '0';
-                // Force reflow for animation
-                // eslint-disable-next-line no-unused-expressions
-                registerForm.offsetWidth;
-                registerForm.style.transform = '';
-                registerForm.style.opacity = '';
-                registerForm.classList.add('fade-in');
-            }, 250);
-        } else {
-            if (loginForm) loginForm.style.display = 'none';
-            if (registerForm) registerForm.style.display = '';
-        }
-        
-        if (headerLogo) headerLogo.textContent = '📝 Register';
-        if (headerSubtitle) {
-            const t = this._getTranslateFn();
-            headerSubtitle.textContent = t('app.register.subtitle') || 'Create a new account';
-        }
-        return true;
+        return this.authDisplayManager.showRegisterFormInContainer();
     }
 
     /**
@@ -768,6 +633,7 @@ class DOMManager extends BaseManager {
         this._clearConnectionMessageTimer();
         this.elements = {};
         this.translateFn = null;
+        this.authDisplayManager = null;
         super.destroy();
     }
 }
