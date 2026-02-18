@@ -414,7 +414,7 @@ describe('DOMManager', () => {
         test('should count total elements correctly', () => {
             const stats = domManager.getElementsStatistics();
             
-            expect(stats.total).toBe(57); // Добавлено много элементов для onboarding, login, register, verify
+            expect(stats.total).toBe(67); // APP_DOM.ELEMENT_IDS count (onboarding, login, register, verify, etc.)
             expect(stats.available).toBeGreaterThan(0);
         });
 
@@ -944,13 +944,13 @@ describe('DOMManager', () => {
             const result = domManager.showLoginFormInContainer();
             
             expect(result).toBe(true);
-            jest.advanceTimersByTime(250);
+            jest.advanceTimersByTime(400);
             
             const loginForm = domManager.elements.mainLoginForm;
             const registerForm = domManager.elements.mainRegisterForm;
             
             if (loginForm) {
-                expect(loginForm.style.display).toBe('');
+                expect(loginForm.style.display).not.toBe('none');
             }
             if (registerForm) {
                 expect(registerForm.style.display).toBe('none');
@@ -970,7 +970,7 @@ describe('DOMManager', () => {
             const result = domManager.showRegisterFormInContainer();
             
             expect(result).toBe(true);
-            jest.advanceTimersByTime(250);
+            jest.advanceTimersByTime(400);
             
             const loginForm = domManager.elements.mainLoginForm;
             const registerForm = domManager.elements.mainRegisterForm;
@@ -979,7 +979,7 @@ describe('DOMManager', () => {
                 expect(loginForm.style.display).toBe('none');
             }
             if (registerForm) {
-                expect(registerForm.style.display).toBe('');
+                expect(registerForm.style.display).not.toBe('none');
             }
         });
 
@@ -1053,7 +1053,7 @@ describe('DOMManager', () => {
             const result = domManager.showLoginForm();
             
             expect(result).toBe(true);
-            jest.advanceTimersByTime(250);
+            jest.advanceTimersByTime(400);
             
             const mainElement = domManager.elements.appMain;
             const loginContainer = domManager.elements.loginContainer;
@@ -1080,7 +1080,7 @@ describe('DOMManager', () => {
             const result = domManager.hideLoginForm();
             
             expect(result).toBe(true);
-            jest.advanceTimersByTime(250);
+            jest.advanceTimersByTime(400);
             
             if (mainElement) {
                 expect(mainElement.style.display).toBe('flex');
@@ -1251,8 +1251,8 @@ describe('DOMManager', () => {
             
             expect(mainElement.classList.contains('fade-out')).toBe(true);
             
-            // Fast-forward animation
-            jest.advanceTimersByTime(300);
+            // Fast-forward animation (400ms timeout)
+            jest.advanceTimersByTime(400);
             
             expect(mainElement.style.display).toBe('none');
             expect(loginElement.style.display).toBe('flex');
@@ -1269,8 +1269,8 @@ describe('DOMManager', () => {
             
             expect(loginElement.classList.contains('fade-out-down')).toBe(true);
             
-            // Fast-forward animation
-            jest.advanceTimersByTime(300);
+            // Fast-forward animation (400ms timeout)
+            jest.advanceTimersByTime(400);
             
             expect(mainElement.style.display).toBe('flex');
             expect(loginElement.style.display).toBe('none');

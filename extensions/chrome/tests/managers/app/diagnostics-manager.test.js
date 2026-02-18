@@ -150,6 +150,16 @@ describe('DiagnosticsManager', () => {
             manager.destroy();
         });
 
+        test('should throw error if translateFn is not a function', () => {
+            global.navigator.language = 'ru';
+            expect(() => {
+                new DiagnosticsManager(
+                    mockServiceWorkerManager,
+                    mockNotificationManager,
+                    { translateFn: 'not a function' }
+                );
+            }).toThrow(TypeError);
+        });
     });
 
     describe('runDiagnostics', () => {

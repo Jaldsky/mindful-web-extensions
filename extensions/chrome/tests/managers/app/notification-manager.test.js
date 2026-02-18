@@ -167,7 +167,8 @@ describe('NotificationManager', () => {
             const result2 = notificationManager.showNotification(123, 'success');
             
             expect(result1).toBeNull();
-            expect(result2).toBeNull();
+            expect(result2).toBeDefined();
+            expect(result2.textContent).toBe('123');
         });
 
         test('should validate type parameter', () => {
@@ -457,6 +458,93 @@ describe('NotificationManager', () => {
             notificationManager.destroy();
             
             expect(notificationManager.notificationStats.size).toBe(0);
+        });
+    });
+
+    describe('authToast layout', () => {
+        test('should create auth-error-toast with layout authToast', () => {
+            const notification = notificationManager.showNotification('Auth error', 'error', {
+                layout: 'authToast'
+            });
+
+            expect(notification).toBeDefined();
+            expect(notification.classList.contains('auth-error-toast')).toBe(true);
+            expect(notification.getAttribute('data-layout')).toBe('authToast');
+            expect(notification.querySelector('.auth-error-message')).toBeDefined();
+            expect(notification.querySelector('.auth-error-message').textContent).toBe('Auth error');
+            expect(notification.querySelector('.auth-error-close')).toBeDefined();
+            expect(notification.querySelector('.auth-error-close').textContent).toBe('×');
+        });
+
+        test('authToast close button should remove notification on click', () => {
+            const notification = notificationManager.showNotification('Auth error', 'error', {
+                layout: 'authToast',
+                duration: 10000
+            });
+
+            expect(notificationManager.notifications.size).toBe(1);
+
+            const closeBtn = notification.querySelector('.auth-error-close');
+            closeBtn.click();
+
+            expect(notificationManager.notifications.size).toBe(0);
+        });
+    });
+
+    describe('_normalizeMessage and _extractErrorText', () => {
+        test('showNotification should accept object with message property', () => {
+            const notification = notificationManager.showNotification(
+                { message: 'Error from backend' },
+                'error'
+            );
+
+            expect(notification).toBeDefined();
+            expect(notification.textContent).toBe('Error from backend');
+        });
+
+        test('showNotification should accept object with detail property', () => {
+            const notification = notificationManager.showNotification(
+                { detail: 'Validation failed' },
+                'error'
+            );
+
+            expect(notification).toBeDefined();
+            expect(notification.textContent).toBe('Validation failed');
+        });
+
+        test('showNotification should accept object with detail as array (FastAPI style)', () => {
+            const notification = notificationManager.showNotification(
+                { detail: [{ msg: 'Field required' }] },
+                'error'
+            );
+
+            expect(notification).toBeDefined();
+            expect(notification.textContent).toBe('Field required');
+        });
+
+        test('showNotification should accept object with error property', () => {
+            const notification = notificationManager.showNotification(
+                { error: 'Network error' },
+                'error'
+            );
+
+            expect(notification).toBeDefined();
+            expect(notification.textContent).toBe('Network error');
+        });
+
+        test('showNotification should return null for null message', () => {
+            const notification = notificationManager.showNotification(null, 'success');
+            expect(notification).toBeNull();
+        });
+
+        test('showNotification should accept object with details[0].message (ErrorResponseSchema)', () => {
+            const notification = notificationManager.showNotification(
+                { details: [{ message: 'Server error' }] },
+                'error'
+            );
+
+            expect(notification).toBeDefined();
+            expect(notification.textContent).toBe('Server error');
         });
     });
 });
