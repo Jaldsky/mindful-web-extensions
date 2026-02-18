@@ -500,6 +500,20 @@ input[type="text"]:focus {
     background-color: var(--color-danger-transparent, rgba(244, 67, 54, 0.12));
 }
 
+.options-clear-all-btn {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+    background-color: var(--color-bg-secondary);
+}
+
+.options-clear-all-btn::before {
+    content: '🗑';
+}
+
+.options-clear-all-btn:hover:not(:disabled) {
+    background-color: var(--color-danger-transparent, rgba(244, 67, 54, 0.12));
+}
+
 /* Developer Panels Container */
 .developer-panels-container {
     margin-top: var(--spacing-xl);
