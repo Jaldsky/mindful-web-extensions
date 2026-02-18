@@ -2,50 +2,130 @@
  * Styles for the extension popup (app.html)
  */
 
+/* Скрыть контент до готовности — убрать мелькание пустого окна при открытии попапа */
+body.app-loading {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Окно попапа компактнее, без лишнего пустого места под футером. */
+html {
+    min-height: 0;
+    height: auto;
+}
+/* Фон как на фронте Auth: обёртка — bg-overlay, карточка формы — bg-primary */
 body {
     margin: 0;
+    padding: 0;
     min-width: 360px;
     width: 360px;
-    height: 600px;
-    min-height: 600px;
-    max-height: 600px;
-    padding: 0;
-    padding-bottom: 0;
-    background: var(--color-bg-overlay);
-    transition: none !important;
+    min-height: 260px;
+    height: auto;
+    max-height: 380px;
+    background: var(--color-bg-primary);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
 }
 
 .app-onboarding-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--color-bg-overlay);
+    position: relative;
+    width: 100%;
+    min-height: 0;
+    background: var(--color-bg-primary);
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
     z-index: 1000;
-    overflow-y: auto;
-    padding: var(--spacing-lg);
+    overflow: visible;
+    padding: 0;
+    flex-shrink: 0;
 }
 
 .app-onboarding-modal {
+    position: relative;
+    width: 100%;
     background: var(--color-bg-primary);
-    border-radius: var(--border-radius-lg);
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
     padding: var(--spacing-xxl);
-    box-shadow: var(--shadow-lg);
-    width: calc(100% - 32px);
-    max-width: 340px;
-    max-height: calc(100vh - 40px);
+    padding-bottom: 0;
     overflow: hidden;
     text-align: center;
-    border: 1px solid var(--border-color);
-    margin: auto;
+    margin: 0;
     animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    transition: height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    transition: height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+    backface-visibility: hidden;
+    transform-origin: top center;
+}
+
+
+.app-onboarding-modal.modal-height-transition {
+    will-change: height;
+}
+
+/* Global toggles — visible on both welcome and main windows, same position */
+.app-global-toggles {
+    position: fixed;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 1100;
+    pointer-events: auto;
+}
+
+.app-onboarding-toggles--hidden {
+    display: none !important;
+}
+
+/* Theme and language toggles — same position as frontend WelcomeModal (legacy, inside overlay) */
+.app-onboarding-toggles {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
+}
+
+/* Как на фронте: ModalToggleButton 36×36px, fontSize 22px; луна отдельно 14px */
+.app-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.app-toggle-btn .app-theme-icon-moon {
+    font-size: 14px;
+}
+
+.app-toggle-btn:hover {
+    opacity: 1;
+    background: rgba(76, 175, 80, 0.15);
+    box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.3);
+    transform: scale(1.15);
+}
+
+.app-toggle-btn:active {
+    transform: scale(1.05);
 }
 
 @keyframes modalSlideIn {
@@ -59,17 +139,99 @@ body {
     }
 }
 
-/* Smooth container for forms to enable height transitions */
+/* Высоту анимирует только .app-onboarding-modal — экраны без transition, чтобы не было дёргания */
 #appWelcomeScreen,
 #appLoginScreen,
 #appRegisterScreen,
-#appVerifyScreen {
-    transition: max-height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
-                opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+#appVerifyScreen,
+#appResendScreen {
     overflow: hidden;
 }
 
-.app-onboarding-modal h2 {
+/* Welcome screen — same layout and style as frontend WelcomeModal */
+.app-welcome-screen {
+    text-align: center;
+}
+
+.app-welcome-header {
+    margin-top: 0;
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Title in welcome screen — same as frontend ModalHeader (green #4CAF50) */
+#appWelcomeScreen .app-welcome-title {
+    margin: 0 0 var(--spacing-lg);
+    color: #4CAF50;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.app-welcome-subtitle {
+    margin: 0 0 var(--spacing-md);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+}
+
+.app-welcome-features {
+    list-style: none;
+    margin: 0 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: left;
+}
+
+.app-welcome-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.app-welcome-feature-icon {
+    color: var(--color-primary);
+    font-size: 16px;
+    line-height: 1.6;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.app-welcome-feature-text {
+    color: var(--color-text-primary);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.app-welcome-actions.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.app-welcome-footer {
+    margin: var(--spacing-lg) 0 var(--spacing-xxl);
+    padding: 0;
+    font-size: 10px;
+    line-height: 1.35;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.app-welcome-footer .app-legal-terms,
+.app-welcome-footer .app-legal-privacy {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+.app-welcome-footer .app-legal-terms:hover,
+.app-welcome-footer .app-legal-privacy:hover {
+    text-decoration: underline;
+}
+
+/* Other onboarding screens (login, register, verify) and auth forms — h2 not the welcome title */
+.app-onboarding-modal h2:not(.app-welcome-title):not(.auth-form-title) {
     margin-top: 0;
     margin-bottom: var(--spacing-xl);
     font-size: var(--font-size-xl);
@@ -99,12 +261,14 @@ body {
 
 .app-register-link {
     margin-top: var(--spacing-sm);
+    font-weight: 400;
 }
 
 .app-register-link a {
     color: var(--color-primary);
     text-decoration: none;
     font-size: var(--font-size-sm);
+    font-weight: 400;
 }
 
 .app-register-link a:hover {
@@ -183,24 +347,116 @@ body {
 
 .app-container {
     background: var(--color-bg-primary);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
-    padding: var(--spacing-xl);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xl);
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
     width: 100%;
-    max-width: 360px;
+    min-height: 280px;
     opacity: 1;
     transform: translateY(0) scale(1);
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
                 transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
+/* Main working window (appMain) — same structure as welcome/auth: overlay bg + modal card */
+#appMain {
+    flex: 1 0 auto;
+    box-sizing: border-box;
+}
+
+/* Main window modal — same structure/style as app-onboarding-modal */
+#appMain .app-main-modal {
+    position: relative;
+    width: 100%;
+    min-height: 100%;
+    box-sizing: border-box;
+    background: var(--color-bg-primary);
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: var(--spacing-xxl);
+    padding-bottom: var(--spacing-xxl);
+    overflow: hidden;
+    margin: 0;
+    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark theme: same as login/welcome window — primary background; sections slightly darker */
+[data-theme="dark"] #appMain .app-main-modal {
+    background: var(--color-bg-primary);
+}
+
+[data-theme="dark"] #appMain .app-main-section {
+    background: var(--color-bg-secondary);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Main window card — inherits from modal, no extra border */
+#appMain .app-section-card.auth-card {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Main window inner layout — compact, harmonious spacing */
+.app-main-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+}
+
+.app-main-header {
+    margin-bottom: var(--spacing-xs);
+}
+
+#appMain .app-main-header.app-header {
+    gap: 2px;
+}
+
+.app-main-title.auth-form-title {
+    margin-bottom: 0;
+}
+
+.app-main-section {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-bg-secondary);
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.08));
+    padding: var(--spacing-md);
+}
+
+
 #appLoginContainer {
-    padding: var(--spacing-xl);
-    gap: var(--spacing-xl);
+    padding: 0;
+    gap: 0;
+}
+
+/* Login container card — same style as app-onboarding-modal */
+#appLoginContainer .app-section-card.auth-card {
+    width: 100%;
+    background: var(--color-bg-primary);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: var(--spacing-xxl);
+    padding-bottom: var(--spacing-xxl);
+    margin: 0;
+}
+
+/* В главном окне нижний отступ у карточки, у футера не дублируем */
+#appLoginContainer .auth-legal-footer {
+    margin-bottom: 0;
 }
 
 .app-container.fade-out {
@@ -244,10 +500,11 @@ body {
 }
 
 
+/* Main popup header — same brand green as frontend */
 .logo {
     font-size: var(--font-size-xl);
     font-weight: bold;
-    color: var(--color-primary);
+    color: #4CAF50;
 }
 
 .subtitle {
@@ -359,6 +616,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: var(--spacing-md);
     margin-bottom: var(--spacing-sm);
 }
 
@@ -368,47 +626,68 @@ body {
 
 .status-label {
     font-size: var(--font-size-sm);
-    color: var(--color-text-primary);
+    color: var(--color-text-secondary);
 }
 
 .status-value {
-    font-size: var(--font-size-xs);
-    padding: 4px 8px;
+    font-size: var(--font-size-sm);
+    padding: 5px 10px;
     border-radius: var(--border-radius-xl);
-    font-weight: 500;
+    font-weight: 600;
 }
 
-/* Anonymous user status styling - same style as status-inactive but with gray color */
-.user-status-anonymous {
-    background-color: #e9ecef;
-    color: #495057;
-    border-radius: var(--border-radius-xl) !important;
+/* Status pills — readable, clearly “on” states */
+.status-value.user-status-anonymous {
+    background-color: rgba(33, 150, 243, 0.12);
+    color: #1565c0;
+    border-radius: var(--border-radius-xl);
+    font-weight: 600;
 }
 
-[data-theme="dark"] .user-status-anonymous {
-    background-color: #495057;
-    color: #e9ecef;
-    border-radius: var(--border-radius-xl) !important;
+[data-theme="dark"] .status-value.user-status-anonymous {
+    background-color: rgba(66, 165, 245, 0.2);
+    color: #64b5f6;
 }
 
-/* Authenticated user status styling - same style as status-active (green) */
-.user-status-authenticated {
-    background-color: var(--color-success);
+.status-value.user-status-authenticated {
+    background-color: rgba(76, 175, 80, 0.18);
+    color: #2e7d32;
+    border-radius: var(--border-radius-xl);
+    font-weight: 600;
+}
+
+[data-theme="dark"] .status-value.user-status-authenticated {
+    background-color: rgba(76, 175, 80, 0.3);
     color: var(--color-success-text);
-    border-radius: var(--border-radius-xl) !important;
 }
 
-[data-theme="dark"] .user-status-authenticated {
-    background-color: var(--color-success);
+.status-value.status-active {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .status-value.status-active {
+    background-color: rgba(76, 175, 80, 0.3);
     color: var(--color-success-text);
-    border-radius: var(--border-radius-xl) !important;
+}
+
+.status-value.status-inactive {
+    background-color: rgba(244, 67, 54, 0.12);
+    color: #b71c1c;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .status-value.status-inactive {
+    background-color: rgba(239, 83, 80, 0.25);
+    color: var(--color-error-text);
 }
 
 /* Stats section */
 .stats {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
 }
 
 .stats-header {
@@ -421,18 +700,21 @@ body {
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--color-text-primary);
+    letter-spacing: 0.2px;
 }
 
 .stats-content {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
 }
 
 .stats-item {
     display: flex;
     justify-content: space-between;
-    font-size: var(--font-size-xs);
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
 }
 
@@ -440,7 +722,12 @@ body {
 .actions {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+}
+
+.actions.button-group {
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    margin-bottom: 0;
 }
 
 .app-action-btn {
@@ -552,15 +839,14 @@ body {
     color: var(--color-primary);
 }
 
-/* Settings button */
+/* Settings button — same style as login window buttons (btn-base / Войти, Назад) */
 .settings-btn {
-    padding: 10px 16px;
+    /* Inherits from .app-action-btn; match .btn-base exactly */
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--border-color);
     background-color: var(--color-bg-secondary);
-    color: var(--color-text);
-    font-weight: 600;
-    box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.08));
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-xs);
 }
 
 .settings-btn::before {
@@ -570,23 +856,15 @@ body {
 .settings-btn:hover:not(:disabled) {
     background-color: var(--color-bg-tertiary);
     border-color: var(--color-primary);
-    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
 }
 
-[data-theme="dark"] .settings-btn {
-    color: var(--color-text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background-color: rgba(33, 33, 33, 0.9);
-    box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.7));
+.settings-btn:active:not(:disabled) {
+    box-shadow: var(--shadow-xs);
+    transform: scale(0.98);
 }
 
-[data-theme="dark"] .settings-btn:hover:not(:disabled) {
-    background-color: rgba(55, 55, 55, 0.9);
-    border-color: var(--color-primary);
-    color: var(--color-text-primary);
-}
-
-/* Dark theme styles for auth buttons */
+/* Dark theme: welcome screen buttons (primary-btn, secondary-btn) */
 [data-theme="dark"] .primary-btn,
 [data-theme="dark"] .secondary-btn {
     color: var(--color-text-primary);
@@ -686,6 +964,12 @@ body {
     right: 20px;
 }
 
+.notification.position-top-center {
+    top: var(--spacing-md);
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+}
+
 .notification.position-top-left {
     top: 20px;
     left: 20px;
@@ -720,6 +1004,74 @@ body {
     transform: translateX(-100%);
 }
 
+/* Auth error toast — как на фронте (Auth.tsx): баннер сверху, красный фон, кнопка закрытия */
+.notification.auth-error-toast {
+    top: var(--spacing-md);
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+    bottom: auto;
+    width: auto;
+    max-width: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background-color: #e57373;
+    color: #ffffff;
+    border: 1px solid #d32f2f;
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-sm);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-20px);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+[data-theme="dark"] .notification.auth-error-toast {
+    background-color: #E57373;
+    color: #ffffff;
+    border-color: #EF5350;
+}
+
+.notification.auth-error-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.notification.auth-error-toast.hiding {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.notification.auth-error-toast .auth-error-message {
+    flex: 1;
+    text-align: center;
+    word-wrap: break-word;
+}
+
+.notification.auth-error-toast .auth-error-close {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.notification.auth-error-toast .auth-error-close:hover {
+    opacity: 1;
+}
+
+.notification.auth-error-toast.position-top-center {
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+}
+
 /* Auth form styles - unified for all forms */
 .auth-form {
     width: 100%;
@@ -733,7 +1085,8 @@ body {
 .auth-form.fade-out,
 #appWelcomeScreen.fade-out,
 #appLoginScreen.fade-out,
-#appRegisterScreen.fade-out {
+#appRegisterScreen.fade-out,
+#appMain .app-main-modal.fade-out {
     opacity: 0;
     transform: scale(0.99);
     pointer-events: none;
@@ -745,7 +1098,8 @@ body {
 #appWelcomeScreen.fade-out-down,
 #appLoginScreen.fade-out-down,
 #appRegisterScreen.fade-out-down,
-#appVerifyScreen.fade-out-down {
+#appVerifyScreen.fade-out-down,
+#appMain .app-main-modal.fade-out-down {
     opacity: 0;
     transform: scale(0.99);
     pointer-events: none;
@@ -757,7 +1111,8 @@ body {
 #appWelcomeScreen.fade-in,
 #appLoginScreen.fade-in,
 #appRegisterScreen.fade-in,
-#appVerifyScreen.fade-in {
+#appVerifyScreen.fade-in,
+#appMain .app-main-modal.fade-in {
     opacity: 1;
     transform: scale(1);
     pointer-events: auto;
@@ -773,7 +1128,7 @@ body {
     text-align: center;
 }
 
-.auth-form h2 {
+.auth-form h2:not(.auth-form-title) {
     margin-top: 0;
     margin-bottom: var(--spacing-xl);
     font-size: var(--font-size-xl);
@@ -790,15 +1145,35 @@ body {
     padding: var(--spacing-xl);
 }
 
-.auth-form-group {
-    margin-bottom: var(--spacing-lg);
+/* Плавное появление/скрытие белых окон (главное окно и форма логина на главной)
+   — такая же логика масштаба/сдвига, как у экранов авторизации */
+.auth-card {
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.auth-card.fade-out {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+}
+
+.auth-card.fade-out-down {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+}
+
+.auth-card.fade-in {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.auth-form-group,
 #appLoginContainer .auth-form-group {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
 }
 
-.auth-form-group label {
+.auth-form-group label,
+.auth-form-group .auth-label {
     display: block;
     margin-bottom: var(--spacing-sm);
     font-size: var(--font-size-sm);
@@ -872,6 +1247,7 @@ body {
 .app-register-link {
     text-align: center;
     margin-top: var(--spacing-lg);
+    font-weight: 400;
 }
 
 #appLoginContainer .app-register-link {
@@ -883,6 +1259,7 @@ body {
     text-decoration: none;
     font-size: var(--font-size-sm);
     transition: color var(--transition-normal);
+    font-weight: 400;
 }
 
 .app-register-link a:hover {
@@ -890,21 +1267,31 @@ body {
     color: var(--color-primary-hover);
 }
 
-/* Apply unified styles to onboarding modal forms */
-.app-onboarding-modal .auth-form {
+/* Auth forms — same layout and style as frontend (LoginForm, RegisterForm, VerifyForm) */
+.auth-form {
     text-align: left;
     overflow: hidden;
 }
 
-.app-onboarding-modal .auth-form h2 {
+.auth-form-title,
+.auth-form h2.auth-form-title {
+    color: var(--color-primary);
+    font-size: 32px;
+    font-weight: bold;
+    margin: 0 0 var(--spacing-lg);
     text-align: center;
 }
 
-.app-onboarding-modal .auth-form-group {
-    margin-bottom: var(--spacing-md);
+.auth-form .auth-form-group {
+    margin-bottom: var(--spacing-sm);
 }
 
-.app-onboarding-modal .auth-form-group label {
+.auth-form .auth-label,
+.auth-form .auth-form-group label {
+    margin-bottom: var(--spacing-sm);
+}
+
+.auth-label {
     display: block;
     margin-bottom: var(--spacing-sm);
     font-size: var(--font-size-sm);
@@ -912,52 +1299,240 @@ body {
     color: var(--color-text-primary);
 }
 
-.app-onboarding-modal .app-input {
+.auth-required {
+    color: var(--color-danger, #f44336);
+}
+
+.auth-field-error {
+    display: block;
+    color: var(--color-danger, #f44336);
+    font-size: var(--font-size-xs);
+    margin-top: var(--spacing-xs);
+    min-height: 1em;
+}
+
+/* Пустой блок ошибки не занимает место — убирает зазор между полем логина и лейблом "Password *" */
+.auth-field-error:empty {
+    display: none;
+    margin: 0;
+    min-height: 0;
+}
+
+.app-input {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-md);
     font-size: var(--font-size-sm);
-    background-color: var(--color-bg-primary);
+    background: var(--color-bg-primary);
     color: var(--color-text-primary);
     font-family: var(--font-family);
     transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
     box-sizing: border-box;
 }
 
-.app-onboarding-modal .app-input:focus {
+.app-input:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
 }
 
-.app-onboarding-modal .app-input::placeholder {
+.app-input.has-error {
+    border-color: var(--color-danger, #f44336);
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.1);
+}
+
+.app-input::placeholder {
     color: var(--color-text-secondary);
     opacity: 0.6;
 }
 
-.app-onboarding-modal .auth-buttons {
+/* Button group — как на фронте LoginForm */
+.button-group.auth-buttons {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
 }
 
-.app-onboarding-modal .app-register-link {
+/* btn-base, btn-primary, btn-secondary — match frontend main.css */
+.btn-base {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    padding: 8px 16px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    line-height: 1;
+    box-shadow: var(--shadow-xs);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.btn-base::before {
+    content: '';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0;
+    height: 1.5em;
+    margin-right: 0;
+    opacity: 0;
+    font-size: 1em;
+    line-height: 1;
+    transition: width 0.2s ease, margin-right 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-base:hover:not(:disabled) {
+    box-shadow: var(--shadow-sm);
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-primary);
+}
+
+.btn-base:active:not(:disabled) {
+    box-shadow: var(--shadow-xs);
+    transform: scale(0.98);
+}
+
+.btn-base:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+}
+
+.btn-primary:hover:not(:disabled)::before {
+    content: '✅';
+    width: 1.3em;
+    margin-right: 6px;
+    opacity: 1;
+}
+
+/* Sign In — замок, как на фронте */
+.btn-primary.btn-signin:hover:not(:disabled)::before {
+    content: '🔐';
+}
+
+.btn-secondary:hover:not(:disabled)::before {
+    content: '←';
+    width: 1.3em;
+    margin-right: 6px;
+    opacity: 1;
+}
+
+.btn-verify:hover:not(:disabled)::before {
+    content: '✉️';
+}
+
+.app-register-link {
     text-align: center;
-    margin-top: var(--spacing-lg);
+    margin-top: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 400;
 }
 
-.app-onboarding-modal .app-register-link a {
+.app-register-link-text,
+.app-register-link a {
+    font-weight: 400;
+}
+
+.app-register-link-text {
+    color: var(--color-text-secondary);
+}
+
+.app-register-link a {
     color: var(--color-primary);
     text-decoration: none;
-    font-size: var(--font-size-sm);
-    transition: color var(--transition-normal);
+    margin-left: 2px;
 }
 
-.app-onboarding-modal .app-register-link a:hover {
+.app-register-link a:hover {
     text-decoration: underline;
     color: var(--color-primary-hover);
+}
+
+/* 6-digit code input — same as frontend CodeInput */
+.auth-code-group {
+    margin-bottom: var(--spacing-sm);
+}
+
+.auth-code-input {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-start;
+    margin-top: var(--spacing-sm);
+}
+
+.auth-code-digit {
+    width: 44px;
+    height: 40px;
+    padding: 0;
+    text-align: center;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    background: var(--color-bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+    box-sizing: border-box;
+}
+
+.auth-code-digit:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.auth-code-digit.has-error,
+.auth-code-group.has-error .auth-code-digit {
+    border-color: var(--color-danger, #f44336);
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.1);
+}
+
+/* Legal footer under login/register — как на фронте Auth; нижний отступ как у главного окна */
+.auth-legal-footer {
+    margin: var(--spacing-lg) 0 var(--spacing-xxl);
+    padding: 0;
+    font-size: 10px;
+    line-height: 1.35;
+    color: var(--color-text-secondary);
+    text-align: center;
+    font-weight: 400;
+}
+
+.auth-legal-footer .app-legal-terms,
+.auth-legal-footer .app-legal-privacy {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 400;
+}
+.auth-legal-footer .app-legal-terms:hover,
+.auth-legal-footer .app-legal-privacy:hover {
+    text-decoration: underline;
+}
+
+.auth-legal-footer span {
+    font-weight: 400;
 }
 
 /* User status with tooltip and click to copy for anonymous users */
@@ -1029,3 +1604,83 @@ body {
     display: none;
 }
 
+/* Отступ между группами полей = отступ под лейблом (над и под "Password *" одинаково) */
+.app-onboarding-modal .auth-form-group,
+.app-onboarding-modal .auth-form .auth-form-group,
+#appLoginContainer .auth-form-group {
+    margin-bottom: var(--spacing-sm) !important;
+}
+.app-onboarding-modal .auth-form-group .auth-label,
+.app-onboarding-modal .auth-form-group label,
+#appLoginContainer .auth-form-group .auth-label,
+#appLoginContainer .auth-form-group label {
+    margin-bottom: var(--spacing-sm) !important;
+}
+.app-onboarding-modal .auth-form .button-group.auth-buttons,
+#appLoginContainer .auth-form .button-group.auth-buttons {
+    margin-top: var(--spacing-md) !important;
+    margin-bottom: var(--spacing-sm) !important;
+    gap: var(--spacing-sm) !important;
+}
+.app-onboarding-modal .app-register-link,
+#appLoginContainer .app-register-link {
+    margin-top: var(--spacing-sm) !important;
+    font-weight: normal !important;
+}
+
+#appVerifyScreen .app-register-link {
+    margin-bottom: var(--spacing-xxl);
+}
+
+/* Экран Resend: последний блок — кнопки, нижний отступ как у остальных экранов */
+#appResendScreen .auth-form .button-group.auth-buttons {
+    margin-bottom: var(--spacing-xxl) !important;
+}
+
+.app-onboarding-modal .app-register-link *,
+#appLoginContainer .app-register-link * {
+    font-weight: normal !important;
+}
+
+.app-onboarding-modal .auth-legal-footer,
+.app-onboarding-modal .auth-legal-footer *,
+#appLoginContainer .auth-legal-footer,
+#appLoginContainer .auth-legal-footer * {
+    font-weight: normal !important;
+}
+
+/* Отступ между полями = как под лейблом (spacing-sm) */
+#appLoginScreen .auth-form .auth-form-group,
+#appRegisterScreen .auth-form .auth-form-group,
+#appVerifyScreen .auth-form .auth-form-group {
+    margin-bottom: var(--spacing-sm) !important;
+}
+
+/* Компактное окно попапа: меньше пустого места под футером */
+html.app-popup,
+html.app-popup body {
+    min-height: 260px !important;
+    max-height: 380px !important;
+    height: auto !important;
+}
+
+/* Убрать жирное начертание у «Don't have an account? Sign up» и футера с Terms/Privacy (по id экранов) */
+#appLoginScreen .app-register-link,
+#appLoginScreen .app-register-link *,
+#appRegisterScreen .app-register-link,
+#appRegisterScreen .app-register-link *,
+#appVerifyScreen .app-register-link,
+#appVerifyScreen .app-register-link *,
+#appLoginScreen .auth-legal-footer,
+#appLoginScreen .auth-legal-footer *,
+#appRegisterScreen .auth-legal-footer,
+#appRegisterScreen .auth-legal-footer *,
+#appVerifyScreen .auth-legal-footer,
+#appVerifyScreen .auth-legal-footer * {
+    font-weight: 400 !important;
+}
+
+#appWelcomeScreen .app-welcome-footer,
+#appWelcomeScreen .app-welcome-footer * {
+    font-weight: 400 !important;
+}
