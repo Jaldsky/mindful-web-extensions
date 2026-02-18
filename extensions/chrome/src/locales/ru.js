@@ -981,6 +981,7 @@ const RU = {
             connectionSuccess: 'Подключение успешно!',
             connectionFailed: 'Ошибка подключения',
             connectionError: 'Ошибка теста подключения',
+            anonymousLoginError: 'Не удалось войти как гость. Проверьте подключение к серверу и попробуйте снова.',
             initError: 'Ошибка инициализации',
             trackingEnabled: 'Отслеживание включено',
             trackingDisabled: 'Отслеживание отключено',

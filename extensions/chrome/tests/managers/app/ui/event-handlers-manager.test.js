@@ -171,6 +171,7 @@ describe('EventHandlersManager', () => {
     test('setupEventHandlers обрабатывает tryAnonBtn и вызывает loadInitialStatus', async () => {
         const tryAnonBtn = createButton();
         app.domManager.elements.tryAnonBtn = tryAnonBtn;
+        app.serviceWorkerManager.sendMessage.mockResolvedValue({ success: true });
 
         manager.setupEventHandlers();
         tryAnonBtn.click();
@@ -181,6 +182,29 @@ describe('EventHandlersManager', () => {
         expect(app.serviceWorkerManager.sendMessage).toHaveBeenCalled();
         expect(app._showMain).toHaveBeenCalled();
         expect(app.loadInitialStatus).toHaveBeenCalled();
+    });
+
+    test('setupEventHandlers не пускает в anonymous режим при недоступном сервере', async () => {
+        const tryAnonBtn = createButton();
+        app.domManager.elements.tryAnonBtn = tryAnonBtn;
+        app.serviceWorkerManager.sendMessage.mockResolvedValue({
+            success: false,
+            error: 'Connection failed'
+        });
+
+        manager.setupEventHandlers();
+        tryAnonBtn.click();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(app._saveOnboardingCompleted).not.toHaveBeenCalled();
+        expect(app._showMain).not.toHaveBeenCalled();
+        expect(app.loadInitialStatus).not.toHaveBeenCalled();
+        expect(app.notificationManager.showNotification).toHaveBeenCalledWith(
+            'app.notifications.anonymousLoginError',
+            'error',
+            { layout: 'authToast', duration: 5000 }
+        );
     });
 
     test('registerForm валидирует username и не вызывает register при ошибке', async () => {
