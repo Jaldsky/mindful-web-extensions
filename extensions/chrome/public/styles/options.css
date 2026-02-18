@@ -44,16 +44,33 @@ body {
     margin: 0 auto;
     padding: var(--spacing-xl);
     padding-bottom: 80px;
-    background-color: var(--color-bg-tertiary);
+    background-color: var(--color-bg-primary);
     overflow-y: scroll;
 }
 
 /* Container */
 .container {
     background: var(--color-bg-primary);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-lg);
     padding: var(--spacing-xxl);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-xs);
+    animation: optionsCardFadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.container + .container {
+    margin-top: var(--spacing-xl);
+}
+
+@keyframes optionsCardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Header with language toggle */
@@ -65,9 +82,71 @@ body {
 }
 
 h1 {
-    color: var(--color-text-primary);
+    color: var(--color-primary);
     margin: 0;
-    font-size: var(--font-size-xl);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+/* Settings page toggles in auth-window style (same visual pattern as app-toggle-btn) */
+.options-header-toggles {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.theme-toggle,
+.language-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    opacity: 0.85;
+    box-shadow: none;
+    transition: opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.theme-toggle:hover,
+.language-toggle:hover {
+    opacity: 1;
+    background: rgba(76, 175, 80, 0.15);
+    box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.3);
+    transform: scale(1.15);
+}
+
+.theme-toggle:active,
+.language-toggle:active {
+    transform: scale(1.05);
+}
+
+.theme-icon,
+.language-icon {
+    width: auto;
+    height: auto;
+    font-size: 24px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+}
+
+/* Same moon/icon ratio as auth popup toggles */
+.theme-icon.options-theme-icon-moon {
+    font-size: 16px;
+}
+
+/* Text values still update in JS, but are hidden to keep icon-only auth style */
+.theme-label,
+.language-code {
+    display: none;
 }
 
 .connection-status-wrapper {
@@ -87,7 +166,10 @@ h1 {
     font-family: var(--font-family);
     background-color: var(--color-bg-secondary);
     color: var(--color-text-primary);
-    transition: all var(--transition-normal);
+    transition: background-color var(--transition-normal),
+                border-color var(--transition-normal),
+                box-shadow var(--transition-normal),
+                transform 0.2s ease;
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -241,18 +323,18 @@ label {
     display: block;
     margin-bottom: var(--spacing-sm);
     font-weight: 500;
-    color: var(--color-text-secondary);
+    color: var(--color-text-primary);
     font-size: var(--font-size-sm);
 }
 
 input[type="url"],
 input[type="text"] {
     width: 100%;
-    padding: 12px;
-    border: 2px solid var(--border-color);
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-md);
     font-size: var(--font-size-sm);
-    transition: border-color var(--transition-normal), background-color var(--transition-normal), color var(--transition-normal);
+    transition: border-color var(--transition-normal), background-color var(--transition-normal), color var(--transition-normal), box-shadow var(--transition-normal);
     font-family: var(--font-family);
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
@@ -262,6 +344,7 @@ input[type="url"]:focus,
 input[type="text"]:focus {
     outline: none;
     border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
 }
 
 .domain-exceptions-input {
@@ -277,19 +360,20 @@ input[type="text"]:focus {
 .domain-exceptions-input input[type="text"] {
     flex: 1 1 0;
     min-width: 0;
-    padding: 12px;
-    border: 2px solid var(--border-color);
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-md);
     font-size: var(--font-size-sm);
     font-family: var(--font-family);
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
-    transition: border-color var(--transition-normal), background-color var(--transition-normal), color var(--transition-normal);
+    transition: border-color var(--transition-normal), background-color var(--transition-normal), color var(--transition-normal), box-shadow var(--transition-normal);
 }
 
 .domain-exceptions-input input[type="text"]:focus {
     outline: none;
     border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
 }
 
 
@@ -411,6 +495,23 @@ input[type="text"]:focus {
     text-overflow: ellipsis;
 }
 
+/* Destructive action stays visually separated from primary actions */
+.danger-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-md);
+    border: 1px dashed rgba(244, 67, 54, 0.3);
+    border-radius: var(--border-radius-md);
+    background: rgba(244, 67, 54, 0.04);
+}
+
+.danger-actions .options-action-btn {
+    flex: 0 1 240px;
+    min-width: 200px;
+    max-width: 260px;
+}
+
 .options-action-btn {
     display: inline-flex;
     align-items: center;
@@ -430,7 +531,8 @@ input[type="text"]:focus {
     transition: background-color var(--transition-normal),
                 border-color var(--transition-normal),
                 color var(--transition-normal),
-                box-shadow var(--transition-normal);
+                box-shadow var(--transition-normal),
+                transform 0.2s ease;
     position: relative;
 }
 
@@ -462,6 +564,7 @@ input[type="text"]:focus {
 
 .options-action-btn:active:not(:disabled) {
     box-shadow: var(--shadow-xs);
+    transform: scale(0.98);
 }
 
 .options-action-btn:disabled {
@@ -502,8 +605,8 @@ input[type="text"]:focus {
 
 .options-clear-all-btn {
     color: var(--color-danger);
-    border-color: var(--color-danger);
-    background-color: var(--color-bg-secondary);
+    border-color: rgba(244, 67, 54, 0.55);
+    background-color: transparent;
 }
 
 .options-clear-all-btn::before {
@@ -512,6 +615,12 @@ input[type="text"]:focus {
 
 .options-clear-all-btn:hover:not(:disabled) {
     background-color: var(--color-danger-transparent, rgba(244, 67, 54, 0.12));
+    border-color: var(--color-danger);
+}
+
+[data-theme="dark"] .danger-actions {
+    border-color: rgba(239, 83, 80, 0.45);
+    background: rgba(239, 83, 80, 0.08);
 }
 
 /* Developer Panels Container */
@@ -568,10 +677,11 @@ input[type="text"]:focus {
 .dev-tools-panel {
     background: var(--color-bg-primary);
     border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
     overflow: hidden;
     animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     transform-origin: top;
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-xs);
 }
 
 .dev-tools-panel.closing {
@@ -1098,6 +1208,54 @@ input[type="text"]:focus {
 /* Reduce extra space under activity statistics block */
 .activity-container .diagnostics-summary {
     margin-bottom: 0;
+}
+
+.activity-analytics-footer {
+    margin: var(--spacing-md) 0 0;
+    font-size: var(--font-size-xs);
+    line-height: 1.45;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.activity-analytics-link {
+    position: relative;
+    display: inline-block;
+    color: var(--color-primary);
+    text-decoration: none;
+    margin-left: 2px;
+    font-weight: 500;
+    transition: color 0.25s ease, text-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.activity-analytics-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 100%;
+    height: 2px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    opacity: 0.75;
+    transition: transform 0.25s ease;
+}
+
+.activity-analytics-link:hover,
+.activity-analytics-link:focus-visible {
+    color: var(--color-primary-hover);
+    text-shadow: 0 0 6px rgba(76, 175, 80, 0.25);
+    transform: translateY(-1px);
+}
+
+.activity-analytics-link:hover::after,
+.activity-analytics-link:focus-visible::after {
+    transform: scaleX(1);
+}
+
+.activity-analytics-link:focus-visible {
+    outline: none;
 }
 
 /* Slide animations */

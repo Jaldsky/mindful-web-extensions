@@ -100,8 +100,10 @@ const CONFIG = {
             BASE_URL: appBase,
             TERMS_PATH: '/terms',
             PRIVACY_PATH: '/privacy',
+            ANALYTICS_PATH: '/analytics',
             TERMS_URL: `${appBase}/terms`,
-            PRIVACY_URL: `${appBase}/privacy`
+            PRIVACY_URL: `${appBase}/privacy`,
+            ANALYTICS_URL: `${appBase}/analytics`
         };
     },
 

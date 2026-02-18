@@ -84,9 +84,11 @@ class ThemeDisplayManager {
 
             if (targetTheme === 'dark') {
                 themeIconElement.textContent = CONFIG.UI.THEME_DISPLAY.ICONS.DARK;
+                themeIconElement.classList.add('options-theme-icon-moon');
                 themeLabelElement.textContent = manager.localeManager.t('options.theme.dark');
             } else {
                 themeIconElement.textContent = CONFIG.UI.THEME_DISPLAY.ICONS.LIGHT;
+                themeIconElement.classList.remove('options-theme-icon-moon');
                 themeLabelElement.textContent = manager.localeManager.t('options.theme.light');
             }
         } catch (error) {

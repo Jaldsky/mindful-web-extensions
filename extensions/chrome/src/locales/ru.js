@@ -1163,6 +1163,8 @@ const RU = {
         activity: {
             title: 'Активность за сегодня',
             refresh: 'Обновить',
+            moreAnalyticsPrefix: 'Более подробная статистика доступна на',
+            moreAnalyticsLink: 'mindfulweb.app',
             labels: {
                 eventsTracked: 'Событий отслежено:',
                 activeEvents: 'Active событий:',

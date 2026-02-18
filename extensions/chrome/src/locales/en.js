@@ -1159,6 +1159,8 @@ const EN = {
         activity: {
             title: "Today's Activity",
             refresh: 'Refresh',
+            moreAnalyticsPrefix: 'More detailed statistics are available at',
+            moreAnalyticsLink: 'mindfulweb.app',
             labels: {
                 eventsTracked: 'Events tracked:',
                 activeEvents: 'Active events:',
