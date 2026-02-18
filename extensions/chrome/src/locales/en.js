@@ -975,6 +975,7 @@ const EN = {
             connectionSuccess: 'Connection Successful!',
             connectionFailed: 'Connection Failed',
             connectionError: 'Connection Test Error',
+            anonymousLoginError: 'Unable to continue as guest. Please check backend connection and try again.',
             initError: 'Initialization Error',
             trackingEnabled: 'Tracking enabled',
             trackingDisabled: 'Tracking disabled',

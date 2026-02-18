@@ -57,14 +57,24 @@ class EventHandlersManager {
 
         if (app.domManager.elements.tryAnonBtn) {
             const handler = async () => {
-                await app._saveOnboardingCompleted(true);
-
                 try {
-                    await app.serviceWorkerManager.sendMessage(CONFIG.MESSAGE_TYPES.AUTH_LOGOUT);
+                    const response = await app.serviceWorkerManager.sendMessage(
+                        CONFIG.MESSAGE_TYPES.AUTH_LOGOUT
+                    );
+                    if (!response?.success) {
+                        throw new Error(response?.error || 'anonymous-auth-failed');
+                    }
                 } catch (error) {
                     app._logError({ key: 'logs.app.authLogoutError' }, error);
+                    app.notificationManager.showNotification(
+                        app.localeManager.t('app.notifications.anonymousLoginError'),
+                        'error',
+                        { layout: 'authToast', duration: 5000 }
+                    );
+                    return;
                 }
 
+                await app._saveOnboardingCompleted(true);
                 app._showMain();
 
                 await app.loadInitialStatus();
