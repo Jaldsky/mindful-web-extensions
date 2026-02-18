@@ -88,6 +88,24 @@ const CONFIG = {
     })(),
 
     /**
+     * URL приложения (фронтенд) для ссылок Terms of Service и Privacy Policy.
+     * Использует CONFIG.BACKEND.BASE_URL, чтобы не зависеть от process.env в рантайме.
+     */
+    get APP() {
+        const backendBase = this.BACKEND.BASE_URL || 'http://localhost:8000';
+        const appBase = (typeof backendBase === 'string' && backendBase.includes('localhost'))
+            ? 'http://localhost:5173'
+            : (backendBase.replace ? backendBase.replace(/\/$/, '') : backendBase);
+        return {
+            BASE_URL: appBase,
+            TERMS_PATH: '/terms',
+            PRIVACY_PATH: '/privacy',
+            TERMS_URL: `${appBase}/terms`,
+            PRIVACY_URL: `${appBase}/privacy`
+        };
+    },
+
+    /**
      * Настройки трекера событий
      */
     TRACKER: {
@@ -196,10 +214,17 @@ const CONFIG = {
             APP_VERIFY_DESCRIPTION: 'appVerifyDescription',
             APP_VERIFY_EMAIL: 'appVerifyEmail',
             APP_VERIFY_CODE: 'appVerifyCode',
+            APP_VERIFY_CODE_CONTAINER: 'appVerifyCodeContainer',
             APP_REGISTER_VERIFY_LINK: 'appRegisterVerifyLink',
             APP_VERIFY_SUBMIT: 'appVerifySubmit',
             APP_VERIFY_BACK: 'appVerifyBack',
             APP_RESEND_CODE_LINK: 'appResendCodeLink',
+            APP_RESEND_SCREEN: 'appResendScreen',
+            APP_RESEND_FORM: 'appResendForm',
+            APP_RESEND_EMAIL: 'appResendEmail',
+            APP_RESEND_EMAIL_ERROR: 'appResendEmailError',
+            APP_RESEND_SUBMIT: 'appResendSubmit',
+            APP_RESEND_BACK: 'appResendBack',
             APP_TRY_ANON_BTN: 'appTryAnonBtn',
             APP_SIGN_IN_BTN: 'appSignInBtn',
             APP_LOGIN_FORM: 'appLoginForm',
@@ -224,6 +249,7 @@ const CONFIG = {
             APP_MAIN_LOGIN_SUBMIT: 'appMainLoginSubmit',
             APP_MAIN_LOGIN_BACK: 'appMainLoginBack',
             APP_MAIN_REGISTER_LINK: 'appMainRegisterLink',
+            APP_MAIN_REGISTER_VERIFY_LINK: 'appMainRegisterVerifyLink',
             APP_MAIN_REGISTER_FORM: 'appMainRegisterForm',
             APP_MAIN_REGISTER_USERNAME: 'appMainRegisterUsername',
             APP_MAIN_REGISTER_USERNAME_ERROR: 'appMainRegisterUsernameError',
@@ -235,7 +261,9 @@ const CONFIG = {
             APP_MAIN_REGISTER_BACK: 'appMainRegisterBack',
             APP_AUTH_HEADER_LOGO: 'appAuthHeaderLogo',
             APP_AUTH_HEADER_SUBTITLE: 'appAuthHeaderSubtitle',
-            OPEN_LOGIN: 'openLogin'
+            OPEN_LOGIN: 'openLogin',
+            APP_THEME_TOGGLE: 'appThemeToggle',
+            APP_LOCALE_TOGGLE: 'appLocaleToggle'
         }
     },
 
@@ -249,6 +277,7 @@ const CONFIG = {
             BACKEND_URL: 'backendUrl',
             SAVE_BTN: 'saveBtn',
             RESET_BTN: 'resetBtn',
+            CLEAR_ALL_DATA_BTN: 'clearAllDataBtn',
             STATUS: 'status',
             RUN_DIAGNOSTICS: 'runDiagnostics',
             TOGGLE_DEVELOPER_TOOLS: 'toggleDeveloperTools',
@@ -306,6 +335,29 @@ const CONFIG = {
         
         // Theme
         THEME: 'mindful_theme'
+    },
+
+    /**
+     * Все ключи chrome.storage.local, используемые расширением.
+     * Используется для полной очистки (например, после переустановки или сброса ID).
+     */
+    get ALL_STORAGE_KEYS_FOR_CLEAR() {
+        return [
+            ...Object.values(this.STORAGE_KEYS),
+            this.LOGS.STORAGE_KEY,
+            'mindful_connection_status'
+        ];
+    },
+
+    /**
+     * Ключи localStorage (кеш темы/локали), которые нужно очищать при полном сбросе.
+     */
+    get LOCAL_STORAGE_KEYS_FOR_CLEAR() {
+        return [
+            this.THEME.CACHE_KEY,
+            this.LOCALE.CACHE_KEY,
+            this.LOCALE.STORAGE_KEY
+        ];
     },
 
     /**
@@ -381,6 +433,7 @@ const CONFIG = {
         AUTH_REGISTER: 'authRegister',
         AUTH_VERIFY: 'authVerify',
         AUTH_RESEND_CODE: 'authResendCode',
+        CLEAR_SESSION: 'clearSession',
         RELOAD_EXTENSION: 'reloadExtension',
         OPEN_OPTIONS: 'openOptions',
         
@@ -404,7 +457,8 @@ const CONFIG = {
             'GET_AUTH_STATUS',
             'AUTH_REGISTER',
             'AUTH_VERIFY',
-            'AUTH_RESEND_CODE'
+            'AUTH_RESEND_CODE',
+            'CLEAR_SESSION'
         ],
         
         // Паттерны для определения блокирующих ошибок
