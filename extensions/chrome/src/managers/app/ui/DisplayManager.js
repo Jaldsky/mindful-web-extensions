@@ -632,11 +632,15 @@ class DisplayManager {
             if (typeof document === 'undefined' || !CONFIG.APP) return;
             const termsUrl = CONFIG.APP.TERMS_URL;
             const privacyUrl = CONFIG.APP.PRIVACY_URL;
+            const analyticsUrl = CONFIG.APP.BASE_URL;
             document.querySelectorAll('.app-legal-terms').forEach((el) => {
                 if (el.tagName === 'A') el.href = termsUrl;
             });
             document.querySelectorAll('.app-legal-privacy').forEach((el) => {
                 if (el.tagName === 'A') el.href = privacyUrl;
+            });
+            document.querySelectorAll('.app-analytics-link').forEach((el) => {
+                if (el.tagName === 'A') el.href = analyticsUrl;
             });
         } catch (error) {
             app._logError({ key: 'logs.app.localeChangeError' }, error);

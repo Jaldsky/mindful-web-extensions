@@ -1,3 +1,5 @@
+const CONFIG = require('../../../config/config.js');
+
 /**
  * Менеджер для инициализации OptionsManager.
  * Отвечает за загрузку настроек, локализацию и настройку UI.
@@ -43,6 +45,7 @@ class InitializationManager {
 
             manager.diagnosticsWorkflowManager.updateStatus('notRun');
             await this.loadSettings();
+            this.setAnalyticsLinkUrl();
 
             if (typeof manager.loadConnectionStatus === 'function') {
                 try {
@@ -94,6 +97,26 @@ class InitializationManager {
             }
 
             throw error;
+        }
+    }
+
+    /**
+     * Устанавливает URL для ссылки на расширенную аналитику.
+     *
+     * @returns {void}
+     */
+    setAnalyticsLinkUrl() {
+        const manager = this.manager;
+
+        try {
+            const analyticsLink = document.getElementById('activityAnalyticsLink');
+            if (!analyticsLink || !CONFIG.APP) {
+                return;
+            }
+
+            analyticsLink.href = CONFIG.APP.BASE_URL;
+        } catch (error) {
+            manager._logError({ key: 'logs.initialization.uiUpdateError' }, error);
         }
     }
 
