@@ -353,6 +353,27 @@ class BackendManager extends BaseManager {
     }
 
     /**
+     * URL для старта OAuth (открыть вкладку).
+     * @param {string} [provider='google']
+     * @returns {string}
+     */
+    getOAuthStartUrl(provider = 'google') {
+        return this.backendAuthManager.getOAuthStartUrl(provider);
+    }
+
+    /**
+     * OAuth callback: обмен code/state на токены.
+     * @param {string} provider
+     * @param {string} code
+     * @param {string} state
+     * @param {string} redirectUri
+     * @returns {Promise<{success: boolean, accessToken?: string, refreshToken?: string, error?: string}>}
+     */
+    async oauthLogin(provider, code, state, redirectUri) {
+        return await this.backendAuthManager.oauthLogin(provider, code, state, redirectUri);
+    }
+
+    /**
      * Обновляет access токен.
      *
      * @async

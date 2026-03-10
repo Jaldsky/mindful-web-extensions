@@ -1438,6 +1438,12 @@ body {
     border-color: var(--color-primary);
 }
 
+.btn-base:hover:not(:disabled)::before {
+    width: 1.3em;
+    margin-right: 6px;
+    opacity: 1;
+}
+
 .btn-base:active:not(:disabled) {
     box-shadow: var(--shadow-xs);
     transform: scale(0.98);
@@ -1448,33 +1454,57 @@ body {
     cursor: not-allowed;
 }
 
-.btn-primary {
-    background-color: var(--color-primary);
-    color: #fff;
-    border-color: var(--color-primary);
-}
-
-.btn-primary:hover:not(:disabled) {
-    background-color: var(--color-primary-hover);
-    border-color: var(--color-primary-hover);
-}
-
+/* Primary button - checkmark emoji for login/register */
 .btn-primary:hover:not(:disabled)::before {
     content: '✅';
-    width: 1.3em;
-    margin-right: 6px;
-    opacity: 1;
 }
 
-/* Sign In — замок, как на фронте */
+/* Verify button - envelope emoji */
+.btn-verify:hover:not(:disabled)::before {
+    content: '✉️';
+}
+
+/* Secondary button - back arrow */
+.btn-secondary:hover:not(:disabled)::before {
+    content: '←';
+}
+
+/* Sign in button - lock emoji (overrides btn-primary) */
 .btn-primary.btn-signin:hover:not(:disabled)::before {
     content: '🔐';
 }
 
-.btn-secondary:hover:not(:disabled)::before {
-    content: '←';
+/* Secondary verify button - envelope emoji */
+.btn-secondary.btn-verify:hover:not(:disabled)::before {
+    content: '✉️';
+}
+
+/* Anonymous button - anonymous user emoji (overrides btn-secondary) */
+.btn-secondary.btn-anonymous:hover:not(:disabled)::before {
+    content: '👤';
+}
+
+/* OAuth Google — как на фронте: иконка появляется при наведении */
+.btn-oauth-google {
+    gap: 2px;
+}
+.btn-oauth-google:hover:not(:disabled)::before {
+    display: none;
+}
+.btn-oauth-google .btn-oauth-google-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.5em;
+    width: 0;
+    margin-right: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: width 0.2s ease, margin-right 0.2s ease, opacity 0.2s ease;
+}
+.btn-oauth-google:hover:not(:disabled) .btn-oauth-google-icon {
     width: 1.3em;
-    margin-right: 6px;
+    margin-right: 4px;
     opacity: 1;
 }
 

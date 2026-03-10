@@ -12,7 +12,8 @@ module.exports = (env, argv) => {
       tracker: './src/tracker.js',
       app: './src/app.js',
       options: './src/options.js',
-      'theme-init': './src/theme-init.js'
+      'theme-init': './src/theme-init.js',
+      'oauth-callback-content': './src/content/oauth-callback-content.js'
     },
     resolve: {
       extensions: ['.js']

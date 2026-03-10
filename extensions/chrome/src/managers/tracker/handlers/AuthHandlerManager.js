@@ -27,6 +27,8 @@ class AuthHandlerManager extends BaseManager {
 
         this.backendManager = dependencies.backendManager;
         this.storageManager = dependencies.storageManager;
+        /** @type {string|null} redirect_uri для ожидающего OAuth callback (сохраняем между AUTH_OAUTH_START и OAUTH_CALLBACK) */
+        this._pendingOAuthRedirectUri = null;
     }
 
     /**
@@ -68,6 +70,98 @@ class AuthHandlerManager extends BaseManager {
             })
             .catch(error => {
                 this._logError({ key: 'logs.authHandler.loginError' }, error);
+                sendResponse({ success: false, error: error.message });
+            });
+    }
+
+    /**
+     * Запускает OAuth-авторизацию: открывает вкладку с URL авторизации и сохраняет redirect_uri для callback.
+     *
+     * @param {Object} request - Объект запроса
+     * @param {Object} [request.data] - Данные запроса
+     * @param {string} [request.data.redirectUri] - redirect_uri для callback (фронт)
+     * @param {Function} sendResponse - Функция для отправки ответа
+     * @returns {void}
+     */
+    handleOAuthStart(request, sendResponse) {
+        const redirectUri = request?.data?.redirectUri;
+        if (!redirectUri || typeof redirectUri !== 'string') {
+            const t = this._getTranslateFn();
+            sendResponse({ success: false, error: t('logs.authHandler.oauthRedirectRequired') || 'redirect_uri required' });
+            return;
+        }
+
+        try {
+            const authorizeUrl = this.backendManager.getOAuthStartUrl('google');
+            if (!authorizeUrl) {
+                const t = this._getTranslateFn();
+                sendResponse({ success: false, error: t('logs.authHandler.oauthUrlError') || 'Failed to get OAuth URL' });
+                return;
+            }
+
+            this._pendingOAuthRedirectUri = redirectUri;
+
+            if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+                chrome.tabs.create({ url: authorizeUrl });
+            }
+            sendResponse({ success: true });
+        } catch (error) {
+            this._pendingOAuthRedirectUri = null;
+            this._logError({ key: 'logs.authHandler.oauthStartError' }, error);
+            sendResponse({ success: false, error: error.message });
+        }
+    }
+
+    /**
+     * Обрабатывает OAuth callback: обменивает code/state на токены, сохраняет сессию и закрывает вкладку.
+     *
+     * @param {Object} request - Объект запроса (от content script)
+     * @param {string} [request.code] - Код авторизации
+     * @param {string} [request.state] - state
+     * @param {Object} sender - Отправитель (Chrome API), для закрытия вкладки sender.tab.id
+     * @param {Function} sendResponse - Функция для отправки ответа
+     * @returns {void}
+     */
+    handleOAuthCallback(request, sender, sendResponse) {
+        const code = request?.code;
+        const state = request?.state;
+
+        if (!code || !state) {
+            sendResponse({ success: false, error: 'code and state required' });
+            return;
+        }
+
+        const redirectUri = this._pendingOAuthRedirectUri;
+        this._pendingOAuthRedirectUri = null;
+
+        if (!redirectUri) {
+            sendResponse({ success: false, error: 'No pending OAuth flow' });
+            return;
+        }
+
+        this.backendManager.oauthLogin('google', code, state, redirectUri)
+            .then(async result => {
+                if (!result?.success) {
+                    sendResponse({ success: false, error: result?.error });
+                    return;
+                }
+
+                const saved = await this.storageManager.saveAuthSession(result.accessToken, result.refreshToken);
+                if (!saved) {
+                    const t = this._getTranslateFn();
+                    sendResponse({ success: false, error: t('logs.authHandler.sessionSaveError') });
+                    return;
+                }
+
+                this.backendManager.setAuthSession(result.accessToken, result.refreshToken);
+
+                if (sender?.tab?.id && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.remove) {
+                    chrome.tabs.remove(sender.tab.id).catch(() => {});
+                }
+                sendResponse({ success: true });
+            })
+            .catch(error => {
+                this._logError({ key: 'logs.authHandler.oauthCallbackError' }, error);
                 sendResponse({ success: false, error: error.message });
             });
     }

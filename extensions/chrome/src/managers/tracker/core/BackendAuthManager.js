@@ -112,6 +112,94 @@ class BackendAuthManager {
         });
     }
 
+    /**
+     * Возвращает URL для старта OAuth (редирект на провайдера).
+     * @param {string} [provider='google']
+     * @returns {string}
+     */
+    getOAuthStartUrl(provider = 'google') {
+        const backend = this.backend;
+        const normalized = (provider || 'google').trim().toLowerCase();
+        const path = normalized === 'google'
+            ? CONFIG.BACKEND.AUTH_OAUTH_AUTHORIZE_PATH
+            : `/api/v1/auth/oauth/${normalized}/authorize`;
+
+        // backend.backendUrl по умолчанию указывает на endpoint событий (/api/v1/events/save),
+        // поэтому собираем URL через URL(), перезаписывая pathname, чтобы не "склеивать" пути.
+        const url = new URL(backend.backendUrl);
+        url.pathname = path;
+        url.search = '';
+        url.hash = '';
+        return url.toString();
+    }
+
+    /**
+     * OAuth callback: обмен code и state на токены.
+     * @param {string} provider - Провайдер (например 'google')
+     * @param {string} code - Код от провайдера
+     * @param {string} state - State
+     * @param {string} redirectUri - Redirect URI (должен совпадать с тем, что на бэкенде)
+     * @returns {Promise<{success: boolean, accessToken?: string, refreshToken?: string, error?: string}>}
+     */
+    async oauthLogin(provider, code, state, redirectUri) {
+        const backend = this.backend;
+        return await backend._executeWithTimingAsync('oauthLogin', async () => {
+            try {
+                const normalized = (provider || 'google').trim().toLowerCase();
+                const backendUrlObj = new URL(backend.backendUrl);
+                backendUrlObj.pathname = normalized === 'google'
+                    ? CONFIG.BACKEND.AUTH_OAUTH_CALLBACK_PATH
+                    : `/api/v1/auth/oauth/${normalized}/callback`;
+                const callbackUrl = backendUrlObj.toString();
+
+                const acceptLanguage = await backend._getAcceptLanguageAsync();
+                const response = await fetch(callbackUrl, {
+                    method: CONFIG.BACKEND.METHODS.POST,
+                    headers: {
+                        [CONFIG.BACKEND.HEADERS.CONTENT_TYPE]: CONFIG.BACKEND.HEADER_VALUES.CONTENT_TYPE_JSON,
+                        [CONFIG.BACKEND.HEADERS.ACCEPT_LANGUAGE]: acceptLanguage
+                    },
+                    body: JSON.stringify({ code, state, redirect_uri: redirectUri }),
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    let errorDetail = '';
+                    try {
+                        const errorText = await response.text();
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorDetail = this._extractErrorDetail(errorJson);
+                        } catch {
+                            // ignore
+                        }
+                    } catch {
+                        // ignore
+                    }
+                    const t = backend._getTranslateFn();
+                    const userMessage = errorDetail || t('logs.backend.unknownError') || 'Unknown error';
+                    backend._logError({ key: 'logs.backend.authLoginError' }, new Error(userMessage));
+                    return { success: false, error: userMessage };
+                }
+
+                const data = await response.json();
+                if (!data || !data.access_token || !data.refresh_token) {
+                    const t = backend._getTranslateFn();
+                    const errorMessage = t('logs.backend.authLoginInvalidResponse');
+                    backend._logError({ key: 'logs.backend.authLoginError' }, new Error(errorMessage));
+                    return { success: false, error: errorMessage };
+                }
+
+                return { success: true, accessToken: data.access_token, refreshToken: data.refresh_token };
+            } catch (error) {
+                backend._logError({ key: 'logs.backend.authLoginError' }, error);
+                const t = backend._getTranslateFn();
+                const errorMessage = error.message || t('logs.backend.unknownError');
+                return { success: false, error: errorMessage };
+            }
+        });
+    }
+
     async refreshAccessToken(refreshToken = null) {
         const backend = this.backend;
         return await backend._executeWithTimingAsync('refreshAccessToken', async () => {

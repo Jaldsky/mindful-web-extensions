@@ -153,6 +153,82 @@ class EventHandlersManager {
             app.eventHandlers.set('loginForm', handler);
         }
 
+        const setupOAuthGoogleHover = (btnEl) => {
+            if (!btnEl) return;
+            const iconEl = btnEl.querySelector('.btn-oauth-google-icon');
+            if (!iconEl) return;
+
+            const setHover = (hover) => {
+                iconEl.style.display = 'inline-flex';
+                iconEl.style.alignItems = 'center';
+                iconEl.style.justifyContent = 'center';
+                iconEl.style.height = '1.5em';
+                iconEl.style.width = hover ? '1.3em' : '0';
+                iconEl.style.marginRight = hover ? '4px' : '0';
+                iconEl.style.overflow = 'hidden';
+                iconEl.style.opacity = hover ? '1' : '0';
+                iconEl.style.fontSize = '13px';
+                iconEl.style.lineHeight = '1.5';
+                iconEl.style.transition = 'width 0.2s ease, margin-right 0.2s ease, opacity 0.2s ease';
+            };
+
+            setHover(false);
+
+            const onEnter = () => setHover(true);
+            const onLeave = () => setHover(false);
+
+            btnEl.addEventListener('mouseenter', onEnter);
+            btnEl.addEventListener('mouseleave', onLeave);
+
+            // сохраняем для возможного cleanup, если будет реализован remove
+            app.eventHandlers.set(`${btnEl.id || 'oauthGoogle'}:mouseenter`, onEnter);
+            app.eventHandlers.set(`${btnEl.id || 'oauthGoogle'}:mouseleave`, onLeave);
+        };
+
+        const handleGoogleLogin = async () => {
+            const redirectUri = `${CONFIG.APP.BASE_URL}/oauth/google/callback`;
+            try {
+                const response = await app.serviceWorkerManager.sendMessage(
+                    CONFIG.MESSAGE_TYPES.AUTH_OAUTH_START,
+                    { redirectUri }
+                );
+                if (!response?.success) {
+                    throw new Error(response?.error || app.localeManager.t('app.auth.loginError'));
+                }
+                app.notificationManager.showNotification(
+                    app.localeManager.t('app.auth.loginWithGoogle'),
+                    'info',
+                    { layout: 'authToast', duration: 3000 }
+                );
+                window.close();
+            } catch (error) {
+                app._logError({ key: 'logs.app.authOAuthStartError' }, error);
+                app.notificationManager.showNotification(
+                    error.message || app.localeManager.t('app.auth.loginError'),
+                    'error',
+                    { layout: 'authToast', duration: 5000 }
+                );
+            }
+        };
+
+        if (app.domManager.elements.loginGoogleBtn) {
+            setupOAuthGoogleHover(app.domManager.elements.loginGoogleBtn);
+            app.domManager.elements.loginGoogleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleGoogleLogin();
+            });
+            app.eventHandlers.set('loginGoogleBtn', handleGoogleLogin);
+        }
+
+        if (app.domManager.elements.mainLoginGoogleBtn) {
+            setupOAuthGoogleHover(app.domManager.elements.mainLoginGoogleBtn);
+            app.domManager.elements.mainLoginGoogleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleGoogleLogin();
+            });
+            app.eventHandlers.set('mainLoginGoogleBtn', handleGoogleLogin);
+        }
+
         if (app.domManager.elements.registerForm) {
             const handler = async (event) => {
                 event.preventDefault();
