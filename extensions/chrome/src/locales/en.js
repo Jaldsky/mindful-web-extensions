@@ -835,7 +835,11 @@ const EN = {
             loginError: 'Auth login error',
             logoutError: 'Auth logout error',
             statusError: 'Auth status error',
-            registerError: 'Auth register error'
+            registerError: 'Auth register error',
+            oauthRedirectRequired: 'redirect_uri is required for OAuth',
+            oauthUrlError: 'Failed to get OAuth URL',
+            oauthStartError: 'OAuth start error',
+            oauthCallbackError: 'OAuth callback error'
         }
     },
 
@@ -866,6 +870,7 @@ const EN = {
             passwordLabel: 'Password',
             passwordPlaceholder: 'Enter password',
             loginButton: 'Sign In',
+            loginWithGoogle: 'Sign in with Google',
             backButton: 'Back',
             noAccount: 'Don\'t have an account?',
             registerLink: 'Sign up',

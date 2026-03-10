@@ -42,6 +42,13 @@ describe('BackendAuthManager', () => {
         delete global.fetch;
     });
 
+    test('getOAuthStartUrl не склеивает путь с /events/save', () => {
+        const url = authManager.getOAuthStartUrl('google');
+        expect(url).toBe(`http://test.com${CONFIG.BACKEND.AUTH_OAUTH_AUTHORIZE_PATH}`);
+        expect(url).not.toContain('/api/v1/events/save/');
+        expect(url).not.toContain('/api/v1/events/save/api/v1/auth/');
+    });
+
     test('setAuthToken валидирует тип токена', () => {
         expect(() => authManager.setAuthToken(123)).toThrow(TypeError);
     });

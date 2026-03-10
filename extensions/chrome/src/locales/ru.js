@@ -839,7 +839,11 @@ const RU = {
             loginError: 'Ошибка авторизации',
             logoutError: 'Ошибка выхода',
             statusError: 'Ошибка статуса авторизации',
-            registerError: 'Ошибка регистрации'
+            registerError: 'Ошибка регистрации',
+            oauthRedirectRequired: 'Для OAuth требуется redirect_uri',
+            oauthUrlError: 'Не удалось получить OAuth URL',
+            oauthStartError: 'Ошибка запуска OAuth',
+            oauthCallbackError: 'Ошибка OAuth callback'
         }
     },
 
@@ -870,6 +874,7 @@ const RU = {
             passwordLabel: 'Пароль',
             passwordPlaceholder: 'Введите пароль',
             loginButton: 'Войти сейчас',
+            loginWithGoogle: 'Войти через Google',
             backButton: 'Назад',
             noAccount: 'Нет аккаунта?',
             registerLink: 'Зарегистрироваться',

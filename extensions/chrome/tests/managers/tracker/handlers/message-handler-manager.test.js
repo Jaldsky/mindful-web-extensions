@@ -608,6 +608,8 @@ describe('MessageHandlerManager', () => {
             messageHandlerManager.authHandler.handleLogin = jest.fn();
             messageHandlerManager.authHandler.handleLogout = jest.fn();
             messageHandlerManager.authHandler.handleGetAuthStatus = jest.fn();
+            messageHandlerManager.authHandler.handleOAuthStart = jest.fn();
+            messageHandlerManager.authHandler.handleOAuthCallback = jest.fn();
             messageHandlerManager.authHandler.handleRegister = jest.fn();
             messageHandlerManager.authHandler.handleVerify = jest.fn();
             messageHandlerManager.authHandler.handleResendCode = jest.fn();
@@ -647,6 +649,37 @@ describe('MessageHandlerManager', () => {
             messageHandlerManager._handleMessage(request, {}, sendResponse);
 
             expect(messageHandlerManager.authHandler.handleGetAuthStatus).toHaveBeenCalledWith(
+                sendResponse
+            );
+        });
+
+        test('должен роутить AUTH_OAUTH_START к authHandler.handleOAuthStart', () => {
+            const request = {
+                type: MessageHandlerManager.MESSAGE_TYPES.AUTH_OAUTH_START,
+                data: { redirectUri: 'http://localhost:5173/oauth/google/callback' }
+            };
+
+            messageHandlerManager._handleMessage(request, {}, sendResponse);
+
+            expect(messageHandlerManager.authHandler.handleOAuthStart).toHaveBeenCalledWith(
+                request,
+                sendResponse
+            );
+        });
+
+        test('должен роутить OAUTH_CALLBACK к authHandler.handleOAuthCallback и передавать sender', () => {
+            const request = {
+                type: MessageHandlerManager.MESSAGE_TYPES.OAUTH_CALLBACK,
+                code: 'abc',
+                state: 'st'
+            };
+            const sender = { tab: { id: 123 } };
+
+            messageHandlerManager._handleMessage(request, sender, sendResponse);
+
+            expect(messageHandlerManager.authHandler.handleOAuthCallback).toHaveBeenCalledWith(
+                request,
+                sender,
                 sendResponse
             );
         });

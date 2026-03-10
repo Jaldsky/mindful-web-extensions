@@ -414,7 +414,7 @@ describe('DOMManager', () => {
         test('should count total elements correctly', () => {
             const stats = domManager.getElementsStatistics();
             
-            expect(stats.total).toBe(67); // APP_DOM.ELEMENT_IDS count (onboarding, login, register, verify, etc.)
+            expect(stats.total).toBe(69); // APP_DOM.ELEMENT_IDS count (incl. Google OAuth buttons)
             expect(stats.available).toBeGreaterThan(0);
         });
 

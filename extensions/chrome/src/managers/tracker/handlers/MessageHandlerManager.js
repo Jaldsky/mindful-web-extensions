@@ -262,6 +262,14 @@ class MessageHandlerManager extends BaseManager {
                     this.authHandler.handleGetAuthStatus(sendResponse);
                     break;
 
+                case MessageHandlerManager.MESSAGE_TYPES.AUTH_OAUTH_START:
+                    this.authHandler.handleOAuthStart(request, sendResponse);
+                    break;
+
+                case MessageHandlerManager.MESSAGE_TYPES.OAUTH_CALLBACK:
+                    this.authHandler.handleOAuthCallback(request, sender, sendResponse);
+                    break;
+
                 case MessageHandlerManager.MESSAGE_TYPES.AUTH_REGISTER:
                     this.authHandler.handleRegister(request, sendResponse);
                     break;

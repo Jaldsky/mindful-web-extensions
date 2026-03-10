@@ -21,6 +21,16 @@
     "https://*/*"
   ],
   "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:5173/*",
+        "https://*/*"
+      ],
+      "js": ["oauth-callback-content.bundle.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "app.html",
     "default_title": "Mindful Web"

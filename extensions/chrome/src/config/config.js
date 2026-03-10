@@ -41,6 +41,8 @@ const CONFIG = {
         const AUTH_REGISTER_PATH = '/api/v1/auth/register'; // Путь для регистрации пользователя
         const AUTH_VERIFY_PATH = '/api/v1/auth/verify'; // Путь для подтверждения email
         const AUTH_RESEND_CODE_PATH = '/api/v1/auth/resend-code'; // Путь для повторной отправки кода
+        const AUTH_OAUTH_AUTHORIZE_PATH = '/api/v1/auth/oauth/google/authorize'; // OAuth: редирект на Google
+        const AUTH_OAUTH_CALLBACK_PATH = '/api/v1/auth/oauth/google/callback'; // OAuth: обмен code на токены
         const DEFAULT_URL = BASE_URL + EVENTS_ENDPOINT; // Полный URL по умолчанию
         
         return {
@@ -55,6 +57,8 @@ const CONFIG = {
             AUTH_REGISTER_PATH,
             AUTH_VERIFY_PATH,
             AUTH_RESEND_CODE_PATH,
+            AUTH_OAUTH_AUTHORIZE_PATH,
+            AUTH_OAUTH_CALLBACK_PATH,
             DEFAULT_URL,
             TIMEOUT: 10000, // Таймаут запроса (мс)
             RETRY_ATTEMPTS: 3, // Количество попыток повтора
@@ -234,6 +238,7 @@ const CONFIG = {
             APP_LOGIN_PASSWORD: 'appLoginPassword',
             APP_LOGIN_SUBMIT: 'appLoginSubmit',
             APP_LOGIN_BACK: 'appLoginBack',
+            APP_LOGIN_GOOGLE_BTN: 'appLoginGoogleBtn',
             APP_REGISTER_LINK: 'appRegisterLink',
             APP_REGISTER_FORM: 'appRegisterForm',
             APP_REGISTER_USERNAME: 'appRegisterUsername',
@@ -250,6 +255,7 @@ const CONFIG = {
             APP_MAIN_LOGIN_PASSWORD: 'appMainLoginPassword',
             APP_MAIN_LOGIN_SUBMIT: 'appMainLoginSubmit',
             APP_MAIN_LOGIN_BACK: 'appMainLoginBack',
+            APP_MAIN_LOGIN_GOOGLE_BTN: 'appMainLoginGoogleBtn',
             APP_MAIN_REGISTER_LINK: 'appMainRegisterLink',
             APP_MAIN_REGISTER_VERIFY_LINK: 'appMainRegisterVerifyLink',
             APP_MAIN_REGISTER_FORM: 'appMainRegisterForm',
@@ -432,6 +438,8 @@ const CONFIG = {
         AUTH_LOGIN: 'authLogin',
         AUTH_LOGOUT: 'authLogout',
         GET_AUTH_STATUS: 'getAuthStatus',
+        AUTH_OAUTH_START: 'authOAuthStart',
+        OAUTH_CALLBACK: 'oauthCallback',
         AUTH_REGISTER: 'authRegister',
         AUTH_VERIFY: 'authVerify',
         AUTH_RESEND_CODE: 'authResendCode',
@@ -457,6 +465,8 @@ const CONFIG = {
             'AUTH_LOGIN',
             'AUTH_LOGOUT',
             'GET_AUTH_STATUS',
+            'AUTH_OAUTH_START',
+            'OAUTH_CALLBACK',
             'AUTH_REGISTER',
             'AUTH_VERIFY',
             'AUTH_RESEND_CODE',
